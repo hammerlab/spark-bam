@@ -1,5 +1,5 @@
 name := "hadoop-bam"
-version := "1.0.0-SNAPSHOT"
+version := "1.0.0"
 deps ++= Seq(
   libs.value('hadoop_bam),
   libs.value('slf4j),
