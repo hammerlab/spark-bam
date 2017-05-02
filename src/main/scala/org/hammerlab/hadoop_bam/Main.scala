@@ -35,6 +35,10 @@ object Main extends CaseApp[Args] {
   }
 
   override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
+    if (remainingArgs.remainingArgs.size != 1) {
+      throw new IllegalArgumentException(s"Exactly one argument (a BAM file path) is required")
+    }
+
     val path = new Path(remainingArgs.remainingArgs.head)
     val conf = new Configuration
 
