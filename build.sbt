@@ -9,3 +9,5 @@ deps ++= Seq(
 providedDeps += libs.value('hadoop)
 
 shadeRenames += ("shapeless.**" → "org.hammerlab.shapeless.@1")
+
+main := "org.hammerlab.hadoop_bam.Main"

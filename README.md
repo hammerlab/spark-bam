@@ -23,9 +23,8 @@ To build/run locally, try [the sample `Main` contained in this library](src/main
 
 ```bash
 sbt assembly
-MAIN=org.hammerlab.hadoop_bam.Main
 JAR=target/scala-2.11/hadoop-bam-assembly-1.0.0-SNAPSHOT.jar
-time spark-submit --class "$MAIN" "$JAR" -n 32 <BAM>
+time spark-submit "$JAR" -n 32 <BAM>
 ```
 
 This print all computed splits as well as a timing stat for just the split-computation (whereas the stats output by `time` will include various app initialization-overhead time as well).
