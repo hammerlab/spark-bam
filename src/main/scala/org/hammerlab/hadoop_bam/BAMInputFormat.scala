@@ -72,7 +72,7 @@ class BAMInputFormat
       queue.add(idx → split.asInstanceOf[FileSplit])
     }
 
-    val numWorkers = cfg.getInt(NUM_GET_SPLITS_WORKERS_KEY, 4)
+    val numWorkers = cfg.getInt(NUM_GET_SPLITS_WORKERS_KEY, 32)
 
     /** Workers will drop a [[FileSplitResult]] for each [[FileSplit]] into this (thread-safe) map. */
     val fileSplitResultsMap = TrieMap[Int, FileSplitResult]()

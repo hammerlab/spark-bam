@@ -1,5 +1,7 @@
 package org.hammerlab.hadoop_bam
 
+import java.io.PrintStream
+
 import caseapp._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -15,15 +17,14 @@ case class JW(conf: Configuration) {
   val job = org.apache.hadoop.mapreduce.Job.getInstance(conf)
 }
 
-case class Args(numWorkers: Option[Int],
-                useSeqdoop: Boolean = false,
-                gsBuffer: Option[Int] = None)
+case class Args(@ExtraName("n") numWorkers: Option[Int],
+                @ExtraName("u") useSeqdoop: Boolean = false,
+                @ExtraName("g") gsBuffer: Option[Int] = None,
+                @ExtraName("o") outFile: Option[String] = None)
 
 object Main extends CaseApp[Args] {
 
-  def time[T](fn: => T): T = {
-    time("")(fn)
-  }
+  def time[T](fn: => T): T = time("")(fn)
 
   def time[T](msg: ⇒ String)(fn: => T): T = {
     val before = System.currentTimeMillis
@@ -65,7 +66,15 @@ object Main extends CaseApp[Args] {
 
     val splits = time("get splits") { ifmt.getSplits(jc) }
 
-    println(
+    val pw =
+      args.outFile match {
+        case Some(outFile) ⇒
+          new PrintStream(outFile)
+        case None ⇒
+          System.out
+      }
+
+    pw.println(
       splits
         .asScala
         .map(split ⇒
