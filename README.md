@@ -3,11 +3,13 @@
 [![Coverage Status](https://coveralls.io/repos/github/hammerlab/hadoop-bam/badge.svg?branch=master)](https://coveralls.io/github/hammerlab/hadoop-bam?branch=master)
 [![Maven Central](https://img.shields.io/maven-central/v/org.hammerlab/hadoop-bam_2.11.svg?maxAge=600)](http://search.maven.org/#search%7Cga%7C1%7Chadoop-bam)
 
-Extension of HadoopGenomics/hadoop-bam
+Extension of [HadoopGenomics/Hadoop-bam](https://github.com/HadoopGenomics/Hadoop-BAM)
 
 Implements [a `BAMInputFormat`](src/main/scala/org/hammerlab/hadoop_bam/BAMInputFormat.scala) that fetches BAM-ranges in parallel using a configurable number of worker-threads:
 
 [![Scaling log-log plot](https://cl.ly/3C0k2Y203U0i/image%20(22).png)](https://docs.google.com/a/hammerlab.org/spreadsheets/d/11c6T-HxR7bMdPOeS6l3n4klBuC9PhgrR5JcSg2qa_H4/edit?usp=sharing)
+
+*Timings from `time spark-submit $JAR -n <NUM> <BAM>` for various numbers of threads (`NUM`), against a 178GB `BAM`; [raw data here](https://docs.google.com/spreadsheets/d/11c6T-HxR7bMdPOeS6l3n4klBuC9PhgrR5JcSg2qa_H4/edit#gid=1917204057).*
 
 ## Impetus
 
