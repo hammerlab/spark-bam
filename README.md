@@ -1,4 +1,6 @@
 # hadoop-bam
+[![Build Status](https://travis-ci.org/hammerlab/hadoop-bam.svg?branch=master)](https://travis-ci.org/hammerlab/hadoop-bam)
+[![Coverage Status](https://coveralls.io/repos/github/hammerlab/hadoop-bam/badge.svg?branch=master)](https://coveralls.io/github/hammerlab/hadoop-bam?branch=master)
 
 Extension of HadoopGenomics/hadoop-bam
 
