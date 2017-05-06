@@ -2,17 +2,17 @@ package org.hammerlab.hadoop_bam
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.mapreduce.{ InputFormat, InputSplit, JobID }
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.task.JobContextImpl
-import org.hammerlab.hadoop_bam.Main.time
+import org.apache.hadoop.mapreduce.{ InputSplit, JobID }
+import org.hammerlab.hadoop_bam.bgzf.VirtualPos
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
-import org.seqdoop.hadoop_bam.FileVirtualSplit
+import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 
 import scala.collection.JavaConverters._
 
-class BAMInputFormatTest
+class InputFormatTest
   extends Suite {
 
   {
@@ -63,6 +63,18 @@ class BAMInputFormatTest
     }
   }
 
+//  {
+//    implicit val path: Path = "22gb.bam"
+//
+//    test("idxd splits") {
+//      implicit val mss = MaxSplitSize(128 * 1024 * 1024)
+//      implicit val extraConf = Map("file.length.override" → 24614355629L.toString)
+//      val ours = ourSplits
+//      ours.size should be(1)
+//      ours(0) should be(VirtualPos(0, 0))
+//    }
+//  }
+
   def checkSplits(maxSplitSize: MaxSplitSize,
                   numSplits: Int)(implicit path: Path): Unit =
     checkSplits(
@@ -86,8 +98,8 @@ class BAMInputFormatTest
 
     for {
       ((VirtualSplit(_, ourStart, ourEnd, _), theirSplit), idx) ← ours.zip(theirs).zipWithIndex
-      val theirStart = VirtualPos(theirSplit.getStartVirtualOffset)
-      val theirEnd = VirtualPos(theirSplit.getEndVirtualOffset)
+      theirStart = VirtualPos(theirSplit.getStartVirtualOffset)
+      theirEnd = VirtualPos(theirSplit.getEndVirtualOffset)
     } {
       withClue(s"split $idx:") {
         ourStart should be(theirStart)
@@ -99,16 +111,33 @@ class BAMInputFormatTest
   implicit class MaxSplitSize(val size: Int)
   implicit def unwrapSplitSize(mss: MaxSplitSize): Int = mss.size
 
-  def ourSplits(implicit path: Path, maxSplitSize: MaxSplitSize): Seq[VirtualSplit] =
-    getSplits(new BAMInputFormat)
+  def ourSplits(implicit
+                path: Path,
+                maxSplitSize: MaxSplitSize,
+                extraConf: Map[String, String] = Map()): Seq[VirtualSplit] =
+    getSplits(new InputFormat)
       .map(_.asInstanceOf[VirtualSplit])
 
-  def theirSplits(implicit path: Path, maxSplitSize: MaxSplitSize): Seq[FileVirtualSplit] =
-    getSplits(new org.seqdoop.hadoop_bam.BAMInputFormat)
+  def theirSplits(implicit
+                  path: Path,
+                  maxSplitSize: MaxSplitSize,
+                  extraConf: Map[String, String] = Map()): Seq[FileVirtualSplit] =
+    getSplits(new BAMInputFormat)
       .map(_.asInstanceOf[FileVirtualSplit])
 
-  def getSplits[K, V](ifmt: InputFormat[K, V])(implicit path: Path, maxSplitSize: MaxSplitSize): Seq[InputSplit] = {
+  def getSplits[K, V](ifmt: BAMInputFormat)(
+      implicit
+      path: Path,
+      maxSplitSize: MaxSplitSize,
+      extraConf: Map[String, String] = Map()): Seq[InputSplit] = {
+
     val conf = new Configuration
+
+    for {
+      (k, v) ← extraConf
+    } {
+      conf.set(k, v)
+    }
 
     val job = org.apache.hadoop.mapreduce.Job.getInstance(conf)
     FileInputFormat.setInputPaths(job, path)

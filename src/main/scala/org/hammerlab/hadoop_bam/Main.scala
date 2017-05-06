@@ -8,7 +8,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.JobID
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.task.JobContextImpl
-import org.hammerlab.hadoop_bam.BAMInputFormat.NUM_GET_SPLITS_WORKERS_KEY
+import org.hammerlab.hadoop_bam.InputFormat.NUM_GET_SPLITS_WORKERS_KEY
 import org.seqdoop.hadoop_bam.FileVirtualSplit
 
 import scala.collection.JavaConverters._
@@ -52,7 +52,7 @@ object Main extends CaseApp[Args] {
       if (args.useSeqdoop)
         new org.seqdoop.hadoop_bam.BAMInputFormat
       else
-        new BAMInputFormat
+        new InputFormat
 
     val job = org.apache.hadoop.mapreduce.Job.getInstance(conf)
     val jobConf = job.getConfiguration
