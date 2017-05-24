@@ -8,7 +8,7 @@ import java.nio.file.Paths
 
 import org.apache.hadoop.fs.Path
 import org.hammerlab.hadoop_bam.Index.{ Bin, Chunk, Reference }
-import org.hammerlab.hadoop_bam.bgzf.VirtualPos
+import org.hammerlab.hadoop_bam.bgzf.Pos
 import org.hammerlab.stats.Stats
 
 case class Index(references: Seq[Reference]) {
@@ -39,7 +39,7 @@ case class Index(references: Seq[Reference]) {
 
 object Index {
 
-  def getDiffStats(offsets: Seq[VirtualPos]): Stats[Long, Int] =
+  def getDiffStats(offsets: Seq[Pos]): Stats[Long, Int] =
     getDiffStats(
       offsets
         .map(_.blockPos)
@@ -52,11 +52,11 @@ object Index {
     Stats(diffs)
   }
 
-  case class Reference(bins: Seq[Bin], offsets: Seq[VirtualPos])
+  case class Reference(bins: Seq[Bin], offsets: Seq[Pos])
 
   case class Bin(id: Int, chunks: Seq[Chunk])
 
-  case class Chunk(start: VirtualPos, end: VirtualPos)
+  case class Chunk(start: Pos, end: Pos)
 
   def apply(path: Path): Index =
     Index(
@@ -102,8 +102,8 @@ object Index {
 
         def readChunk() =
           Chunk(
-            VirtualPos(readLong),
-            VirtualPos(readLong)
+            Pos(readLong),
+            Pos(readLong)
           )
 
         def readChunks = seq(readChunk)
@@ -111,7 +111,7 @@ object Index {
         def readBin() = Bin(readInt, readChunks)
         def readBins = seq(readBin)
 
-        def readOffset() = VirtualPos(readLong)
+        def readOffset() = Pos(readLong)
         def readOffsets = seq(readOffset)
 
         def readReference() =

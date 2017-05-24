@@ -1,15 +1,22 @@
 package org.hammerlab.hadoop_bam
 
-import java.io.PrintStream
+import java.io.{ IOException, PrintStream }
 
 import caseapp._
+import htsjdk.samtools.{ BAMRecordCodec, SAMRecord }
+import htsjdk.samtools.seekablestream.ByteArraySeekableStream
+import htsjdk.samtools.util.BlockCompressedInputStream
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.mapreduce.JobID
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
+import org.apache.hadoop.mapreduce.{ InputSplit, JobContext, JobID, RecordReader, TaskAttemptContext }
+import org.apache.hadoop.mapreduce.lib.input.{ FileInputFormat, FileSplit }
 import org.apache.hadoop.mapreduce.task.JobContextImpl
 import org.hammerlab.hadoop_bam.InputFormat.NUM_GET_SPLITS_WORKERS_KEY
-import org.seqdoop.hadoop_bam.FileVirtualSplit
+import org.hammerlab.hadoop_bam.bgzf.Pos
+import org.hammerlab.iterator.SimpleBufferedIterator
+import org.apache.hadoop.mapreduce.lib.input.{ FileInputFormat, FileSplit }
+import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, LazyBAMRecordFactory }
+import org.seqdoop.hadoop_bam.util.WrapSeekable
 
 import scala.collection.JavaConverters._
 
@@ -32,6 +39,27 @@ object Main extends CaseApp[Args] {
     val after = System.currentTimeMillis
     println(s"$msg:\t${after-before}ms")
     res
+  }
+
+  def readFrom(path: Path, conf: Configuration, pos: Pos): Iterator[SAMRecord] = {
+    val sin = WrapSeekable.openPath(conf, path)
+    sin.seek(pos.blockPos)
+    val BLOCKS_NEEDED_FOR_GUESS = 3 * 0xffff + 0xfffe
+    val arr = Array.fill[Byte](BLOCKS_NEEDED_FOR_GUESS)(0)
+    if (sin.read(arr) < arr.length) {
+      throw new IOException(s"Too few bytes read")
+    }
+    val in = new ByteArraySeekableStream(arr)
+    val bgzf = new BlockCompressedInputStream(in)
+    bgzf.setCheckCrcs(true)
+    bgzf.seek(pos.offset)
+
+    val bamCodec = new BAMRecordCodec(null, new LazyBAMRecordFactory)
+    bamCodec.setInputStream(bgzf)
+    new SimpleBufferedIterator[SAMRecord] {
+      override protected def _advance: Option[SAMRecord] =
+        Option(bamCodec.decode())
+    }
   }
 
   override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
@@ -83,12 +111,27 @@ object Main extends CaseApp[Args] {
         .asScala
         .map(split ⇒
           if (args.useSeqdoop)
-            split.asInstanceOf[FileVirtualSplit]: VirtualSplit
+            split.asInstanceOf[FileVirtualSplit]: Split
           else
-            split.asInstanceOf[VirtualSplit]
+            split.asInstanceOf[Split]
         )
         .map(split ⇒ s"${split.start}-${split.end}")
         .mkString("\t", "\n\t", "\n")
     )
   }
+}
+
+import org.apache.hadoop.mapreduce.{ InputSplit, JobContext, JobID, RecordReader, TaskAttemptContext }
+import org.apache.hadoop.mapreduce.lib.input.{ FileInputFormat, FileSplit }
+import scala.collection.JavaConverters._
+class TestInputFormat extends FileInputFormat {
+
+  override def createRecordReader(split: InputSplit, context: TaskAttemptContext): RecordReader[Nothing, Nothing] = ???
+
+  def fileSplits(job: JobContext): Vector[FileSplit] =
+    super
+      .getSplits(job)
+      .asScala
+      .map(_.asInstanceOf[FileSplit])
+      .toVector
 }

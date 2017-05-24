@@ -5,7 +5,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.task.JobContextImpl
 import org.apache.hadoop.mapreduce.{ InputSplit, JobID }
-import org.hammerlab.hadoop_bam.bgzf.VirtualPos
+import org.hammerlab.hadoop_bam.bgzf.Pos
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
@@ -97,9 +97,9 @@ class InputFormatTest
     }
 
     for {
-      ((VirtualSplit(_, ourStart, ourEnd, _), theirSplit), idx) ← ours.zip(theirs).zipWithIndex
-      theirStart = VirtualPos(theirSplit.getStartVirtualOffset)
-      theirEnd = VirtualPos(theirSplit.getEndVirtualOffset)
+      ((Split(_, ourStart, ourEnd, _), theirSplit), idx) ← ours.zip(theirs).zipWithIndex
+      theirStart = Pos(theirSplit.getStartVirtualOffset)
+      theirEnd = Pos(theirSplit.getEndVirtualOffset)
     } {
       withClue(s"split $idx:") {
         ourStart should be(theirStart)
@@ -114,9 +114,9 @@ class InputFormatTest
   def ourSplits(implicit
                 path: Path,
                 maxSplitSize: MaxSplitSize,
-                extraConf: Map[String, String] = Map()): Seq[VirtualSplit] =
+                extraConf: Map[String, String] = Map()): Seq[Split] =
     getSplits(new InputFormat)
-      .map(_.asInstanceOf[VirtualSplit])
+      .map(_.asInstanceOf[Split])
 
   def theirSplits(implicit
                   path: Path,

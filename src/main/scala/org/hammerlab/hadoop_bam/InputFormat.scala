@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.{ FSDataInputStream, Path }
 import org.apache.hadoop.mapreduce.InputSplit
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.hammerlab.hadoop_bam.InputFormat.NUM_GET_SPLITS_WORKERS_KEY
-import org.hammerlab.hadoop_bam.bgzf.{ VirtualPos, VirtualPosIndex }
+import org.hammerlab.hadoop_bam.bgzf.{ Pos, PosIndex }
 import org.seqdoop.hadoop_bam.util.WrapSeekable
 import org.seqdoop.hadoop_bam.{ BAMSplitGuesser, FileVirtualSplit, BAMInputFormat ⇒ ParentFormat }
 
@@ -37,13 +37,13 @@ class InputFormat
 
     val fileSplitsByPath = fileSplits.zipWithIndex.map(_.swap).groupBy(_._2.getPath)
 
-    /** [[FileSplitResult]]s will be placed here for each [[FileSplit]] */
-    val fileSplitResultsMap = TrieMap[Int, FileSplitResult]()
+    /** [[SplitResult]]s will be placed here for each [[FileSplit]] */
+    val fileSplitResultsMap = TrieMap[Int, SplitResult]()
 
     /** Work queue, each [[FileSplit]] will be enqueued and then worker threads will pop them off and process them. */
     val queue = new ConcurrentLinkedDeque[(Int, FileSplit)]()
 
-    val pathIndexMap = TrieMap[Path, VirtualPosIndex]()
+    val pathIndexMap = TrieMap[Path, PosIndex]()
 
     for {
       (path, splits) ← fileSplitsByPath
@@ -51,12 +51,12 @@ class InputFormat
     } {
       queue.addAll(splits.asJava)
 
-      /** If an index exists for [[path]], pull all [[VirtualPos]] addresses from it and cache them. */
+      /** If an index exists for [[path]], pull all [[Pos]] addresses from it and cache them. */
       val baiPath = path.suffix(".bai")
       if (fs.exists(baiPath)) {
         val index = Index(baiPath)
         val length = cfg.getLong("file.length.override", fs.getFileStatus(path).getLen)
-        pathIndexMap(path) = VirtualPosIndex(index, length)
+        pathIndexMap(path) = PosIndex(index, length)
       }
     }
 
@@ -93,7 +93,7 @@ class InputFormat
 
               /**
                * The following logic is basically copied from [[org.seqdoop.hadoop_bam.BAMInputFormat]], but modified to
-               * e.g. emit a [[FileSplitResult]].
+               * e.g. emit a [[SplitResult]].
                */
 
               implicit val path = split.getPath
@@ -120,7 +120,7 @@ class InputFormat
                       }
 
                     logger.debug(s"Split $idx from index: $virtualStart-$virtualEnd")
-                    VirtualSplit(path, virtualStart, virtualEnd, split.getLocations)
+                    Split(path, virtualStart, virtualEnd, split.getLocations)
 
                   // Otherwise, find positions with the "guesser"
                   case None ⇒
@@ -128,7 +128,7 @@ class InputFormat
                     // As the guesser goes to the next BGZF block before looking for BAM
                     // records, the ending BGZF blocks have to always be traversed fully.
                     // Hence force the length to be 0xffff, the maximum possible.
-                    val virtualEnd = VirtualPos(end, 0xffff)
+                    val virtualEnd = Pos(end, 0xffff)
 
                     guesser.guessNextBAMRecordStart(start, end) match {
                       case guess if guess == end ⇒
@@ -147,9 +147,9 @@ class InputFormat
                         logger.debug(s"Split $idx: extend previous split to $virtualEnd")
                         ExtendPrevious(path, virtualEnd)
                       case guess ⇒
-                        val virtualStart = VirtualPos(guess)
+                        val virtualStart = Pos(guess)
                         logger.debug(s"Split $idx: $virtualStart-$virtualEnd")
-                        VirtualSplit(path, virtualStart, virtualEnd, split.getLocations)
+                        Split(path, virtualStart, virtualEnd, split.getLocations)
                     }
                 }
 
@@ -187,18 +187,18 @@ class InputFormat
         .map(_._2)
 
     /**
-     * Each [[FileSplitResult]] is either a [[VirtualSplit]] or an instance of [[ExtendPrevious]]; runs of the latter
+     * Each [[SplitResult]] is either a [[Split]] or an instance of [[ExtendPrevious]]; runs of the latter
      * should be folded in to the nearest-preceding [[FileVirtualSplit]].
      */
 
     // Buffer for accumulating finished splits
-    val newSplits = ArrayBuffer[VirtualSplit]()
+    val newSplits = ArrayBuffer[Split]()
 
     /**
      * Staging buffer for the "next" split, which may be extended by [[ExtendPrevious]]s before the split is
      * "finished".
      */
-    var nextSplitOpt: Option[VirtualSplit] = None
+    var nextSplitOpt: Option[Split] = None
 
     /**
      * If there is a split in [[nextSplitOpt]] and it is known to be finished, append it to [[newSplits]] and clear
@@ -223,7 +223,7 @@ class InputFormat
               s"$path: no reads in first split: bad BAM file or tiny split size?"
             )
         }
-      case split: VirtualSplit ⇒
+      case split: Split ⇒
         // Any previous in-progress split can be considered finished.
         flush()
 
