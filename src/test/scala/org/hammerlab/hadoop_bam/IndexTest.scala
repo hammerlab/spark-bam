@@ -2,7 +2,7 @@ package org.hammerlab.hadoop_bam
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.hammerlab.hadoop_bam.bgzf.VirtualPos
+import org.hammerlab.hadoop_bam.bgzf.Pos
 import org.hammerlab.stats.Stats
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
@@ -58,8 +58,8 @@ class IndexTest
     val chr1Offsets = chr1.offsets
     chr1Offsets.size should be(15213)
 
-    chr1Offsets(0) should be(VirtualPos(  5322,  8020))
-    chr1Offsets(1) should be(VirtualPos(168780, 55019))
+    chr1Offsets(0) should be(Pos(  5322,  8020))
+    chr1Offsets(1) should be(Pos(168780, 55019))
   }
 
 //  test("read offset") {
