@@ -1,93 +1,190 @@
 package org.hammerlab.hadoop_bam.bam
 
-import java.net.URI
-import java.nio.file.Paths
-import java.util.concurrent.ConcurrentLinkedDeque
+import java.io.IOException
 
 import caseapp._
 import grizzled.slf4j.Logging
-import org.apache.hadoop.conf.Configuration
+import htsjdk.samtools.seekablestream.ByteArraySeekableStream
 import org.apache.hadoop.fs.{ Path ⇒ HPath }
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{ SparkConf, SparkContext }
 import org.hammerlab.hadoop_bam.bgzf.Pos
-import org.hammerlab.iterator.Sliding2Iterator._
-import org.hammerlab.paths.Path
+import org.hammerlab.hadoop_bam.bgzf.hadoop.BytesInputFormat.RANGES_KEY
+import org.hammerlab.hadoop_bam.bgzf.hadoop.{ BytesInputFormat, UncompressedBlock }
+import org.hammerlab.iterator.HeadOptionIterator
+import org.hammerlab.magic.rdd.keyed.FilterKeysRDD._
+import org.hammerlab.magic.rdd.keyed.ReduceByKeyRDD._
+import org.hammerlab.magic.rdd.sliding.SlidingRDD._
+import org.hammerlab.magic.rdd.sort.SortRDD._
 import org.seqdoop.hadoop_bam.BAMSplitGuesser
+import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFrom
 import org.seqdoop.hadoop_bam.util.WrapSeekable
 
-case class Args(@ExtraName("n") numWorkers: Int = 4,
-                @ExtraName("k") blocksFile: String,
+import scala.collection.mutable.ArrayBuffer
+import scala.math.ceil
+import scala.reflect.ClassTag
+
+case class Args(@ExtraName("k") blocksFile: String,
                 @ExtraName("r") recordsFile: String,
                 @ExtraName("b") bamFile: String,
-                @ExtraName("i") printInterval: Int = 10)
+                @ExtraName("n") numBlocks: Option[Int] = None,
+                @ExtraName("w") blocksWhitelist: Option[String] = None,
+                @ExtraName("p") blocksPerPartition: Int = 10)
 
-case class Worker(id: Int,
-                  pathStr: String,
-                  queue: ConcurrentLinkedDeque[Long],
-                  joinedRecordPosMap: Map[Long, (Option[Pos], Vector[Int])],
-                  blockSizeMap: Map[Long, Int])
-  extends Thread
-    with Logging {
-
-  var blockPos: Long = -1
-  var up: Int = -1
-  var usize: Int = -1
-
-  override def toString: String =
-    s"$id:${Pos(blockPos, up)}/$usize"
-
-  override def run(): Unit = {
-    val conf = new Configuration
-    val path = new HPath(pathStr)
-    val fs = path.getFileSystem(conf)
-    val ss = WrapSeekable.openPath(conf, path)
-    val guesser = new BAMSplitGuesser(ss, conf)
-
-    while (true) {
-      Option(queue.poll()) match {
-        case None ⇒
-          return
-        case Some(bp) ⇒
-          blockPos = bp
-          logger.info(s"$id: processing $blockPos")
-          val (nextBlockPosOpt, offsets) = joinedRecordPosMap(blockPos)
-          usize = blockSizeMap(blockPos)
-          guesser.fillBuffer(blockPos)
-          val it =
-            (
-              offsets.iterator.map(offset ⇒ Pos(blockPos, offset)) ++
-                nextBlockPosOpt.iterator
-            )
-            .buffered
-
-          up = 0
-          while (up < usize) {
-            if (Pos(blockPos, up) > it.head) {
-              it.next
-            }
-            val guess = guesser.findNextBAMPos(0, up)
-            if (guess == -1) {
-              logger.error(s"No guess at ${Pos(blockPos, up)} ($usize): expected ${it.head}")
-            } else if (Pos(guess + (blockPos << 16)) != it.head) {
-              logger.error(
-                s"Bad guess at ${Pos(blockPos, up)} ($usize): expected ${it.head}, actual ${Pos(guess + (blockPos << 16))}"
-              )
-            }
-
-            up += 1
-          }
-      }
-    }
-  }
+sealed trait Error {
+  def pos: Pos
 }
+
+case class FalsePositive(pos: Pos,
+                         expectedPos: Pos,
+                         passedRecordStart: Boolean)
+  extends Error
+
+case class FalseNegative(pos: Pos,
+                         expectedPos: Pos,
+                         passedRecordStart: Boolean)
+  extends Error
 
 object CheckBAM
   extends CaseApp[Args]
     with Logging {
 
+  def processBlock(block: Long,
+                   usize: Int,
+                   offsets: Vector[Int],
+                   nextPosOpt: Option[Pos],
+                   bytes: Array[Byte],
+                   referenceSequenceCount: Int,
+                   errFn: () ⇒ Unit = () ⇒ {},
+                   posFn: () ⇒ Unit = () ⇒ {},
+                   blockFn: () ⇒ Unit = () ⇒ {}): Iterator[Error] = {
+    val ss = new ByteArraySeekableStream(bytes)
+    val guesser = new BAMSplitGuesser(ss, referenceSequenceCount)
+    guesser.fillBuffer(0)
+
+    val expectedPoss =
+      (
+        offsets
+          .iterator
+          .map(offset ⇒ Pos(block, offset)) ++
+            nextPosOpt.iterator
+      )
+      .buffered
+
+    var up = 0
+    val errors = ArrayBuffer[Error]()
+    while (up < usize) {
+      val pos = Pos(block, up)
+
+      while (expectedPoss.hasNext && pos > expectedPoss.head) {
+        expectedPoss.next
+      }
+
+      expectedPoss.headOption match {
+        case Some(expectedPos) ⇒
+          val validRecordStart = guesser.checkRecordStart(up)
+
+          if (validRecordStart) {
+            val hasSucceedingRecords = guesser.checkSucceedingRecords(up)
+            (hasSucceedingRecords, pos == expectedPos) match {
+              case (true, false) ⇒
+                errFn()
+                errors +=
+                  FalsePositive(
+                    pos,
+                    expectedPos,
+                    hasSucceedingRecords
+                  )
+              case (false, true) ⇒
+                errFn()
+                errors +=
+                  FalseNegative(
+                    pos,
+                    expectedPos,
+                    true
+                  )
+              case _ ⇒
+            }
+          } else {
+            if (expectedPos == pos) {
+              errFn()
+              errors +=
+                FalseNegative(
+                  pos,
+                  expectedPos,
+                  false
+                )
+            }
+          }
+        case None ⇒
+          if (nextPosOpt.isEmpty && pos > Pos(block, offsets.last))
+            up = usize
+          else
+            throw new IOException(
+              s"Out of read positions at $pos (${offsets.mkString(",")}"
+            )
+      }
+
+      posFn()
+
+      up += 1
+    }
+
+    blockFn()
+
+    errors.iterator
+  }
+
   override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
-    val blockSizeMap =
-      Path(new URI(args.blocksFile))
-        .lines
+
+    val sparkConf = new SparkConf()
+
+    val sc = new SparkContext(sparkConf)
+    val path = new HPath(args.bamFile)
+
+    val errorsRDD = run(sc, path, args)
+    val numErrors = errorsRDD.count
+    val errors =
+      if (numErrors > 1000)
+        errorsRDD.take(1000)
+      else
+        errorsRDD.collect()
+
+    numErrors match {
+      case 0 ⇒
+        println("No errors!")
+      case _ ⇒
+        println(s"$numErrors errors:")
+        println(
+          errors
+            .mkString(
+              "\t",
+              "\n\t",
+              if (numErrors > 1000)
+                "\n…\n"
+              else
+                "\n"
+            )
+        )
+    }
+  }
+
+  def run(sc: SparkContext, path: HPath, args: Args): RDD[Error] = {
+
+    val conf = sc.hadoopConfiguration
+
+    val ss = WrapSeekable.openPath(conf, path)
+
+    val referenceSequenceCount = readSAMHeaderFrom(ss, conf).getSequenceDictionary.size
+
+    val fs = path.getFileSystem(conf)
+
+    val lastBlock = fs.getFileStatus(path).getLen - 28
+
+    val blockSizes: RDD[(Long, Int)] =
+      sc
+        .textFile(args.blocksFile)
         .map(
           _.split(",") match {
             case Array(pos, usize) ⇒
@@ -96,71 +193,190 @@ object CheckBAM
               throw new IllegalArgumentException(s"Bad block line: ${a.mkString(",")}")
           }
         )
-        .toMap
 
-    val queue = new ConcurrentLinkedDeque[Long]()
-    for { (block, _) ← blockSizeMap } { queue.add(block) }
+    val blocksAndSuccessors =
+      blockSizes
+        .keys
+        .sliding2Opt
+        .mapValues(_.getOrElse(lastBlock))
 
-    val recordPosMap =
-      Path(new URI(args.recordsFile))
-        .lines
+    val blockWhitelistOpt: Option[Broadcast[Set[Long]]] =
+      (args.numBlocks, args.blocksWhitelist) match {
+        case (Some(_), Some(_)) ⇒
+          throw new Exception("Specify num blocks xor blocks whitelist")
+        case (Some(numBlocks), _) ⇒
+          Some(
+            sc.broadcast(
+              blockSizes
+                .keys
+                .take(numBlocks)
+                .toSet
+            )
+          )
+        case (_, Some(blocksWhitelist)) ⇒
+          Some(
+            sc.broadcast(
+              blocksWhitelist
+                .split(",")
+                .map(_.toLong)
+                .toSet
+            )
+          )
+        case _ ⇒
+          None
+      }
+
+    def filterBlocks[T: ClassTag](rdd: RDD[(Long, T)]): RDD[(Long, T)] =
+      blockWhitelistOpt match {
+        case Some(blockWhitelist) ⇒
+          rdd.filterKeys(blockWhitelist)
+        case None ⇒
+          rdd
+      }
+
+    val recordsRDD: RDD[(Long, Int)] =
+      sc
+        .textFile(args.recordsFile)
         .map(
           _.split(",") match {
             case Array(a, b) ⇒
-              Pos(a.toInt, b.toInt)
+              (a.toLong, b.toInt)
             case a ⇒
               throw new IllegalArgumentException(s"Bad record-pos line: ${a.mkString(",")}")
           }
         )
-        .toVector
-        .groupBy(_.blockPos)
-        .mapValues(
-          _
-          .map(_.offset)
-          .sorted
-        )
 
-    val joinedRecordPosMap =
-      recordPosMap
-        .toVector
-        .sortBy(_._1)
+    val blockNextFirstOffsets: RDD[(Long, Option[Pos])] =
+      recordsRDD
+        .minByKey()
+        .sortByKey()
         .sliding2Opt
         .map {
-          case ((pos, offsets), nextPosOpt) ⇒
-            pos →
-              (
-                nextPosOpt.map {
-                  case (nextBlock, nextOffsets) ⇒
-                    Pos(nextBlock, nextOffsets.head)
-                } →
-                  offsets
-                )
+          case ((block, _), nextBlockOpt) ⇒
+            block →
+              nextBlockOpt
+                .map {
+                  case (nextBlock, nextOffset) ⇒
+                    Pos(nextBlock, nextOffset)
+                }
         }
-        .toMap
 
-    val workers =
-      for { id ← 0 until args.numWorkers } yield
-        Worker(
-          id,
-          args.bamFile,
-          queue,
-          joinedRecordPosMap,
-          blockSizeMap
+    val blockOffsetsRDD: RDD[(Long, Vector[Int])] =
+      recordsRDD
+        .groupByKey()
+        .mapValues(
+          _
+            .toVector
+            .sorted
         )
 
-    val timerThread =
-      new Thread {
-        override def run(): Unit = {
-          while (!queue.isEmpty) {
-            logger.info(s"Blocks remaining: ${queue.size()}:\n${workers.mkString("\t", "\n\t", "\n")}")
-            Thread.sleep(args.printInterval * 1000)
-          }
+    val blockDataRDD: RDD[(Long, (Int, Vector[Int], Option[Pos]))] =
+      filterBlocks(blockSizes)
+        .cogroup(
+          filterBlocks(blockOffsetsRDD),
+          filterBlocks(blockNextFirstOffsets)
+        )
+        .flatMap {
+          case (block, (usizes, offsetss, nextPosOpts)) ⇒
+            (usizes.size, offsetss.size, nextPosOpts.size) match {
+              case (1, 1, 1) ⇒
+                Some(
+                  block →
+                    (
+                      usizes.head,
+                      offsetss.head,
+                      nextPosOpts.head
+                    )
+                )
+              case _ ⇒
+                throw new Exception(
+                  s"Bad join sizes at $block: ${usizes.size} ${offsetss.size} ${nextPosOpts.size}"
+                )
+            }
         }
+
+    val blocksRefrenced =
+      blockDataRDD
+        .flatMap {
+          case (block, (_, _, nextPosOpt)) ⇒
+            Iterator(block) ++ nextPosOpt.map(_.blockPos)
+        }
+        .distinct
+        .sort()
+
+    val referenceBlocksWithEnds =
+      blocksRefrenced
+        .keyBy(x ⇒ x)
+        .join(blocksAndSuccessors)
+        .values
+        .flatMap(x ⇒ Iterator(x._1, x._2))
+        .distinct
+        .sort()
+        .collect
+
+    val numPartitions =
+      ceil(
+        referenceBlocksWithEnds.length * 1.0 / args.blocksPerPartition
+      )
+      .toInt
+
+    val blocksStr = referenceBlocksWithEnds.mkString(",")
+
+    conf.set(RANGES_KEY, blocksStr)
+
+    val blockBytesRDD: RDD[(Long, Array[Byte])] =
+      sc
+        .newAPIHadoopFile(
+          args.bamFile,
+          classOf[BytesInputFormat],
+          classOf[Long],
+          classOf[UncompressedBlock]
+        )
+        .sliding(4, includePartial = true)  // Get each BGZF block and 3 that follow it
+        .map {
+          bytess ⇒
+            bytess
+            .head
+            ._1 →
+              bytess
+                .toArray
+                .flatMap(_._2.bytes)
+        }
+
+    val posCounter = sc.longAccumulator("positions")
+    val errCounter = sc.longAccumulator("errors")
+    val blockCounter = sc.longAccumulator("blocks")
+
+    blockDataRDD
+      .leftOuterJoin(blockBytesRDD, numPartitions)
+      .flatMap {
+        case (
+          block,
+          (
+            (
+              usize,
+              offsets,
+              nextPosOpt
+            ),
+            Some(bytes)
+          )
+        ) ⇒
+          processBlock(
+            block,
+            usize,
+            offsets,
+            nextPosOpt,
+            bytes,
+            referenceSequenceCount,
+            () ⇒ errCounter.add(1),
+            () ⇒ posCounter.add(1),
+            () ⇒ blockCounter.add(1)
+          )
+        case (block, (dataOpt, bytesOpt)) ⇒
+          throw new Exception(
+            s"Missing data or bytes for block $block: $dataOpt $bytesOpt"
+          )
       }
-
-    timerThread.start()
-
-    workers.foreach(_.start)
-    workers.foreach(_.join)
+      .sortBy(_.pos)
   }
 }
