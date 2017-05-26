@@ -6,19 +6,15 @@ import java.nio.file.Paths
 import java.util.concurrent.ConcurrentLinkedDeque
 
 import htsjdk.samtools.{ SAMException, SAMRecord }
-import htsjdk.samtools.util.{ RuntimeEOFException, RuntimeIOException }
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.hammerlab.hadoop_bam.bgzf.Pos
 import org.hammerlab.hadoop_bam.bgzf.block.{ Metadata, MetadataStream }
+import org.hammerlab.iterator.Sliding2Iterator._
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 import org.seqdoop.hadoop_bam.BAMSplitGuesser
 import org.seqdoop.hadoop_bam.util.WrapSeekable
-
-import org.hammerlab.iterator.Sliding2Iterator._
-
-import scala.collection.JavaConverters._
 
 class RecordStreamTest
   extends Suite {
@@ -56,7 +52,7 @@ class RecordStreamTest
 
   test("5k") {
     val conf = new Configuration
-    implicit val rs = RecordStream(File("test5k.bam"), conf)
+    implicit val rs = SeekableRecordStream(File("test5k.bam"))
 
     check(
       ( 2454 →     0, 10001, "HWI-ST807:461:C2P0JACXX:4:2115:8592:79724"),
@@ -105,22 +101,6 @@ class RecordStreamTest
     check(
       ( 2454 →  1244, 10048, "HWI-ST807:461:C2P0JACXX:4:1304:9505:89866")
     )
-
-
-    //rs.uncompressedBytes.take(16).toArray should be(Array())
-    //    for { i ← 0 to 20 } {
-//      println(s"$i: ${convTuple(rs.next)}")
-//    }
-//    println("")
-//
-//    rs.drop(20)
-//    println(convTuple(rs.next))
-//    rs.drop(20)
-//    println(convTuple(rs.next))
-//    rs.drop(20)
-//    println(convTuple(rs.next))
-//    rs.drop(20)
-//    println(convTuple(rs.next))
   }
 
   test("metadata") {
@@ -148,13 +128,9 @@ class RecordStreamTest
     val path = new Path(File(pathStr).uri)
     val fs = path.getFileSystem(conf)
     val ss = WrapSeekable.openPath(conf, path)
-//    val guesser = new BAMSplitGuesser(ss, conf)
-
-//    implicit val rs = RecordStream(File(pathStr), conf)
 
     val stream = MetadataStream(FileChannel.open(File(pathStr).path))
 
-//    var recs = 0
     var continue = true
 
     val timerThread =
@@ -171,50 +147,29 @@ class RecordStreamTest
 
     timerThread.start()
 
-//    val recPath = new Path("/Users/ryan/c/hl/hadoop-bam/records")
-//    println(s"rec path: ${recPath.toUri}")
-//    val rp = new PrintWriter(fs.create(recPath))
     val bp = new PrintWriter(fs.create(new Path("/Users/ryan/c/hl/hadoop-bam/blocks2")))
 
-//    var curBlock: Option[Long] = None
-//    var lastPos: Option[Pos] = None
     try {
       while (stream.hasNext) {
         val Metadata(start, uncompressedSize, _) = stream.next()
         bp.println(s"$start,$uncompressedSize")
-//      while (rs.hasNext) {
-//        val (Pos(block, offset), _) = rs.next
-//        rp.println(s"$block,$offset")
-//        if (!curBlock.contains(block)) {
-//          curBlock = Some(block)
-//          bp.println(block)
-//        }
-//        recs += 1
-//        lastPos = rs.curPos
       }
     } catch {
       case e: SAMException ⇒
         println(
-//          s"caught exception at ${rs.compressedChannel.position()}\n$e\n"
           s"caught exception at ${stream.ch.position()}"
         )
       case e: IOException ⇒
         println(
-//          s"caught exception at ${rs.compressedChannel.position()}\n$e\n"
           s"caught exception at ${stream.ch.position()}"
         )
     }
 
     continue = false
     println(s"last block idx: ${stream.blockIdx}")
-//    println(s"Last pos: $lastPos, last block: $curBlock")
-
-//    rp.close()
     bp.close()
 
     stream.blockIdx should be(13380)
-
-//    (recs, rs.blockStream.blockIdx) should be((2756196, 13380))
   }
 
   case class Worker(id: Int,
@@ -368,18 +323,7 @@ class RecordStreamTest
     val ss = WrapSeekable.openPath(conf, path)
     val guesser = new BAMSplitGuesser(ss, conf)
 
-    implicit val rs = RecordStream(File(pathStr), conf)
-
-//    val numWorkers = 4
-//    val threads =
-//      for {
-//        _ ← 0 until numWorkers
-//      } yield
-//        new Thread {
-//          override def run(): Unit = {
-//
-//          }
-//        }
+    implicit val rs = RecordStream(File(pathStr))
 
     rs.drop(1000)
 

@@ -8,10 +8,11 @@ deps ++= Seq(
   libs.value('slf4j),
   "com.github.alexarchambault" %% "case-app" % "1.2.0-M3",
   "com.google.cloud" % "google-cloud-nio" % "0.10.0-alpha",
+  libs.value('magic_rdds),
   libs.value('paths)
 )
 
-providedDeps += hadoop.value
+addSparkDeps
 
 // Spark 2.1.0 (spark-submit is an easy way to run this library's Main) puts shapeless 2.0.0 on the classpath, but we
 // need 2.3.2.

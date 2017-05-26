@@ -4,13 +4,15 @@ import java.io.{ IOException, InputStream }
 import java.nio.ByteBuffer
 import java.nio.channels.SeekableByteChannel
 
+import org.hammerlab.hadoop_bam.bam.ByteChannel
+
 case class Header(size: Int, compressedSize: Int)
 
 object Header {
 
   val EXPECTED_HEADER_SIZE = 18
 
-  def apply(ch: SeekableByteChannel)(implicit buf: ByteBuffer): Header = {
+  def apply(ch: ByteChannel)(implicit buf: ByteBuffer): Header = {
     buf.limit(EXPECTED_HEADER_SIZE)
     val headerBytesRead = ch.read(buf)
     if (headerBytesRead != EXPECTED_HEADER_SIZE) {
@@ -20,13 +22,16 @@ object Header {
     implicit val arr = buf.array
     val header = apply()
     buf.clear()
-    ch.position(ch.position() + header.size - EXPECTED_HEADER_SIZE)
+    ch.skip(header.size - EXPECTED_HEADER_SIZE)
 
     header
   }
 
   def apply(is: InputStream)(implicit buffer: Array[Byte]): Header = {
 
+    if (is == null || buffer == null) {
+      throw new IOException(s"is: $is, buffer: $buffer")
+    }
     val headerBytesRead = is.read(buffer, 0, EXPECTED_HEADER_SIZE)
     if (headerBytesRead != EXPECTED_HEADER_SIZE) {
       throw new IOException(s"Expected $EXPECTED_HEADER_SIZE header bytes, got $headerBytesRead")

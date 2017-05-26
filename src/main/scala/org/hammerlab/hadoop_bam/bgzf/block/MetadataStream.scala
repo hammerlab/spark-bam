@@ -1,14 +1,34 @@
 package org.hammerlab.hadoop_bam.bgzf.block
 
-import java.io.IOException
+import java.io.{ IOException, InputStream }
 import java.nio.ByteBuffer
+import java.nio.ByteOrder.LITTLE_ENDIAN
 import java.nio.channels.SeekableByteChannel
 
+import org.hammerlab.hadoop_bam.bam.ByteChannel
 import org.hammerlab.hadoop_bam.bgzf.block.Block.{ FOOTER_SIZE, MAX_BLOCK_SIZE }
 import org.hammerlab.iterator.SimpleBufferedIterator
-import java.nio.ByteOrder.LITTLE_ENDIAN
 
-case class MetadataStream(ch: SeekableByteChannel)
+sealed trait Readable {
+  def skip(n: Int): Unit
+}
+
+case class ReadableChannel(ch: SeekableByteChannel)
+  extends Readable {
+  override def skip(n: Int): Unit = ch.position(ch.position() + n)
+}
+
+case class ReadableStream(is: InputStream)
+  extends Readable {
+  override def skip(n: Int): Unit = {
+    val skipped = is.skip(n)
+    if (skipped < n.toLong) {
+      throw new IOException(s"Attempted to skip $n, skipped $skipped")
+    }
+  }
+}
+
+case class MetadataStream(ch: ByteChannel)
   extends SimpleBufferedIterator[Metadata] {
 
   implicit val encBuf = ByteBuffer.allocate(MAX_BLOCK_SIZE).order(LITTLE_ENDIAN)
@@ -29,7 +49,7 @@ case class MetadataStream(ch: SeekableByteChannel)
 
     val remainingBytes = dataLength + FOOTER_SIZE
 
-    ch.position(ch.position() + remainingBytes - 4)
+    ch.skip(remainingBytes - 4)
     encBuf.limit(4)
     val bytesRead = ch.read(encBuf)
     if (bytesRead != 4) {
