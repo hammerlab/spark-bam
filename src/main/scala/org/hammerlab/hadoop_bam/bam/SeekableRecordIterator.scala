@@ -1,7 +1,6 @@
 package org.hammerlab.hadoop_bam.bam
 
-import java.io.InputStream
-import java.nio.channels.FileChannel
+import java.nio.channels.SeekableByteChannel
 
 import org.hammerlab.hadoop_bam.bgzf.Pos
 import sun.nio.ch.ChannelInputStream
@@ -9,9 +8,9 @@ import sun.nio.ch.ChannelInputStream
 trait SeekableRecordIterator[T] {
   self: RecordIterator[T] ⇒
 
-  lazy val compressedChannel = FileChannel.open(path)
+  def compressedChannel: SeekableByteChannel
 
-  override def getInputStream: InputStream = new ChannelInputStream(compressedChannel)
+  override lazy val compressedInputStream = new ChannelInputStream(compressedChannel)
 
   def seek(to: Pos): Unit = {
     if (to < headerEndPos) {

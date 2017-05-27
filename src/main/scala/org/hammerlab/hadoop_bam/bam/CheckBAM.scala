@@ -1,53 +1,51 @@
 package org.hammerlab.hadoop_bam.bam
 
-import java.io.IOException
+import java.io.ByteArrayInputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder.LITTLE_ENDIAN
 
 import caseapp._
 import grizzled.slf4j.Logging
-import htsjdk.samtools.seekablestream.ByteArraySeekableStream
 import org.apache.hadoop.fs.{ Path ⇒ HPath }
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{ SparkConf, SparkContext }
+import org.hammerlab.genomics.reference.NumLoci
 import org.hammerlab.hadoop_bam.bgzf.Pos
+import org.hammerlab.hadoop_bam.bgzf.block
 import org.hammerlab.hadoop_bam.bgzf.hadoop.BytesInputFormat.RANGES_KEY
 import org.hammerlab.hadoop_bam.bgzf.hadoop.{ BytesInputFormat, UncompressedBlock }
-import org.hammerlab.iterator.HeadOptionIterator
+import org.hammerlab.iterator.{ HeadOptionIterator, SimpleBufferedIterator }
 import org.hammerlab.magic.rdd.keyed.FilterKeysRDD._
 import org.hammerlab.magic.rdd.keyed.ReduceByKeyRDD._
 import org.hammerlab.magic.rdd.sliding.SlidingRDD._
 import org.hammerlab.magic.rdd.sort.SortRDD._
-import org.seqdoop.hadoop_bam.BAMSplitGuesser
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFrom
 import org.seqdoop.hadoop_bam.util.WrapSeekable
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.JavaConverters._
 import scala.math.ceil
 import scala.reflect.ClassTag
 
-case class Args(@ExtraName("k") blocksFile: String,
-                @ExtraName("r") recordsFile: String,
-                @ExtraName("b") bamFile: String,
-                @ExtraName("n") numBlocks: Option[Int] = None,
-                @ExtraName("w") blocksWhitelist: Option[String] = None,
-                @ExtraName("p") blocksPerPartition: Int = 10)
+case class CheckBAMArgs(@ExtraName("k") blocksFile: String,
+                        @ExtraName("r") recordsFile: String,
+                        @ExtraName("b") bamFile: String,
+                        @ExtraName("n") numBlocks: Option[Int] = None,
+                        @ExtraName("w") blocksWhitelist: Option[String] = None,
+                        @ExtraName("p") blocksPerPartition: Int = 20)
 
-sealed trait Error {
-  def pos: Pos
-}
+sealed trait Call
 
-case class FalsePositive(pos: Pos,
-                         expectedPos: Pos,
-                         passedRecordStart: Boolean)
-  extends Error
+sealed trait True extends Call
+sealed trait False extends Call
 
-case class FalseNegative(pos: Pos,
-                         expectedPos: Pos,
-                         passedRecordStart: Boolean)
-  extends Error
+case object TruePositive extends True
+case object FalsePositive extends False
+case class TrueNegative(error: Error) extends True
+case class FalseNegative(error: Error) extends False
 
 object CheckBAM
-  extends CaseApp[Args]
+  extends CaseApp[CheckBAMArgs]
     with Logging {
 
   def processBlock(block: Long,
@@ -55,13 +53,8 @@ object CheckBAM
                    offsets: Vector[Int],
                    nextPosOpt: Option[Pos],
                    bytes: Array[Byte],
-                   referenceSequenceCount: Int,
-                   errFn: () ⇒ Unit = () ⇒ {},
-                   posFn: () ⇒ Unit = () ⇒ {},
-                   blockFn: () ⇒ Unit = () ⇒ {}): Iterator[Error] = {
-    val ss = new ByteArraySeekableStream(bytes)
-    val guesser = new BAMSplitGuesser(ss, referenceSequenceCount)
-    guesser.fillBuffer(0)
+                   contigLengths: Map[Int, NumLoci]): Iterator[(Pos, Call)] = {
+    val buf = ByteBuffer.wrap(bytes).order(LITTLE_ENDIAN)
 
     val expectedPoss =
       (
@@ -72,71 +65,47 @@ object CheckBAM
       )
       .buffered
 
-    var up = 0
-    val errors = ArrayBuffer[Error]()
-    while (up < usize) {
-      val pos = Pos(block, up)
+    new SimpleBufferedIterator[(Pos, Call)] {
+      var up = 0
+      override protected def _advance: Option[(Pos, Call)] =
+        if (up >= usize)
+          None
+        else {
+          val pos = Pos(block, up)
+          buf.position(up)
 
-      while (expectedPoss.hasNext && pos > expectedPoss.head) {
-        expectedPoss.next
-      }
-
-      expectedPoss.headOption match {
-        case Some(expectedPos) ⇒
-          val validRecordStart = guesser.checkRecordStart(up)
-
-          if (validRecordStart) {
-            val hasSucceedingRecords = guesser.checkSucceedingRecords(up)
-            (hasSucceedingRecords, pos == expectedPos) match {
-              case (true, false) ⇒
-                errFn()
-                errors +=
-                  FalsePositive(
-                    pos,
-                    expectedPos,
-                    hasSucceedingRecords
-                  )
-              case (false, true) ⇒
-                errFn()
-                errors +=
-                  FalseNegative(
-                    pos,
-                    expectedPos,
-                    true
-                  )
-              case _ ⇒
-            }
-          } else {
-            if (expectedPos == pos) {
-              errFn()
-              errors +=
-                FalseNegative(
-                  pos,
-                  expectedPos,
-                  false
-                )
-            }
+          while (expectedPoss.hasNext && pos > expectedPoss.head) {
+            expectedPoss.next
           }
-        case None ⇒
-          if (nextPosOpt.isEmpty && pos > Pos(block, offsets.last))
-            up = usize
-          else
-            throw new IOException(
-              s"Out of read positions at $pos (${offsets.mkString(",")}"
+
+          val expectPositive = expectedPoss.headOption.contains(pos)
+
+          Some(
+            pos → (
+              Guesser.guess(buf, contigLengths) match {
+                case Some(error) ⇒
+                  if (expectPositive) {
+                    FalseNegative(error)
+                  } else {
+                    TrueNegative(error)
+                  }
+                case None ⇒
+                  if (expectPositive)
+                    TruePositive
+                  else
+                    FalsePositive
+              }
             )
+          )
       }
 
-      posFn()
-
-      up += 1
+      override protected def postNext(): Unit = {
+        up += 1
+      }
     }
-
-    blockFn()
-
-    errors.iterator
   }
 
-  override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
+  override def run(args: CheckBAMArgs, remainingArgs: RemainingArgs): Unit = {
 
     val sparkConf = new SparkConf()
 
@@ -170,13 +139,23 @@ object CheckBAM
     }
   }
 
-  def run(sc: SparkContext, path: HPath, args: Args): RDD[Error] = {
+  def run(sc: SparkContext, path: HPath, args: CheckBAMArgs): RDD[(Pos, Call)] = {
 
     val conf = sc.hadoopConfiguration
 
     val ss = WrapSeekable.openPath(conf, path)
 
-    val referenceSequenceCount = readSAMHeaderFrom(ss, conf).getSequenceDictionary.size
+    val contigLengths =
+      readSAMHeaderFrom(ss, conf)
+        .getSequenceDictionary
+        .getSequences
+        .asScala
+        .map(
+          seq ⇒
+            seq.getSequenceIndex →
+              NumLoci(seq.getSequenceLength)
+        )
+        .toMap
 
     val fs = path.getFileSystem(conf)
 
@@ -338,14 +317,16 @@ object CheckBAM
             bytess
             .head
             ._1 →
-              bytess
-                .toArray
-                .flatMap(_._2.bytes)
+              block.Stream(
+                new ByteArrayInputStream(
+                  bytess
+                    .toArray
+                    .flatMap(_._2.bytes)
+                )
+              )
+              .toArray
+              .flatMap(_.bytes)
         }
-
-    val posCounter = sc.longAccumulator("positions")
-    val errCounter = sc.longAccumulator("errors")
-    val blockCounter = sc.longAccumulator("blocks")
 
     blockDataRDD
       .leftOuterJoin(blockBytesRDD, numPartitions)
@@ -367,16 +348,13 @@ object CheckBAM
             offsets,
             nextPosOpt,
             bytes,
-            referenceSequenceCount,
-            () ⇒ errCounter.add(1),
-            () ⇒ posCounter.add(1),
-            () ⇒ blockCounter.add(1)
+            contigLengths
           )
         case (block, (dataOpt, bytesOpt)) ⇒
           throw new Exception(
             s"Missing data or bytes for block $block: $dataOpt $bytesOpt"
           )
       }
-      .sortBy(_.pos)
+      .sortByKey()
   }
 }

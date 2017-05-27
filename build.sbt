@@ -9,7 +9,8 @@ deps ++= Seq(
   "com.github.alexarchambault" %% "case-app" % "1.2.0-M3",
   "com.google.cloud" % "google-cloud-nio" % "0.10.0-alpha",
   libs.value('magic_rdds),
-  libs.value('paths)
+  libs.value('paths),
+  libs.value('reference)
 )
 
 addSparkDeps

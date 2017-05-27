@@ -43,7 +43,13 @@ case class MetadataStream(ch: ByteChannel)
     blockIdx += 1
 
     encBuf.clear()
-    val Header(actualHeaderSize, compressedSize) = Header(ch)
+    val Header(actualHeaderSize, compressedSize) =
+      try {
+        Header(ch)
+      } catch {
+        case e: IOException ⇒
+          return None
+      }
 
     val dataLength = compressedSize - actualHeaderSize - FOOTER_SIZE
 

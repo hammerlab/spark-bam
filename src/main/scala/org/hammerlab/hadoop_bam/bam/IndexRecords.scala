@@ -13,7 +13,7 @@ import org.hammerlab.hadoop_bam.bgzf.Pos
 import org.hammerlab.paths.Path
 
 case class IndexRecordsArgs(@ExtraName("b") bamFile: String,
-                            @ExtraName("o") outFile: String,
+                            @ExtraName("o") outFile: Option[String],
                             @ExtraName("r") parseRecords: Boolean = false,
                             @ExtraName("c") useChannel: Boolean = false,
                             @ExtraName("t") throwOnIOIssue: Boolean = false)
@@ -40,14 +40,15 @@ object IndexRecords
     var idx = 0
     var lastPos = Pos(0, 0)
 
-    time(
-      () ⇒
-        logger.info(
-          s"$idx records processed, pos: $lastPos"
-        )
-    )
+    val outPath =
+      new HPath(
+        args
+          .outFile
+          .getOrElse(
+            args.bamFile + ".records"
+          )
+      )
 
-    val outPath = new HPath(args.outFile)
     val fs = outPath.getFileSystem(conf)
     val out = new PrintWriter(fs.create(outPath))
 
@@ -61,24 +62,30 @@ object IndexRecords
       }
     }
 
-    if (args.throwOnIOIssue) {
-      traverse()
-    } else {
-      try {
+    time(
+      () ⇒
+        logger.info(
+          s"$idx records processed, pos: $lastPos"
+        ),
+      if (args.throwOnIOIssue) {
         traverse()
-      } catch {
-        case e: IOException ⇒
-          logger.error(e)
+      } else {
+        try {
+          traverse()
+        } catch {
+          case e: IOException ⇒
+            logger.error(e)
 
-        // Non-record-parsing mode hits this in the case of a truncated file
-        case e: RuntimeEOFException ⇒
-          logger.error(e)
+          // Non-record-parsing mode hits this in the case of a truncated file
+          case e: RuntimeEOFException ⇒
+            logger.error(e)
 
-        // Record-parsing can hit this in the presence of incomplete records in a truncated file
-        case e: RuntimeIOException ⇒
-          logger.error(e)
+          // Record-parsing can hit this in the presence of incomplete records in a truncated file
+          case e: RuntimeIOException ⇒
+            logger.error(e)
+        }
       }
-    }
+    )
 
     logger.info("Traversal done")
     out.flush()

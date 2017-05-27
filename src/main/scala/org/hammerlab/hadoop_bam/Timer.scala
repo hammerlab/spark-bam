@@ -1,13 +1,20 @@
 package org.hammerlab.hadoop_bam
 
+abstract class StoppableThread extends Thread {
+  protected var stopped = false
+  def end(): Unit = {
+    stopped = true
+  }
+}
+
 object Timer {
-  def time(fn: () ⇒ Unit,
-           intervalS: Int = 1,
-           stopFn: () => Boolean = () ⇒ false): Thread = {
+  def time[T](fn: () ⇒ Unit,
+              bodyFn: ⇒ T,
+              intervalS: Int = 1): T = {
     val thread =
-      new Thread {
+      new StoppableThread {
         override def run(): Unit = {
-          while (!stopFn()) {
+          while (!stopped) {
             Thread.sleep(intervalS * 1000)
             fn()
           }
@@ -16,6 +23,10 @@ object Timer {
 
     thread.start()
 
-    thread
+    val ret = bodyFn
+
+    thread.end()
+
+    ret
   }
 }
