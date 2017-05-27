@@ -12,15 +12,15 @@ import org.hammerlab.hadoop_bam.bam.ByteChannel
 import org.hammerlab.hadoop_bam.bgzf.block.{ Metadata, MetadataStream }
 import org.hammerlab.paths.Path
 
-case class Args(@ExtraName("b") bamFile: String,
-                @ExtraName("o") outFile: String,
-                @ExtraName("c") useChannel: Boolean = false)
+case class IndexBlocksArgs(@ExtraName("b") bamFile: String,
+                           @ExtraName("o") outFile: Option[String],
+                           @ExtraName("c") useChannel: Boolean = false)
 
 object IndexBlocks
-  extends CaseApp[Args]
+  extends CaseApp[IndexBlocksArgs]
     with Logging {
 
-  override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
+  override def run(args: IndexBlocksArgs, remainingArgs: RemainingArgs): Unit = {
     val conf = new Configuration
     val path = Path(new URI(args.bamFile))
     val ch: ByteChannel =
@@ -30,7 +30,17 @@ object IndexBlocks
         path.inputStream
 
     val stream = MetadataStream(ch)
-    val outPath = Path(new URI(args.outFile))
+    val outPath =
+      Path(
+        new URI(
+          args
+            .outFile
+            .getOrElse(
+              args.bamFile + ".blocks"
+            )
+        )
+      )
+
     val out = new PrintWriter(outPath.outputStream)
 
     var idx = 0
@@ -39,20 +49,19 @@ object IndexBlocks
       () ⇒
         logger.info(
           s"$idx blocks processed, ${ch.position()} bytes"
-        )
-    )
-
-    try {
-      for {
-        Metadata(start, uncompressedSize, _) ← stream
-      } {
-        out.println(s"$start,$uncompressedSize")
-        idx += 1
+        ),
+      try {
+        for {
+          Metadata(start, uncompressedSize, _) ← stream
+        } {
+          out.println(s"$start,$uncompressedSize")
+          idx += 1
+        }
+      } catch {
+        case e: IOException ⇒
+          logger.error(e)
       }
-    } catch {
-      case e: IOException ⇒
-        logger.error(e)
-    }
+    )
 
     logger.info("Traversal done")
     out.flush()

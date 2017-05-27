@@ -1,10 +1,13 @@
 package org.hammerlab.hadoop_bam.bam
 
+import java.io.InputStream
+import java.nio.channels.{ FileChannel, SeekableByteChannel }
+
 import org.hammerlab.hadoop_bam.bgzf.Pos
 import org.hammerlab.paths.Path
 
-case class PosStream(override val path: Path)
-  extends RecordIterator[Pos](path) {
+trait PosStreamI
+  extends RecordIterator[Pos] {
   override protected def _advance: Option[Pos] = {
     for {
       pos ← curPos
@@ -16,10 +19,17 @@ case class PosStream(override val path: Path)
   }
 }
 
-class SeekablePosStream(override val path: Path)
-  extends PosStream(path)
+case class PosStream(compressedInputStream: InputStream)
+  extends PosStreamI
+
+object PosStream {
+  def apply(path: Path): PosStream = PosStream(path.inputStream)
+}
+
+case class SeekablePosStream(compressedChannel: SeekableByteChannel)
+  extends PosStreamI
     with SeekableRecordIterator[Pos]
 
 object SeekablePosStream {
-  def apply(path: Path): SeekablePosStream = new SeekablePosStream(path)
+  def apply(path: Path): SeekablePosStream = SeekablePosStream(FileChannel.open(path))
 }

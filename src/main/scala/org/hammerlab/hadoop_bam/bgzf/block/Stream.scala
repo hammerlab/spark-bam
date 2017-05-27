@@ -24,39 +24,44 @@ case class Stream(is: InputStream)
 
     blockIdx += 1
 
-    val Header(actualHeaderSize, compressedSize) = Header(is)
+    try {
+      val Header(actualHeaderSize, compressedSize) = Header(is)
 
-    val dataLength = compressedSize - actualHeaderSize - FOOTER_SIZE
+      val dataLength = compressedSize - actualHeaderSize - FOOTER_SIZE
 
-    val remainingBytes = dataLength + FOOTER_SIZE
+      val remainingBytes = dataLength + FOOTER_SIZE
 
-    val bytesRead = is.read(encBuf, actualHeaderSize, remainingBytes)
-    if (bytesRead != remainingBytes) {
-      throw new IOException(s"Expected $remainingBytes bytes for block data+footer, found $bytesRead")
-    }
+      val bytesRead = is.read(encBuf, actualHeaderSize, remainingBytes)
+      if (bytesRead != remainingBytes) {
+        throw new IOException(s"Expected $remainingBytes bytes for block data+footer, found $bytesRead")
+      }
 
-    val uncompressedSize = getInt(compressedSize - 4)
+      val uncompressedSize = getInt(compressedSize - 4)
 
-    val inflater = new Inflater(true)
-    inflater.setInput(encBuf, actualHeaderSize, dataLength)
-    val bytesDecompressed = inflater.inflate(decBuf, 0, uncompressedSize)
-    if (bytesDecompressed != uncompressedSize) {
-      throw new IOException(s"Expected $uncompressedSize decompressed bytes, found $bytesDecompressed")
-    }
+      val inflater = new Inflater(true)
+      inflater.setInput(encBuf, actualHeaderSize, dataLength)
+      val bytesDecompressed = inflater.inflate(decBuf, 0, uncompressedSize)
+      if (bytesDecompressed != uncompressedSize) {
+        throw new IOException(s"Expected $uncompressedSize decompressed bytes, found $bytesDecompressed")
+      }
 
-    val start = blockStart
-    blockStart += compressedSize
+      val start = blockStart
+      blockStart += compressedSize
 
-    if (dataLength == 2)
+      if (dataLength == 2)
       // Empty block at end of file
-      None
-    else
-      Some(
-        Block(
-          decBuf.slice(0, uncompressedSize),
-          start,
-          compressedSize
+        None
+      else
+        Some(
+          Block(
+            decBuf.slice(0, uncompressedSize),
+            start,
+            compressedSize
+          )
         )
-      )
+    } catch {
+      case e: IOException ⇒
+        None
+    }
   }
 }

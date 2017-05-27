@@ -8,14 +8,11 @@ import org.hammerlab.hadoop_bam.bgzf.block.Block
 import org.hammerlab.hadoop_bam.bgzf.{ Pos, block }
 import org.hammerlab.iterator.FlatteningIterator._
 import org.hammerlab.iterator.{ FlatteningIterator, SimpleBufferedIterator }
-import org.hammerlab.paths.Path
 
-abstract class RecordIterator[T](val path: Path)
+trait RecordIterator[T]
   extends SimpleBufferedIterator[T] {
 
-  def getInputStream: InputStream = path.inputStream
-
-  val compressedInputStream = getInputStream
+  def compressedInputStream: InputStream
 
   val blockStream: block.Stream = block.Stream(compressedInputStream)
   val uncompressedBytes: FlatteningIterator[Byte, Block] = blockStream.smush

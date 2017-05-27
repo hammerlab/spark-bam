@@ -1,6 +1,7 @@
 package org.hammerlab.hadoop_bam.bam
 
 import java.io.InputStream
+import java.nio.channels.{ FileChannel, SeekableByteChannel }
 
 import htsjdk.samtools.{ BAMRecordCodec, SAMRecord }
 import org.hammerlab.hadoop_bam.bgzf.Pos
@@ -8,13 +9,16 @@ import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.LazyBAMRecordFactory
 import sun.nio.ch.ChannelInputStream
 
-case class RecordStream(override val path: Path)
-  extends RecordIterator[(Pos, SAMRecord)](path) {
+trait RecordStreamI
+  extends RecordIterator[(Pos, SAMRecord)] {
 
-  val byteStream: InputStream = new ChannelInputStream(byteChannel)
+  lazy val byteStream: InputStream = new ChannelInputStream(byteChannel)
 
-  val bamCodec = new BAMRecordCodec(null, new LazyBAMRecordFactory)
-  bamCodec.setInputStream(byteStream)
+  lazy val bamCodec = {
+    val codec = new BAMRecordCodec(null, new LazyBAMRecordFactory)
+    codec.setInputStream(byteStream)
+    codec
+  }
 
   override protected def _advance: Option[(Pos, SAMRecord)] = {
     for {
@@ -25,10 +29,17 @@ case class RecordStream(override val path: Path)
   }
 }
 
-class SeekableRecordStream(override val path: Path)
-  extends RecordStream(path)
+case class RecordStream(compressedInputStream: InputStream)
+  extends RecordStreamI
+
+object RecordStream {
+  def apply(path: Path): RecordStream = RecordStream(path.inputStream)
+}
+
+case class SeekableRecordStream(compressedChannel: SeekableByteChannel)
+  extends RecordStreamI
     with SeekableRecordIterator[(Pos, SAMRecord)]
 
 object SeekableRecordStream {
-  def apply(path: Path): SeekableRecordStream = new SeekableRecordStream(path)
+  def apply(path: Path): SeekableRecordStream = SeekableRecordStream(FileChannel.open(path))
 }
