@@ -1,4 +1,4 @@
-package org.hammerlab.bam.split
+package org.hammerlab.bam.hadoop
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path

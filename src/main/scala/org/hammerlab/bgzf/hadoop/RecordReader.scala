@@ -5,7 +5,7 @@ import java.io.InputStream
 import org.apache.hadoop.mapreduce
 import org.apache.hadoop.io.NullWritable
 import org.apache.hadoop.mapreduce.{ InputSplit, TaskAttemptContext }
-import org.hammerlab.bam.split.Split
+import org.hammerlab.bam.hadoop.Split
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Block, Stream }
 

@@ -2,7 +2,6 @@ package org.hammerlab.bgzf.block
 
 import java.io.{ IOException, InputStream }
 import java.nio.ByteBuffer
-import java.nio.channels.SeekableByteChannel
 
 import org.hammerlab.io.ByteChannel
 
@@ -29,13 +28,11 @@ object Header {
 
   def apply(is: InputStream)(implicit buffer: Array[Byte]): Header = {
 
-    if (is == null || buffer == null) {
-      throw new IOException(s"is: $is, buffer: $buffer")
-    }
     val headerBytesRead = is.read(buffer, 0, EXPECTED_HEADER_SIZE)
-    if (headerBytesRead != EXPECTED_HEADER_SIZE) {
-      throw new IOException(s"Expected $EXPECTED_HEADER_SIZE header bytes, got $headerBytesRead")
-    }
+    if (headerBytesRead != EXPECTED_HEADER_SIZE)
+      throw new IOException(
+        s"Expected $EXPECTED_HEADER_SIZE header bytes, got $headerBytesRead"
+      )
 
     val header = apply()
     is.skip(header.size - EXPECTED_HEADER_SIZE)

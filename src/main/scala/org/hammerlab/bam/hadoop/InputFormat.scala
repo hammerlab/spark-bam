@@ -1,4 +1,4 @@
-package org.hammerlab.bam.split
+package org.hammerlab.bam.hadoop
 
 import java.io.IOException
 import java.util.concurrent.ConcurrentLinkedDeque
@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.{ FSDataInputStream, Path }
 import org.apache.hadoop.mapreduce.InputSplit
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.hammerlab.bam.index.Index
-import org.hammerlab.bam.split.InputFormat.NUM_GET_SPLITS_WORKERS_KEY
+import org.hammerlab.bam.hadoop.InputFormat.NUM_GET_SPLITS_WORKERS_KEY
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.index.PosIndex
 import org.seqdoop.hadoop_bam.util.WrapSeekable

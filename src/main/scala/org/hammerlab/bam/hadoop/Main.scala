@@ -1,4 +1,4 @@
-package org.hammerlab.bam.split
+package org.hammerlab.bam.hadoop
 
 import java.io.{ IOException, PrintStream }
 
@@ -11,7 +11,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.JobID
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.task.JobContextImpl
-import org.hammerlab.bam.split.InputFormat.NUM_GET_SPLITS_WORKERS_KEY
+import org.hammerlab.bam.hadoop.InputFormat.NUM_GET_SPLITS_WORKERS_KEY
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.timing.Timer.time

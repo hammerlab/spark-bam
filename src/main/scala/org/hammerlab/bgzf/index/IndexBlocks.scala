@@ -41,8 +41,6 @@ object IndexBlocks
         )
       )
 
-    println(s"writing to $outPath")
-
     val out = new PrintWriter(outPath.outputStream)
 
     var idx = 0
