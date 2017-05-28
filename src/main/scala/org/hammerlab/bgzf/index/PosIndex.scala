@@ -15,8 +15,9 @@ case class PosIndex(offsets: util.NavigableSet[Pos]) {
 
 object PosIndex {
   def apply(index: Index, bamSize: Long): PosIndex =
-    new PosIndex(
+    PosIndex(
       {
+        implicit val ord = implicitly[Ordering[Pos]]
         val set = new util.TreeSet(implicitly[Comparator[Pos]])
         set.addAll(
           index

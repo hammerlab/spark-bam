@@ -6,7 +6,9 @@ case class Block(bytes: Array[Byte],
                  start: Long,
                  compressedSize: Int)
   extends Iterator[Byte] {
+
   def uncompressedSize = bytes.length
+
   def startPos = Pos(start, 0)
   def endPos = Pos(start, uncompressedSize)
   def nextStartPos = Pos(start + compressedSize, 0)
@@ -21,9 +23,8 @@ case class Block(bytes: Array[Byte],
     ret
   }
 
-  override def toString(): String = {
-    s"Block($startPos-$endPos;$compressedSize)"
-  }
+  override def toString(): String =
+    s"Block($startPos-$uncompressedSize;$compressedSize)"
 }
 
 object Block {
@@ -37,10 +38,3 @@ object Block {
       ((buffer(idx + 2) & 0xff) << 16) |
       ((buffer(idx + 3) & 0xff) << 24)
 }
-
-case class HeaderParseException(idx: Int,
-                                actual: Byte,
-                                expected: Byte)
-  extends Exception(
-    s"Position $idx: $actual != $expected"
-  )
