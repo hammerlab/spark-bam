@@ -11,6 +11,7 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.hammerlab.genomics.reference.NumLoci
+import org.hammerlab.hadoop_bam.bam.Error.ErrorFlags
 import org.hammerlab.hadoop_bam.bgzf.Pos
 import org.hammerlab.hadoop_bam.bgzf.block
 import org.hammerlab.hadoop_bam.bgzf.hadoop.BytesInputFormat.RANGES_KEY
@@ -41,8 +42,8 @@ sealed trait False extends Call
 
 case object TruePositive extends True
 case object FalsePositive extends False
-case class TrueNegative(error: Error) extends True
-case class FalseNegative(error: Error) extends False
+case class TrueNegative(error: ErrorFlags) extends True
+case class FalseNegative(error: ErrorFlags) extends False
 
 object CheckBAM
   extends CaseApp[CheckBAMArgs]

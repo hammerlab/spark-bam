@@ -10,7 +10,8 @@ deps ++= Seq(
   "com.google.cloud" % "google-cloud-nio" % "0.10.0-alpha",
   libs.value('magic_rdds),
   libs.value('paths),
-  libs.value('reference)
+  libs.value('reference),
+  "com.chuusai" %% "shapeless" % "2.3.2"
 )
 
 addSparkDeps
