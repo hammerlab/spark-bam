@@ -15,7 +15,7 @@ import org.hammerlab.iterator.Sliding2Iterator._
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
-case class UncompressedBlock(bytes: Array[Byte])
+case class CompressedBlock(bytes: Array[Byte])
 
 class BytesSplit
   extends InputSplit
@@ -67,7 +67,7 @@ object BytesSplit {
 }
 
 class BytesInputFormat
-  extends FileInputFormat[Long, UncompressedBlock] {
+  extends FileInputFormat[Long, CompressedBlock] {
 
   override def getSplits(job: JobContext): util.List[InputSplit] = {
 
@@ -120,8 +120,8 @@ class BytesInputFormat
   }
 
   override def createRecordReader(splt: InputSplit,
-                                  context: TaskAttemptContext): mapreduce.RecordReader[Long, UncompressedBlock] =
-    new mapreduce.RecordReader[Long, UncompressedBlock] {
+                                  context: TaskAttemptContext): mapreduce.RecordReader[Long, CompressedBlock] =
+    new mapreduce.RecordReader[Long, CompressedBlock] {
       val split = splt.asInstanceOf[BytesSplit]
 
       val path = split.path
@@ -133,14 +133,14 @@ class BytesInputFormat
 
       var idx = 0
       val it =
-        new SimpleBufferedIterator[(Long, UncompressedBlock)] {
-          override protected def _advance: Option[(Long, UncompressedBlock)] = {
+        new SimpleBufferedIterator[(Long, CompressedBlock)] {
+          override protected def _advance: Option[(Long, CompressedBlock)] = {
             if (blocksIter.hasNext) {
               val (start, end) = blocksIter.next
               is.seek(start)
               val bytes = Array.fill[Byte]((end - start).toInt)(0)
               is.readFully(bytes)
-              Some(start, UncompressedBlock(bytes))
+              Some(start, CompressedBlock(bytes))
             } else
               None
           }
@@ -162,7 +162,7 @@ class BytesInputFormat
           it.hasNext
         }
 
-      override def getCurrentValue: UncompressedBlock = it.head._2
+      override def getCurrentValue: CompressedBlock = it.head._2
       override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {}
       override def close(): Unit = {
         is.close()

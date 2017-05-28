@@ -11,11 +11,13 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.hammerlab.genomics.reference.NumLoci
-import org.hammerlab.hadoop_bam.bam.Error.ErrorFlags
+import org.hammerlab.hadoop_bam.Monoid.{ mzero ⇒ zero }
+import org.hammerlab.hadoop_bam.MonoidSyntax._
+import org.hammerlab.hadoop_bam.bam.Error.{ ErrorCount, ErrorFlags, numNonZeroFields, toCounts }
 import org.hammerlab.hadoop_bam.bgzf.Pos
 import org.hammerlab.hadoop_bam.bgzf.block
 import org.hammerlab.hadoop_bam.bgzf.hadoop.BytesInputFormat.RANGES_KEY
-import org.hammerlab.hadoop_bam.bgzf.hadoop.{ BytesInputFormat, UncompressedBlock }
+import org.hammerlab.hadoop_bam.bgzf.hadoop.{ BytesInputFormat, CompressedBlock }
 import org.hammerlab.iterator.{ HeadOptionIterator, SimpleBufferedIterator }
 import org.hammerlab.magic.rdd.keyed.FilterKeysRDD._
 import org.hammerlab.magic.rdd.keyed.ReduceByKeyRDD._
@@ -25,6 +27,8 @@ import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFrom
 import org.seqdoop.hadoop_bam.util.WrapSeekable
 
 import scala.collection.JavaConverters._
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable
 import scala.math.ceil
 import scala.reflect.ClassTag
 
@@ -45,9 +49,21 @@ case object FalsePositive extends False
 case class TrueNegative(error: ErrorFlags) extends True
 case class FalseNegative(error: ErrorFlags) extends False
 
+case class Result(numPositions: Long,
+                  calls: RDD[(Pos, Call)],
+                  numFalseCalls: Long,
+                  falseCalls: RDD[(Pos, False)],
+                  countsByNonZeroFields: Array[(Int, (ErrorCount, ErrorCount))])
+
 object CheckBAM
   extends CaseApp[CheckBAMArgs]
     with Logging {
+
+  implicit def CanBuildArrayFromSeq[T, U: ClassTag] =
+    new CanBuildFrom[Seq[T], U, Array[U]] {
+      def apply(from: Seq[T]): mutable.Builder[U, Array[U]] = mutable.ArrayBuilder.make[U]()
+      def apply(): mutable.Builder[U, Array[U]] = mutable.ArrayBuilder.make[U]()
+    }
 
   def processBlock(block: Long,
                    usize: Int,
@@ -113,25 +129,32 @@ object CheckBAM
     val sc = new SparkContext(sparkConf)
     val path = new HPath(args.bamFile)
 
-    val errorsRDD = run(sc, path, args)
-    val numErrors = errorsRDD.count
-    val errors =
-      if (numErrors > 1000)
-        errorsRDD.take(1000)
-      else
-        errorsRDD.collect()
+    val Result(
+      numPositions,
+      calls,
+      numFalseCalls,
+      falseCalls,
+      countsByNonZeroFields
+    ) =
+      run(sc, path, args)
 
-    numErrors match {
+    val falseCallsSample =
+      if (numFalseCalls > 1000)
+        falseCalls.take(1000)
+      else
+        falseCalls.collect()
+
+    numFalseCalls match {
       case 0 ⇒
-        println("No errors!")
+        println(s"$numPositions calls, no errors!")
       case _ ⇒
-        println(s"$numErrors errors:")
+        println(s"$numPositions calls, $falseCallsSample errors; first 1000:")
         println(
-          errors
+          falseCallsSample
             .mkString(
               "\t",
               "\n\t",
-              if (numErrors > 1000)
+              if (numFalseCalls > 1000)
                 "\n…\n"
               else
                 "\n"
@@ -140,7 +163,7 @@ object CheckBAM
     }
   }
 
-  def run(sc: SparkContext, path: HPath, args: CheckBAMArgs): RDD[(Pos, Call)] = {
+  def run(sc: SparkContext, path: HPath, args: CheckBAMArgs): Result = {
 
     val conf = sc.hadoopConfiguration
 
@@ -269,9 +292,10 @@ object CheckBAM
                     )
                 )
               case _ ⇒
-                throw new Exception(
-                  s"Bad join sizes at $block: ${usizes.size} ${offsetss.size} ${nextPosOpts.size}"
+                logger.warn(
+                  s"Suspicious join sizes at $block: ${usizes.size} ${offsetss.size} ${nextPosOpts.size}"
                 )
+                None
             }
         }
 
@@ -310,7 +334,7 @@ object CheckBAM
           args.bamFile,
           classOf[BytesInputFormat],
           classOf[Long],
-          classOf[UncompressedBlock]
+          classOf[CompressedBlock]
         )
         .sliding(4, includePartial = true)  // Get each BGZF block and 3 that follow it
         .map {
@@ -321,41 +345,98 @@ object CheckBAM
               block.Stream(
                 new ByteArrayInputStream(
                   bytess
-                    .toArray
                     .flatMap(_._2.bytes)
                 )
               )
-              .toArray
               .flatMap(_.bytes)
+              .toArray
         }
 
-    blockDataRDD
-      .leftOuterJoin(blockBytesRDD, numPartitions)
-      .flatMap {
-        case (
-          block,
-          (
+    val calls =
+      blockDataRDD
+        .leftOuterJoin(blockBytesRDD, numPartitions)
+        .flatMap {
+          case (
+            block,
             (
+              (
+                usize,
+                offsets,
+                nextPosOpt
+              ),
+              Some(bytes)
+            )
+          ) ⇒
+            processBlock(
+              block,
               usize,
               offsets,
-              nextPosOpt
-            ),
-            Some(bytes)
-          )
-        ) ⇒
-          processBlock(
-            block,
-            usize,
-            offsets,
-            nextPosOpt,
-            bytes,
-            contigLengths
-          )
-        case (block, (dataOpt, bytesOpt)) ⇒
-          throw new Exception(
-            s"Missing data or bytes for block $block: $dataOpt $bytesOpt"
-          )
+              nextPosOpt,
+              bytes,
+              contigLengths
+            )
+          case (block, (dataOpt, bytesOpt)) ⇒
+            throw new Exception(
+              s"Missing data or bytes for block $block: $dataOpt $bytesOpt"
+            )
+        }
+        .sortByKey()
+
+    val numCalls = calls.count
+
+    val falseCalls =
+      calls.flatMap {
+        case (pos, f: False) ⇒ Some(pos → f)
+        case _ ⇒ None
       }
-      .sortByKey()
+
+    val numFalseCalls = falseCalls.count
+
+    val trueNegativesByNumFields: Array[(Int, ErrorCount)] =
+      calls
+        .flatMap {
+          _._2 match {
+            case TrueNegative(error) ⇒ Some(toCounts(error))
+            case _ ⇒ None
+          }
+        }
+        .map(
+          counts ⇒
+            numNonZeroFields(counts) →
+              counts
+        )
+        .reduceByKey(_ |+| _, 20)
+        .collect()
+        .sortBy(_._1)
+
+    val trueNegativesByNumFieldsCumulative =
+      trueNegativesByNumFields
+        .scanLeft(
+          0 → zero[ErrorCount]
+        ) {
+          (soFar, next) ⇒
+            val (_, countSoFar) = soFar
+            val (numNonZeroFields, count) = next
+            numNonZeroFields → (countSoFar |+| count)
+        }
+        .drop(1)
+
+    val countsByNonZeroFields =
+      for {
+        ((numNonZeroFields, counts), (_, cumulativeCounts)) ←
+          trueNegativesByNumFields
+            .zip(
+              trueNegativesByNumFieldsCumulative
+            )
+      } yield
+        numNonZeroFields → (counts, cumulativeCounts)
+
+    Result(
+      numCalls,
+      calls,
+      numFalseCalls,
+      falseCalls,
+      countsByNonZeroFields
+    )
   }
 }
