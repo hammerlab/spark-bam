@@ -6,68 +6,118 @@ import org.hammerlab.genomics.reference.NumLoci
 
 import scala.math.max
 
-sealed trait Error
-  case object TooFewFixedBlockBytes extends Error
-  sealed trait PosErrors extends Error
-    case class ReadPosError(refPosError: RefPosError) extends PosErrors
-    case class NextReadPosError(refPosError: RefPosError) extends PosErrors
-    case class RefPosErrors(refPosError: RefPosError,
-                            nextRefPosError: RefPosError) extends PosErrors
+case class Error(tooFewFixedBlockBytes: Boolean,
+                 readPosError: Option[RefPosError],
+                 nextReadPosError: Option[RefPosError],
+                 readNameError: Option[ReadNameError],
+                 cigarOpsError: Option[CigarOpsError],
+                 tooFewBytesForSeqAndQuals: Boolean) {
+  def negativeReadIdx = readPosError.exists(_.negativeRefIdx)
+  def tooLargeReadIdx = readPosError.exists(_.tooLargeRefIdx)
+  def negativeReadPos = readPosError.exists(_.negativeRefPos)
+  def tooLargeReadPos = readPosError.exists(_.tooLargeRefPos)
 
-      sealed trait RefPosError
-        sealed trait RefIdxError extends RefPosError
+  def negativeNextReadIdx = nextReadPosError.exists(_.negativeRefIdx)
+  def tooLargeNextReadIdx = nextReadPosError.exists(_.tooLargeRefIdx)
+  def negativeNextReadPos = nextReadPosError.exists(_.negativeRefPos)
+  def tooLargeNextReadPos = nextReadPosError.exists(_.tooLargeRefPos)
 
-          sealed trait NegativeRefIdx extends RefIdxError
-            case object NegativeRefIdx extends NegativeRefIdx
-            case object NegativeRefIdxAndPos extends NegativeRefIdx with NegativeRefPos
+  def nonNullTerminatedReadName = readNameError.exists(_.nonNullTerminatedReadName)
+  def nonASCIIReadName = readNameError.exists(_.nonASCIIReadName)
+  def noReadName = readNameError.exists(_.noReadName)
+  def emptyReadName = readNameError.exists(_.emptyReadName)
 
-          sealed trait TooLargeRefIdx extends RefIdxError
-            case object TooLargeRefIdx extends TooLargeRefIdx
-            case object TooLargeRefIdxNegativePos extends TooLargeRefIdx with NegativeRefPos
+  def tooFewBytesForCigarOps = cigarOpsError.exists(_.tooFewBytesForCigarOps)
+  def invalidCigarOp = cigarOpsError.exists(_.invalidCigarOp)
+}
 
-        sealed trait RefLocusError extends RefPosError
-          sealed trait NegativeRefPos extends RefLocusError
-            case object NegativeRefPos extends NegativeRefPos
-          case object TooLargeRefPos extends RefLocusError
+object Error {
+  def apply(implicit
+            posErrors: (Option[RefPosError], Option[RefPosError]),
+            readNameError: Option[ReadNameError] = None,
+            cigarOpsError: Option[CigarOpsError] = None,
+            tooFewBytesForSeqAndQuals: Boolean = false): Option[Error] =
+    (posErrors, readNameError, cigarOpsError, tooFewBytesForSeqAndQuals) match {
+      case ((None, None), None, None, false) ⇒ None
+      case _ ⇒
+        Some(
+          Error(
+            tooFewFixedBlockBytes = false,
+            readPosError = posErrors._1,
+            nextReadPosError = posErrors._2,
+            readNameError = readNameError,
+            cigarOpsError = cigarOpsError,
+            tooFewBytesForSeqAndQuals = tooFewBytesForSeqAndQuals
+          )
+        )
+    }
+}
 
-  sealed trait VariableFieldErrors extends Error
-    case object TooFewBytesForReadName extends VariableFieldErrors
-    case class TooFewBytesForCigarOps(readNameError: Option[ReadNameError]) extends VariableFieldErrors
-    case class TooFewBytesForSeqAndQuals(readNameError: Option[ReadNameError],
-                                         cigarOpsError: Option[CigarOpsError]) extends VariableFieldErrors
-    case class ReadNameAndCigarOpsErrors(readNameError: ReadNameError,
-                                         cigarOpsError: CigarOpsError) extends VariableFieldErrors
+sealed trait RefPosError {
+  def negativeRefIdx: Boolean = false
+  def tooLargeRefIdx: Boolean = false
+  def negativeRefPos: Boolean = false
+  def tooLargeRefPos: Boolean = false
+}
 
-    sealed trait ReadNameError extends VariableFieldErrors
-      case object NonNullTerminatedReadName extends ReadNameError
-      case object NonASCIIReadName extends ReadNameError
-      sealed trait ReadNameLengthError extends ReadNameError
-        case object NoReadName extends ReadNameLengthError
-        case object EmptyReadName extends ReadNameLengthError
+  sealed trait NegativeRefIdx extends RefPosError {
+    override def negativeRefIdx = true
+  }
+    case object NegativeRefIdx extends NegativeRefIdx
+    case object NegativeRefIdxAndPos extends NegativeRefIdx with NegativeRefPos
 
-    sealed trait CigarOpsError extends VariableFieldErrors
-      case object InvalidCigarOp extends CigarOpsError
+  sealed trait TooLargeRefIdx extends RefPosError {
+    override def tooLargeRefIdx = true
+  }
+    case object TooLargeRefIdx extends TooLargeRefIdx
+    case object TooLargeRefIdxNegativePos extends TooLargeRefIdx with NegativeRefPos
 
-  case class PosAndVariableErrors(posErrors: PosErrors,
-                                  variableErrors: VariableFieldErrors) extends Error
+  sealed trait NegativeRefPos extends RefPosError {
+    override def negativeRefPos = true
+  }
+    case object NegativeRefPos extends NegativeRefPos
+  case object TooLargeRefPos extends RefPosError {
+    override def tooLargeRefPos = true
+  }
+
+  sealed trait ReadNameError {
+    def tooFewBytesForReadName = false
+    def nonNullTerminatedReadName = false
+    def nonASCIIReadName = false
+    def noReadName = false
+    def emptyReadName = false
+  }
+    case object TooFewBytesForReadName
+      extends ReadNameError {
+      override def tooFewBytesForReadName = true
+    }
+    case object NonNullTerminatedReadName extends ReadNameError {
+      override def nonNullTerminatedReadName = true
+    }
+    case object NonASCIIReadName extends ReadNameError {
+      override def nonASCIIReadName = true
+    }
+    sealed trait ReadNameLengthError extends ReadNameError
+    case object NoReadName extends ReadNameLengthError {
+      override def noReadName = true
+    }
+    case object EmptyReadName extends ReadNameLengthError {
+      override def emptyReadName = true
+    }
+
+    sealed trait CigarOpsError {
+      def invalidCigarOp = false
+      def tooFewBytesForCigarOps = false
+    }
+      case object InvalidCigarOp extends CigarOpsError {
+        override def invalidCigarOp = true
+      }
+      case object TooFewBytesForCigarOps
+        extends CigarOpsError {
+        override def tooFewBytesForCigarOps = true
+      }
 
 object Guesser {
-//  def guess(bytes: Array[Byte],
-//            contigLengths: Map[Int, NumLoci],
-//            numTries: Int = 64 * 1024): Option[Guess] = {
-//    var i = 0
-//    val buf = ByteBuffer.wrap(bytes).order(LITTLE_ENDIAN)
-//    while (i < numTries) {
-//      buf.position(i)
-//      guess(buf, contigLengths) match {
-//        case Some(g) ⇒
-//          return Some(g)
-//        case _ ⇒
-//      }
-//      i += 1
-//    }
-//    None
-//  }
 
   val allowedReadNameChars =
     (
@@ -81,7 +131,12 @@ object Guesser {
   def guess(buf: ByteBuffer,
             contigLengths: Map[Int, NumLoci]): Option[Error] = {
     if (buf.remaining() < 36)
-      return Some(TooFewFixedBlockBytes)
+      return Some(
+        Error(
+          tooFewFixedBlockBytes = true,
+          None, None, None, None, false
+        )
+      )
 
     val remainingBytes = buf.getInt
 
@@ -107,7 +162,7 @@ object Guesser {
         None
     }
 
-    val refPosError = getRefPosError
+    val readPosError = getRefPosError
 
     val readNameLength = buf.getInt & 0xff
 
@@ -123,117 +178,60 @@ object Guesser {
         (seqLen + 1) / 2 +  // bases
         seqLen              // phred scores
 
-    val nextRefPosError = getRefPosError
+    val nextReadPosError = getRefPosError
 
-    val posErrors: Option[PosErrors] =
-      (refPosError, nextRefPosError) match {
-        case (Some(refPosError), Some(nextRefPosError)) ⇒
-          Some(RefPosErrors(refPosError, nextRefPosError))
-        case (Some(refPosError), _) ⇒
-          Some(
-            ReadPosError(
-              refPosError
-            )
-          )
-        case (_, Some(nextRefPosError)) ⇒
-          Some(
-            NextReadPosError(
-              nextRefPosError
-            )
-          )
-        case _ ⇒
-          None
-      }
+    implicit val posErrors = (readPosError, nextReadPosError)
 
     buf.getInt  // unused: template length
 
-    val variableFieldsError: Option[VariableFieldErrors] =
-      if (buf.remaining() < readNameLength)
-        Some(TooFewBytesForReadName)
-      else {
-        val readNameBytes = Array.fill[Byte](readNameLength)(0)
-        buf.get(readNameBytes)
+    if (buf.remaining() < readNameLength) {
+      implicit val readNameError = Some(TooFewBytesForReadName)
+      Error.apply
+    } else {
+      val readNameBytes = Array.fill[Byte](readNameLength)(0)
+      buf.get(readNameBytes)
 
-        val readNameError: Option[ReadNameError] =
-          readNameLength match {
-            case 0 ⇒
-              Some(NoReadName)
-            case 1 ⇒
-              Some(EmptyReadName)
-            case _ ⇒
-              if (readNameBytes.last != 0)
-                Some(NonNullTerminatedReadName)
-              else if (
-                readNameBytes
-                  .view
-                  .slice(0, readNameLength - 1)
-                  .exists(byte ⇒ !allowedReadNameChars(byte.toChar))
-              )
-                Some(NonASCIIReadName)
-              else
-                None
-          }
-
-        if (buf.remaining() < numCigarBytes)
-          Some(
-            TooFewBytesForCigarOps(
-              readNameError
+      implicit val readNameError: Option[ReadNameError] =
+        readNameLength match {
+          case 0 ⇒
+            Some(NoReadName)
+          case 1 ⇒
+            Some(EmptyReadName)
+          case _ ⇒
+            if (readNameBytes.last != 0)
+              Some(NonNullTerminatedReadName)
+            else if (
+              readNameBytes
+                .view
+                .slice(0, readNameLength - 1)
+                .exists(byte ⇒ !allowedReadNameChars(byte.toChar))
             )
-          )
-        else {
-
-          val cigarOpsError: Option[CigarOpsError] =
-            if (
-              (0 until numCigarOps)
-                .exists {
-                  _ ⇒
-                    (buf.getInt & 0xf) > 8
-                }
-            )
-              Some(InvalidCigarOp)
+              Some(NonASCIIReadName)
             else
               None
-
-          if (buf.remaining() < (seqLen + 1) / 2 + seqLen)
-            Some(
-              TooFewBytesForSeqAndQuals(
-                readNameError,
-                cigarOpsError
-              )
-            )
-          else
-            (readNameError, cigarOpsError) match {
-              case (Some(readNameError), Some(cigarOpsError)) ⇒
-                Some(
-                  ReadNameAndCigarOpsErrors(
-                    readNameError,
-                    cigarOpsError
-                  )
-                )
-              case (Some(readNameError), _) ⇒
-                Some(readNameError)
-              case (_, Some(cigarOpsError)) ⇒
-                Some(cigarOpsError)
-              case _ ⇒
-                None
-            }
         }
-      }
 
-    (posErrors, variableFieldsError) match {
-      case (Some(posErrors), Some(variableFieldsError)) ⇒
-        Some(
-          PosAndVariableErrors(
-            posErrors,
-            variableFieldsError
+      if (buf.remaining() < numCigarBytes) {
+        implicit val cigarOpsError = Some(TooFewBytesForCigarOps)
+        Error.apply
+      } else {
+
+        implicit val cigarOpsError: Option[CigarOpsError] =
+          if (
+            (0 until numCigarOps)
+              .exists {
+                _ ⇒
+                  (buf.getInt & 0xf) > 8
+              }
           )
-        )
-      case (Some(posErrors), _) ⇒
-        Some(posErrors)
-      case (_, Some(variableFieldsError)) ⇒
-        Some(variableFieldsError)
-      case _ ⇒
-        None
+            Some(InvalidCigarOp)
+          else
+            None
+
+        implicit val tooFewBytesForSeqAndQuals = buf.remaining() < (seqLen + 1) / 2 + seqLen
+
+        Error.apply
+      }
     }
   }
 }
