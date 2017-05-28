@@ -3,40 +3,85 @@ package org.hammerlab.hadoop_bam.bam
 import java.nio.ByteBuffer
 
 import org.hammerlab.genomics.reference.NumLoci
+import shapeless._
 
 import scala.math.max
 
-case class Error(tooFewFixedBlockBytes: Boolean,
-                 readPosError: Option[RefPosError],
-                 nextReadPosError: Option[RefPosError],
-                 readNameError: Option[ReadNameError],
-                 cigarOpsError: Option[CigarOpsError],
-                 tooFewBytesForSeqAndQuals: Boolean) {
-  def negativeReadIdx = readPosError.exists(_.negativeRefIdx)
-  def tooLargeReadIdx = readPosError.exists(_.tooLargeRefIdx)
-  def negativeReadPos = readPosError.exists(_.negativeRefPos)
-  def tooLargeReadPos = readPosError.exists(_.tooLargeRefPos)
+//case class ErrorT[T]
 
-  def negativeNextReadIdx = nextReadPosError.exists(_.negativeRefIdx)
-  def tooLargeNextReadIdx = nextReadPosError.exists(_.tooLargeRefIdx)
-  def negativeNextReadPos = nextReadPosError.exists(_.negativeRefPos)
-  def tooLargeNextReadPos = nextReadPosError.exists(_.tooLargeRefPos)
-
-  def nonNullTerminatedReadName = readNameError.exists(_.nonNullTerminatedReadName)
-  def nonASCIIReadName = readNameError.exists(_.nonASCIIReadName)
-  def noReadName = readNameError.exists(_.noReadName)
-  def emptyReadName = readNameError.exists(_.emptyReadName)
-
-  def tooFewBytesForCigarOps = cigarOpsError.exists(_.tooFewBytesForCigarOps)
-  def invalidCigarOp = cigarOpsError.exists(_.invalidCigarOp)
-}
+case class ErrorT[T](tooFewFixedBlockBytes: T,
+                     negativeReadIdx: T,
+                     tooLargeReadIdx: T,
+                     negativeReadPos: T,
+                     tooLargeReadPos: T,
+                     negativeNextReadIdx: T,
+                     tooLargeNextReadIdx: T,
+                     negativeNextReadPos: T,
+                     tooLargeNextReadPos: T,
+                     nonNullTerminatedReadName: T,
+                     nonASCIIReadName: T,
+                     noReadName: T,
+                     emptyReadName: T,
+                     tooFewBytesForCigarOps: T,
+                     invalidCigarOp: T,
+                     tooFewBytesForSeqAndQuals: T)
 
 object Error {
+
+  type ErrorFlags = ErrorT[Boolean]
+  type ErrorCount = ErrorT[Long]
+
+  object toLong extends Poly1 {
+    implicit val cs: Case.Aux[Boolean, Long] = at(b ⇒ if (b) 1 else 0)
+  }
+
+  object countNonZeros extends Poly2 {
+    implicit val cs: Case.Aux[Int, Long, Int] =
+      at(
+        (count, l) ⇒
+          count +
+            (if (l > 0) 1 else 0)
+      )
+  }
+
+  def toCounts(error: ErrorFlags): ErrorCount = {
+    val bools = Generic[ErrorFlags].to(error)
+    Generic[ErrorCount].from(bools.map(toLong))
+  }
+
+  def numNonZeroFields(counts: ErrorCount): Int =
+    Generic[ErrorCount].to(counts).foldLeft(0)(countNonZeros)
+
+  def apply(tooFewFixedBlockBytes: Boolean,
+            readPosError: Option[RefPosError],
+            nextReadPosError: Option[RefPosError],
+            readNameError: Option[ReadNameError],
+            cigarOpsError: Option[CigarOpsError],
+            tooFewBytesForSeqAndQuals: Boolean): ErrorFlags =
+    ErrorT(
+      tooFewFixedBlockBytes = tooFewFixedBlockBytes,
+      negativeReadIdx = readPosError.exists(_.negativeRefIdx),
+      tooLargeReadIdx = readPosError.exists(_.tooLargeRefIdx),
+      negativeReadPos = readPosError.exists(_.negativeRefPos),
+      tooLargeReadPos = readPosError.exists(_.tooLargeRefPos),
+      negativeNextReadIdx = nextReadPosError.exists(_.negativeRefIdx),
+      tooLargeNextReadIdx = nextReadPosError.exists(_.tooLargeRefIdx),
+      negativeNextReadPos = nextReadPosError.exists(_.negativeRefPos),
+      tooLargeNextReadPos = nextReadPosError.exists(_.tooLargeRefPos),
+      nonNullTerminatedReadName = readNameError.exists(_.nonNullTerminatedReadName),
+      nonASCIIReadName = readNameError.exists(_.nonASCIIReadName),
+      noReadName = readNameError.exists(_.noReadName),
+      emptyReadName = readNameError.exists(_.emptyReadName),
+      tooFewBytesForCigarOps = cigarOpsError.exists(_.tooFewBytesForCigarOps),
+      invalidCigarOp = cigarOpsError.exists(_.invalidCigarOp),
+      tooFewBytesForSeqAndQuals = tooFewBytesForSeqAndQuals
+    )
+
   def apply(implicit
             posErrors: (Option[RefPosError], Option[RefPosError]),
             readNameError: Option[ReadNameError] = None,
             cigarOpsError: Option[CigarOpsError] = None,
-            tooFewBytesForSeqAndQuals: Boolean = false): Option[Error] =
+            tooFewBytesForSeqAndQuals: Boolean = false): Option[ErrorFlags] =
     (posErrors, readNameError, cigarOpsError, tooFewBytesForSeqAndQuals) match {
       case ((None, None), None, None, false) ⇒ None
       case _ ⇒
@@ -119,6 +164,8 @@ sealed trait RefPosError {
 
 object Guesser {
 
+  import Error.ErrorFlags
+
   val allowedReadNameChars =
     (
       ('a' to 'z') ++
@@ -129,7 +176,7 @@ object Guesser {
     .toSet
 
   def guess(buf: ByteBuffer,
-            contigLengths: Map[Int, NumLoci]): Option[Error] = {
+            contigLengths: Map[Int, NumLoci]): Option[ErrorFlags] = {
     if (buf.remaining() < 36)
       return Some(
         Error(
@@ -170,13 +217,6 @@ object Guesser {
     val numCigarBytes = 4 * numCigarOps
 
     val seqLen = buf.getInt
-
-    val impliedRemainingBytes =
-      32 +
-        max(0, readNameLength) +
-        numCigarBytes +
-        (seqLen + 1) / 2 +  // bases
-        seqLen              // phred scores
 
     val nextReadPosError = getRefPosError
 
