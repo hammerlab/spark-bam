@@ -12,15 +12,16 @@ import org.hammerlab.io.ByteChannel
 import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat
 
-case class IndexBlocksArgs(@ExtraName("b") bamFile: String,
-                           @ExtraName("o") outFile: Option[String] = None,
-                           @ExtraName("c") useChannel: Boolean = false)
+case class Args(@ExtraName("b") bamFile: String,
+                @ExtraName("o") outFile: Option[String] = None,
+                @ExtraName("c") useChannel: Boolean = false,
+                @ExtraName("i") omitEmptyFinalBlock: Boolean = false)
 
 object IndexBlocks
-  extends CaseApp[IndexBlocksArgs]
+  extends CaseApp[Args]
     with Logging {
 
-  override def run(args: IndexBlocksArgs, remainingArgs: RemainingArgs): Unit = {
+  override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
     val conf = new Configuration
     val path = Path(new URI(args.bamFile))
     val ch: ByteChannel =
@@ -29,7 +30,12 @@ object IndexBlocks
       else
         path.inputStream
 
-    val stream = MetadataStream(ch)
+    val stream =
+      MetadataStream(
+        ch,
+        includeEmptyFinalBlock = !args.omitEmptyFinalBlock
+      )
+
     val outPath =
       Path(
         new URI(

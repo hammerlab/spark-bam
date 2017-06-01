@@ -1,6 +1,7 @@
 package org.hammerlab.bgzf.block
 
 import java.io.FileInputStream
+import java.nio.channels.FileChannel
 
 import org.hammerlab.stats.Stats
 import org.hammerlab.test.Suite
@@ -17,22 +18,41 @@ class StreamTest
     )
   }
 
+  implicit def blockToMetadata(block: Block): Metadata =
+    Metadata(
+      block.start,
+      block.uncompressedSize,
+      block.compressedSize
+    )
+
+  test("seekable") {
+
+    val ch = FileChannel.open(File("5k.bam").path)
+    val stream = SeekableStream(ch)
+
+    stream.next() should ===(Metadata(    0,  5650,  2454))
+    stream.seek(0)
+    stream.next() should ===(Metadata(    0,  5650,  2454))
+    stream.seek(0)
+    stream.next() should ===(Metadata(    0,  5650,  2454))
+    stream.next() should ===(Metadata( 2454, 65092, 25330))
+
+    stream.seek(0)
+    stream.next() should ===(Metadata(    0,  5650,  2454))
+
+    stream.seek(27784)
+    stream.next() should ===(Metadata(27784, 64902, 23602))
+  }
+
   test("5k.bam") {
     val is = new FileInputStream(File("5k.bam"))
     val bgzfStream = Stream(is)
     val blocks = bgzfStream.toList
     blocks.size should be(50)
-    blocks(0).start should be(0)
-    blocks(0).compressedSize should be(2454)
-    blocks(0).uncompressedSize should be(5650)
 
-    blocks(1).start should be(2454)
-    blocks(1).compressedSize should be(25330)
-    blocks(1).uncompressedSize should be(65092)
-
-    blocks(2).start should be(27784)
-    blocks(2).compressedSize should be(23602)
-    blocks(2).uncompressedSize should be(64902)
+    blocks(0) should ===(Metadata(     0,  5650,  2454))
+    blocks(1) should ===(Metadata(  2454, 65092, 25330))
+    blocks(2) should ===(Metadata( 27784, 64902, 23602))
 
     val compressedStats =
       Stats(

@@ -9,6 +9,7 @@ import java.nio.file.Paths
 import org.apache.hadoop.fs.Path
 import org.hammerlab.bam.index.Index.{ Bin, Chunk, Reference }
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.io.Buffer
 import org.hammerlab.stats.Stats
 
 case class Index(references: Seq[Reference]) {
@@ -63,8 +64,8 @@ object Index {
       {
         val ch = FileChannel.open(Paths.get(path.toUri))
 
-        val buf4 = ByteBuffer.allocate(4).order(LITTLE_ENDIAN)
-        val buf8 = ByteBuffer.allocate(8).order(LITTLE_ENDIAN)
+        val buf4 = Buffer(4)
+        val buf8 = Buffer(8)
 
         ch.read(buf4)
         if (buf4.array().map(_.toChar).mkString("") != "BAI\1") {

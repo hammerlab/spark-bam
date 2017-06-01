@@ -1,59 +1,75 @@
 package org.hammerlab.bgzf.hadoop
 
-import java.io.InputStream
-
-import org.apache.hadoop.mapreduce
-import org.apache.hadoop.io.NullWritable
 import org.apache.hadoop.mapreduce.{ InputSplit, TaskAttemptContext }
-import org.hammerlab.bam.hadoop.Split
-import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Block, Stream }
+import org.hammerlab.io.SeekableByteChannel
+import org.hammerlab.iterator.SimpleBufferedIterator
+import org.hammerlab.iterator.SimpleBufferedIterator._
 
-case class RecordReader(is: InputStream,
-                        startBlock: Long,
-                        iterator: Stream,
-                        length: Long)
-  extends mapreduce.RecordReader[NullWritable, Block] {
-
-  override def getCurrentKey: NullWritable = NullWritable.get()
-
-  override def getProgress: Float =
-    if (length == 0)
-      0
-    else
-      (iterator.blockStart - startBlock) / length
-
-  override def nextKeyValue(): Boolean = iterator.hasNext
-
-  override def getCurrentValue: Block = iterator.head
-
-  override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {}
-
-  override def close(): Unit = is.close()
-}
+//case class RecordReader(is: InputStream,
+//                        start: Long,
+//                        length: Long,
+//                        blocks: Stream,
+//                        blocksWhitelist: Option[Set[Long]])
+//  extends SimpleBufferedIterator[(Long, Block)] {
+//
+//}
 
 object RecordReader {
   def apply(split: InputSplit,
-            context: TaskAttemptContext): RecordReader = {
+            context: TaskAttemptContext): SimpleBufferedIterator[(Long, Block)] = {
+
     val Split(
       path,
-      Pos(startBlock, _),
-      Pos(endBlock, _),
-      _
+      start,
+      length,
+      _,
+      blocksWhitelistOpt
     ) =
       split.asInstanceOf[Split]
 
-    val length = endBlock - startBlock
-
     val fs = path.getFileSystem(context.getConfiguration)
-    val is = fs.open(path)
-    val iterator = Stream(is)
+
+    val is: SeekableByteChannel = fs.open(path)
+    is.seek(start)
+
+    val blocks = Stream(is)
 
     RecordReader(
-      is,
-      startBlock,
-      iterator,
-      length
+      start,
+      start + length,
+      blocks,
+      blocksWhitelistOpt
     )
   }
+
+  def apply(start: Long,
+            end: Long,
+            blocks: Stream,
+            blocksWhitelist: Option[Set[Long]]): SimpleBufferedIterator[(Long, Block)] = {
+    blocksWhitelist
+      .map(
+        whitelist ⇒
+          blocks
+            .filter(
+              block ⇒
+                whitelist.contains(block.start)
+            )
+            .buffered
+      )
+      .getOrElse(
+        blocks
+      )
+      .map(
+        block ⇒
+          block.start →
+            block
+      )
+      .takeWhile(_._1 < end)
+      .buffer
+  }
+
+  implicit def make(split: InputSplit,
+                    context: TaskAttemptContext): SimpleBufferedIterator[(Long, Block)] =
+    apply(split, context)
 }

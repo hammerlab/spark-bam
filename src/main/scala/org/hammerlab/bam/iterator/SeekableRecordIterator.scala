@@ -1,26 +1,36 @@
 package org.hammerlab.bam.iterator
 
-import java.nio.channels.SeekableByteChannel
-
 import org.hammerlab.bgzf.Pos
-import sun.nio.ch.ChannelInputStream
+import org.hammerlab.bgzf.block.{ SeekableByteStream, SeekableStream }
+import org.hammerlab.io.SeekableByteChannel
 
-trait SeekableRecordIterator[T] {
-  self: RecordIterator[T] ⇒
+/**
+ * Interface for [[RecordIterator]]s that adds ability to seek
+ */
+trait SeekableRecordIterator[T]
+  extends RecordIterator[T, SeekableByteStream] {
 
-  def compressedChannel: SeekableByteChannel
-
-  override lazy val compressedInputStream = new ChannelInputStream(compressedChannel)
+  //override def makeBlockStream: SeekableStream = SeekableStream(compressedByteChannel)
 
   def seek(to: Pos): Unit = {
     if (to < headerEndPos) {
+      // Positions inside the header should fast-forward to the end of the header
       seek(headerEndPos)
     } else {
-      compressedChannel.position(to.blockPos)
-      reset()
-      blockStream.blockStart = to.blockPos
-      uncompressedBytes.drop(to.offset)
-      assert(blockStream.pos.blockPos == to.blockPos, s"Expected ${blockStream.pos} to match $to")
+      stream.seek(to)
+
+      /** Clear any cached [[org.hammerlab.iterator.SimpleBufferedIterator]] `_next` values */
+      clear()
+
+//      uncompressedBytes.clear()
+
+      // Fast-forward to requested virtual offset within block
+//      blockStream.headOption.foreach(
+//        block ⇒
+//          block.idx = to.offset
+//      )
+
+      require(curPos.get == to)
     }
   }
 }

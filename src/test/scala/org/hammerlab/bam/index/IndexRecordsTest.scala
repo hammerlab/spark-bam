@@ -9,7 +9,7 @@ class IndexRecordsTest
   extends Suite {
   test("2.bam") {
     IndexRecords.run(
-      IndexRecordsArgs(
+      Args(
         File("2.bam").uri.toString
       ),
       RemainingArgs(Nil, Nil)
@@ -19,7 +19,7 @@ class IndexRecordsTest
   test("5k.bam") {
     val outFile = tmpPath()
     IndexRecords.run(
-      IndexRecordsArgs(
+      Args(
         File("5k.bam").uri.toString,
         outFile = Some(outFile.uri.toString)
       ),

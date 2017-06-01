@@ -1,35 +1,54 @@
 package org.hammerlab.bam.iterator
 
-import java.io.InputStream
-import java.nio.channels.{ FileChannel, SeekableByteChannel }
+import java.nio.channels.FileChannel
 
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.bgzf.block.{ ByteStream, ByteStreamI, SeekableByteStream }
 import org.hammerlab.paths.Path
 
-trait PosStreamI
-  extends RecordIterator[Pos] {
+/**
+ * Interface for iterating over record-start [[Pos]]s in a BAM file
+ */
+trait PosStreamI[Stream <: ByteStreamI[_]]
+  extends RecordIterator[Pos, Stream] {
   override protected def _advance: Option[Pos] = {
     for {
       pos ← curPos
     } yield {
       val remainingLength = readInt
-      uncompressedBytes.drop(remainingLength)
+      stream.drop(remainingLength)
       pos
     }
   }
 }
 
-case class PosStream(compressedInputStream: InputStream)
-  extends PosStreamI
+/**
+ * Non-seekable [[PosStreamI]]
+ */
+case class PosStream(stream: ByteStream)
+  extends PosStreamI[ByteStream]
 
 object PosStream {
-  def apply(path: Path): PosStream = PosStream(path.inputStream)
+  def apply(path: Path): PosStream =
+    PosStream(
+      ByteStream(
+        path.inputStream
+      )
+    )
 }
 
-case class SeekablePosStream(compressedChannel: SeekableByteChannel)
-  extends PosStreamI
+/**
+ * Seekable [[PosStreamI]]
+ */
+case class SeekablePosStream(stream: SeekableByteStream)
+  extends PosStreamI[SeekableByteStream]
     with SeekableRecordIterator[Pos]
 
 object SeekablePosStream {
-  def apply(path: Path): SeekablePosStream = SeekablePosStream(FileChannel.open(path))
+  def apply(path: Path): SeekablePosStream =
+    SeekablePosStream(
+      SeekableByteStream(
+        FileChannel.open(path)
+      )
+    )
 }

@@ -5,10 +5,16 @@ import java.nio.ByteBuffer
 
 import org.hammerlab.io.ByteChannel
 
+/**
+ * BGZF-block header
+ * @param size size of header, in bytes
+ * @param compressedSize compressed size of block, parsed from header
+ */
 case class Header(size: Int, compressedSize: Int)
 
 object Header {
 
+  // 18 bytes is enough to learn what we need to know: sizes of header and compressed block
   val EXPECTED_HEADER_SIZE = 18
 
   def apply(ch: ByteChannel)(implicit buf: ByteBuffer): Header = {
@@ -53,6 +59,7 @@ object Header {
         )
     }
 
+    // GZip magic bytes
     check(0,  31)
     check(1, 139.toByte)
     check(2,   8)
@@ -60,9 +67,11 @@ object Header {
 
     val xlen = getShort(10)
 
+    // We expect 6 bytes of `xlen`; anything more is considered "extra" and added to the expected 18-byte header size
     val extraHeaderBytes = xlen - 6
     val actualHeaderSize = EXPECTED_HEADER_SIZE + extraHeaderBytes
 
+    // BAM-specific GZip-flags
     check(12, 66)
     check(13, 67)
     check(14,  2)

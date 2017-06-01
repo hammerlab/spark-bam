@@ -18,7 +18,7 @@ case class ErrorT[T](tooFewFixedBlockBytes: T,
                      emptyReadName: T,
                      tooFewBytesForCigarOps: T,
                      invalidCigarOp: T,
-                     tooFewBytesForSeqAndQuals: T)
+                     tooFewRemainingBytesImplied: T)
 
 object Error {
 
@@ -116,7 +116,7 @@ object Error {
             nextReadPosError: Option[RefPosError],
             readNameError: Option[ReadNameError],
             cigarOpsError: Option[CigarOpsError],
-            tooFewBytesForSeqAndQuals: Boolean): Flags =
+            tooFewRemainingBytesImplied: Boolean): Flags =
     ErrorT(
       tooFewFixedBlockBytes = tooFewFixedBlockBytes,
 
@@ -138,18 +138,18 @@ object Error {
 
       tooFewBytesForCigarOps = cigarOpsError.exists(_.tooFewBytesForCigarOps),
       invalidCigarOp = cigarOpsError.exists(_.invalidCigarOp),
-      tooFewBytesForSeqAndQuals = tooFewBytesForSeqAndQuals
+      tooFewRemainingBytesImplied = tooFewRemainingBytesImplied
     )
 
   /**
    * Construct an [[Flags]] from some convenient, implicit wrappers around subsets of the possible flags
    */
-  def apply(implicit
+  def build(implicit
             posErrors: (Option[RefPosError], Option[RefPosError]),
             readNameError: Option[ReadNameError] = None,
             cigarOpsError: Option[CigarOpsError] = None,
-            tooFewBytesForSeqAndQuals: Boolean = false): Option[Flags] =
-    (posErrors, readNameError, cigarOpsError, tooFewBytesForSeqAndQuals) match {
+            tooFewRemainingBytesImplied: Boolean = false): Option[Flags] =
+    (posErrors, readNameError, cigarOpsError, tooFewRemainingBytesImplied) match {
       case ((None, None), None, None, false) ⇒ None
       case _ ⇒
         Some(
@@ -159,7 +159,7 @@ object Error {
             nextReadPosError = posErrors._2,
             readNameError = readNameError,
             cigarOpsError = cigarOpsError,
-            tooFewBytesForSeqAndQuals = tooFewBytesForSeqAndQuals
+            tooFewRemainingBytesImplied = tooFewRemainingBytesImplied
           )
         )
     }

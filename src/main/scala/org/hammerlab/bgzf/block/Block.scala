@@ -2,6 +2,13 @@ package org.hammerlab.bgzf.block
 
 import org.hammerlab.bgzf.Pos
 
+/**
+ * Representation of an uncompressed BGZF block
+ *
+ * @param bytes uncompressed bytes
+ * @param start (compressed) start-position in the file
+ * @param compressedSize size of compressed block
+ */
 case class Block(bytes: Array[Byte],
                  start: Long,
                  compressedSize: Int)
@@ -14,6 +21,8 @@ case class Block(bytes: Array[Byte],
   def nextStartPos = Pos(start + compressedSize, 0)
 
   def pos = Pos(start, idx)
+
+  //def iterator: Iterator[Byte] = bytes.iterator
 
   var idx = 0
   override def hasNext: Boolean = idx < uncompressedSize

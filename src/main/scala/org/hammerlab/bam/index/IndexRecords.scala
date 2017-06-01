@@ -25,16 +25,17 @@ import org.hammerlab.paths.Path
  * @param throwOnTruncation If true, throw an [[IOException]] in case of an unexpected EOF; default: stop traversing,
  *                          output only through end of last complete record, exit 0.
  */
-case class IndexRecordsArgs(@ExtraName("b") bamFile: String,
-                            @ExtraName("o") outFile: Option[String] = None,
-                            @ExtraName("r") parseRecords: Boolean = false,
-                            @ExtraName("c") useChannel: Boolean = false,
-                            @ExtraName("t") throwOnTruncation: Boolean = false)
+case class Args(@ExtraName("b") bamFile: String,
+                @ExtraName("o") outFile: Option[String] = None,
+                @ExtraName("r") parseRecords: Boolean = false,
+                @ExtraName("c") useChannel: Boolean = false,
+                @ExtraName("t") throwOnTruncation: Boolean = false)
 
 object IndexRecords
-  extends CaseApp[IndexRecordsArgs]
+  extends CaseApp[Args]
     with Logging {
-  override def run(args: IndexRecordsArgs, remainingArgs: RemainingArgs): Unit = {
+
+  override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
     val conf = new Configuration
     val inPath = Path(new URI(args.bamFile))
 

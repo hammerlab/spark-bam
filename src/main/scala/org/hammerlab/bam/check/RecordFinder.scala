@@ -1,31 +1,33 @@
 package org.hammerlab.bam.check
 
+import java.io.IOException
 import java.nio.ByteBuffer
 
+import org.hammerlab.bam.check.Error.Flags
 import org.hammerlab.genomics.reference.NumLoci
+import org.hammerlab.io.ByteChannel
+import java.nio.ByteOrder.LITTLE_ENDIAN
 
-object Guesser {
+import org.hammerlab.bam.check.RecordFinder.{ FIXED_FIELDS_SIZE, allowedReadNameChars, buffer }
 
-  import Error.Flags
+class RecordFinder {
+  val buf = buffer(FIXED_FIELDS_SIZE)
+  val readNameBuffer = buffer(255)
 
-  val allowedReadNameChars =
-    (
-      ('a' to 'z') ++
-        ('A' to 'Z') ++
-        ('0' to '9') ++
-        """ -.,\/|_=+!@#$%^&*(){}[]<>?:;"'"""
-    )
-    .toSet
-
-  def guess(buf: ByteBuffer,
+  def apply(ch: ByteChannel,
             contigLengths: Map[Int, NumLoci]): Option[Flags] = {
-    if (buf.remaining() < 36)
-      return Some(
-        Error(
-          tooFewFixedBlockBytes = true,
-          None, None, None, None, false
+
+    try {
+      ch.read(buf)
+    } catch {
+      case _: IOException ⇒
+        return Some(
+          Error(
+            tooFewFixedBlockBytes = true,
+            None, None, None, None, false
+          )
         )
-      )
+    }
 
     val remainingBytes = buf.getInt
 
@@ -60,18 +62,20 @@ object Guesser {
 
     val seqLen = buf.getInt
 
+    val numSeqAndQualBytes = (seqLen + 1) / 2 + seqLen
+
+    implicit val tooFewRemainingBytesImplied =
+      remainingBytes < 32 + readNameLength + numCigarBytes + numSeqAndQualBytes
+
     val nextReadPosError = getRefPosError
 
     implicit val posErrors = (readPosError, nextReadPosError)
 
     buf.getInt  // unused: template length
 
-    if (buf.remaining() < readNameLength) {
-      implicit val readNameError = Some(TooFewBytesForReadName)
-      Error.apply
-    } else {
-      val readNameBytes = Array.fill[Byte](readNameLength)(0)
-      buf.get(readNameBytes)
+    try {
+      ch.read(readNameBuffer)
+      val readNameBytes = readNameBuffer.array()
 
       implicit val readNameError: Option[ReadNameError] =
         readNameLength match {
@@ -93,27 +97,48 @@ object Guesser {
               None
         }
 
-      if (buf.remaining() < numCigarBytes) {
-        implicit val cigarOpsError = Some(TooFewBytesForCigarOps)
-        Error.apply
-      } else {
-
-        implicit val cigarOpsError: Option[CigarOpsError] =
+      implicit val cigarOpsError: Option[CigarOpsError] =
+        try {
           if (
             (0 until numCigarOps)
               .exists {
                 _ ⇒
-                  (buf.getInt & 0xf) > 8
+                  (ch.getInt & 0xf) > 8
               }
           )
             Some(InvalidCigarOp)
           else
             None
+        } catch {
+          case _: IOException ⇒
+            Some(TooFewBytesForCigarOps)
+        }
 
-        implicit val tooFewBytesForSeqAndQuals = buf.remaining() < (seqLen + 1) / 2 + seqLen
+      return Error.build
 
-        Error.apply
-      }
+    } catch {
+      case _: IOException ⇒
+        implicit val readNameError = Some(TooFewBytesForReadName)
+        return Error.build
     }
+
+    Error.build
   }
+}
+
+object RecordFinder {
+
+  val allowedReadNameChars =
+    (
+      ('!' to '?') ++
+      ('A' to '~')
+    )
+    .toSet
+
+  def buffer(len: Int): ByteBuffer =
+    ByteBuffer
+      .allocate(FIXED_FIELDS_SIZE)
+      .order(LITTLE_ENDIAN)
+
+  val FIXED_FIELDS_SIZE = 9 * 4  // 9 4-byte ints at the start of every BAM record
 }
