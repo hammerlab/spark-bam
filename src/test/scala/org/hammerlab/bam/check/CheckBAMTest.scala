@@ -31,25 +31,27 @@ class CheckBAMTest
 
     println(criticalErrorCounts.pp())
 
+    println(totalErrorCounts.pp(wrapFields = true))
+
     totalErrorCounts should be(
       ErrorT[Long](
-        invalidCigarOp            = 6168038,
-        tooLargeReadIdx           = 6027725,
-        tooLargeNextReadIdx       = 6027725,
-        tooFewBytesForSeqAndQuals = 5769355,
-        nonNullTerminatedReadName = 5134158,
-        nonASCIIReadName          =  685293,
-        noReadName                =  641496,
-        negativeReadPos           =  333781,
-        negativeReadIdx           =  333781,
-        negativeNextReadPos       =  333781,
-        negativeNextReadIdx       =  333781,
-        emptyReadName             =   51823,
-        tooLargeReadPos           =   43922,
-        tooLargeNextReadPos       =   43922,
-        tooFewBytesForCigarOps    =   42542,
-        tooFewFixedBlockBytes     =       0,
-        tooFewBytesForReadName    =       0
+        invalidCigarOp              = 6168038,
+        tooLargeReadIdx             = 6027725,
+        tooLargeNextReadIdx         = 6027725,
+        tooFewRemainingBytesImplied = 5769355,
+        nonNullTerminatedReadName   = 5134158,
+        nonASCIIReadName            =  685293,
+        noReadName                  =  641496,
+        negativeReadPos             =  333781,
+        negativeReadIdx             =  333781,
+        negativeNextReadPos         =  333781,
+        negativeNextReadIdx         =  333781,
+        emptyReadName               =   51823,
+        tooLargeReadPos             =   43922,
+        tooLargeNextReadPos         =   43922,
+        tooFewBytesForCigarOps      =   42542,
+        tooFewFixedBlockBytes       =       0,
+        tooFewBytesForReadName      =       0
       )
     )
   }

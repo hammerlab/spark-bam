@@ -8,22 +8,25 @@ import org.hammerlab.bgzf.block.Block.{ FOOTER_SIZE, MAX_BLOCK_SIZE }
 import org.hammerlab.io.ByteChannel
 import org.hammerlab.iterator.SimpleBufferedIterator
 
-case class MetadataStream(ch: ByteChannel)
+/**
+ * Iterator over bgzf-block [[Metadata]]
+ * @param ch input stream/channel containing compressed bgzf data
+ * @param includeEmptyFinalBlock if true, include the final, empty bgzf-block in this stream
+ */
+case class MetadataStream(ch: ByteChannel,
+                          includeEmptyFinalBlock: Boolean = false,
+                          closeStream: Boolean = true)
   extends SimpleBufferedIterator[Metadata] {
 
+  // Buffer for compressed-block data
   implicit val encBuf =
     ByteBuffer
       .allocate(MAX_BLOCK_SIZE)
       .order(LITTLE_ENDIAN)
 
-  var blockStart = 0L
-  def pos = head.start
-
-  var blockIdx = -1
-
   override protected def _advance: Option[Metadata] = {
 
-    blockIdx += 1
+    val start = ch.position()
 
     encBuf.clear()
     val Header(actualHeaderSize, compressedSize) =
@@ -34,28 +37,17 @@ case class MetadataStream(ch: ByteChannel)
           return None
       }
 
-    val dataLength = compressedSize - actualHeaderSize - FOOTER_SIZE
-
-    val remainingBytes = dataLength + FOOTER_SIZE
+    val remainingBytes = compressedSize - actualHeaderSize
 
     ch.skip(remainingBytes - 4)
-    encBuf.limit(4)
-    val bytesRead = ch.read(encBuf)
-    if (bytesRead != 4)
-      throw new IOException(
-        s"Expected 4 bytes for block data+footer, found $bytesRead"
-      )
+    val uncompressedSize = ch.getInt
 
-    encBuf.position(0)
-    val uncompressedSize = encBuf.getInt
+    val dataLength = remainingBytes - FOOTER_SIZE
 
-    val start = blockStart
-    blockStart += compressedSize
-
-    if (dataLength == 2)
-      // Empty block at end of file
+    if (dataLength == 2 && !includeEmptyFinalBlock) {
+      // Skip empty block at end of file
       None
-    else
+    } else
       Some(
         Metadata(
           start,
@@ -64,4 +56,8 @@ case class MetadataStream(ch: ByteChannel)
         )
       )
   }
+
+  override def close(): Unit =
+    if (closeStream)
+      ch.close()
 }

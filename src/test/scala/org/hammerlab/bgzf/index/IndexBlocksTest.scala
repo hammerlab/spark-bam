@@ -11,7 +11,7 @@ class IndexBlocksTest
   test("5k.bam") {
     val outPath = tmpPath()
     IndexBlocks.run(
-      IndexBlocksArgs(
+      Args(
         File("5k.bam").uri.toString,
         outFile = Some(outPath.uri.toString)
       ),

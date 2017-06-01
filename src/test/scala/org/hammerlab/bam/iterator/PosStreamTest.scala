@@ -7,7 +7,7 @@ import org.hammerlab.test.resources.File
 class PosStreamTest
   extends Suite {
 
-  def checkFirstPositions(implicit stream: PosStreamI): Unit = {
+  def checkFirstPositions(implicit stream: PosStreamI[_]): Unit = {
     stream.take(10).toList should be(
       Seq(
         Pos(2454,    0),
@@ -61,5 +61,16 @@ class PosStreamTest
         Pos(1006167,   663)
       )
     )
+
+    stream.seek(Pos(1006167, 1325))
+    stream.next should be(Pos(1006167, 1325))
+
+    stream.seek(Pos(1006167, 1325))
+    stream.next should be(Pos(1006167, 1325))
+
+    stream.seek(Pos(0, 0))
+    checkFirstPositions
+    stream.seek(Pos(0, 10))
+    checkFirstPositions
   }
 }

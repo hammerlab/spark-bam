@@ -1,42 +1,100 @@
 package org.hammerlab.io
 
 import java.io.{ IOException, InputStream }
-import java.nio.ByteBuffer
-import java.nio.channels.{ ReadableByteChannel, SeekableByteChannel }
+import java.nio.channels.ReadableByteChannel
+import java.nio.{ ByteBuffer, ByteOrder, channels }
+
+import org.apache.hadoop.fs.Seekable
 
 /**
- * Readable, seekable interface over [[InputStream]]s, [[Iterator[Byte]]]s, and [[SeekableByteChannel]]s.
+ * Readable, "skippable" interface over [[InputStream]]s, [[Iterator[Byte]]]s, and [[channels.SeekableByteChannel]]s.
+ *
+ * When wrapping [[channels.SeekableByteChannel]]s or [[Seekable]]s, exposes [[SeekableByteChannel.seek]] as well.
  */
 trait ByteChannel
   extends ReadableByteChannel {
-  private var _position = 0L
+  protected var _position = 0L
 
   final def read(dst: ByteBuffer): Int = {
     val n = _read(dst)
     _position += n
     n
   }
+
+  def readString(length: Int, includesNull: Boolean = true): String = {
+    val buffer = Buffer(length)
+    read(buffer)
+    buffer
+      .array()
+      .slice(
+        0,
+        if (includesNull)
+          length - 1
+        else
+          length
+      )
+      .map(_.toChar)
+      .mkString("")
+  }
+
+  lazy val b4 = Buffer(4)
+
+  def order(order: ByteOrder): Unit =
+    b4.order(order)
+
+  def getInt: Int = {
+    b4.position(0)
+    read(b4)
+    b4.getInt(0)
+  }
+
   protected def _read(dst: ByteBuffer): Int
+
+  def read(dst: ByteBuffer, offset: Int, length: Int): Int = {
+    dst.position(offset)
+    val prevLimit = dst.limit()
+    dst.limit(offset + length)
+    val n = read(dst)
+    dst.limit(prevLimit)
+    n
+  }
 
   final def skip(n: Int): Unit = {
     _skip(n)
     _position += n
   }
+
   protected def _skip(n: Int): Unit
 
-  def position(): Long = {
-    _position
+  def position(): Long = _position
+}
+
+trait SeekableByteChannel
+  extends ByteChannel {
+  def seek(newPos: Long): Unit = {
+    _position = newPos
+    _seek(newPos)
   }
+
+  protected def _seek(newPos: Long): Unit
 }
 
 object ByteChannel {
 
-  implicit class ChannelByteChannel(ch: SeekableByteChannel)
-    extends ByteChannel {
+  implicit class ChannelByteChannel(ch: channels.SeekableByteChannel)
+    extends SeekableByteChannel {
     override def _read(dst: ByteBuffer): Int = ch.read(dst)
     override def _skip(n: Int): Unit = ch.position(ch.position() + n)
     override def isOpen = ch.isOpen
     override def close(): Unit = { ch.close() }
+    override def position(): Long = ch.position()
+    override protected def _seek(newPos: Long): Unit = ch.position(newPos)
+  }
+
+  implicit class SeekableHadoopByteChannel(is: InputStream with Seekable)
+    extends InputStreamByteChannel(is)
+      with SeekableByteChannel {
+    override protected def _seek(newPos: Long): Unit = is.seek(newPos)
   }
 
   implicit class IteratorByteChannel(it: Iterator[Byte])
@@ -68,7 +126,7 @@ object ByteChannel {
       is.read(
         dst.array(),
         dst.position(),
-        dst.limit()
+        dst.remaining()
       )
 
     override def _skip(n: Int): Unit = {

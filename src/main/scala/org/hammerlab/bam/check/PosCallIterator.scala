@@ -1,60 +1,35 @@
 package org.hammerlab.bam.check
 
-import java.nio.ByteBuffer
-import java.nio.ByteOrder.LITTLE_ENDIAN
-
+import org.hammerlab.bam.check.Error.Flags
+import org.hammerlab.bam.iterator.SeekableRecordStream
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.bgzf.block.SeekableByteStream
 import org.hammerlab.genomics.reference.NumLoci
-import org.hammerlab.iterator.{ HeadOptionIterator, SimpleBufferedIterator }
+import org.hammerlab.io.SeekableByteChannel
+import org.hammerlab.iterator.SimpleBufferedIterator
 
 case class PosCallIterator(block: Long,
                            usize: Int,
-                           offsets: Vector[Int],
-                           nextPosOpt: Option[Pos],
-                           bytes: Array[Byte],
+                           ch: SeekableByteStream,
                            contigLengths: Map[Int, NumLoci])
-  extends SimpleBufferedIterator[(Pos, Call)] {
+  extends SimpleBufferedIterator[(Pos, Option[Flags])] {
 
-  val buf = ByteBuffer.wrap(bytes).order(LITTLE_ENDIAN)
-
-  val expectedPoss =
-    (
-      offsets
-      .iterator
-      .map(offset ⇒ Pos(block, offset)) ++
-        nextPosOpt.iterator
-      )
-    .buffered
+  val rs = new SeekableRecordStream(ch)
+  val finder = new RecordFinder
 
   var up = 0
-  override protected def _advance: Option[(Pos, Call)] =
+  override protected def _advance: Option[(Pos, Option[Flags])] =
     if (up >= usize)
       None
     else {
       val pos = Pos(block, up)
-      buf.position(up)
-
-      while (expectedPoss.hasNext && pos > expectedPoss.head) {
-        expectedPoss.next
-      }
-
-      val expectPositive = expectedPoss.headOption.contains(pos)
+      rs.seek(pos)
 
       Some(
-        pos → (
-          Guesser.guess(buf, contigLengths) match {
-            case Some(error) ⇒
-              if (expectPositive) {
-                FalseNegative(error)
-              } else {
-                TrueNegative(error)
-              }
-            case None ⇒
-              if (expectPositive)
-                TruePositive
-              else
-                FalsePositive
-          }
+        pos →
+          finder(
+            rs.uncompressedByteChannel,
+            contigLengths
           )
       )
     }
@@ -62,4 +37,6 @@ case class PosCallIterator(block: Long,
   override protected def postNext(): Unit = {
     up += 1
   }
+
+  override def close(): Unit = ch.close()
 }

@@ -25,7 +25,7 @@ class RecordStreamTest
   implicit def convTuple(t: (Pos, SAMRecord)): (Pos, Int, String) =
     (t._1, t._2.getAlignmentStart, t._2.getReadName)
 
-  def check(ops: StreamOp*)(implicit rs: RecordStreamI): Unit =
+  def check(ops: StreamOp*)(implicit rs: RecordStreamI[_]): Unit =
     ops.foreach {
       case Drop(n) ⇒ rs.drop(n)
       case Record(pos, start, name) ⇒
@@ -33,14 +33,14 @@ class RecordStreamTest
         check(pos, start, name)
     }
 
-  def check(expectedPos: Pos, start: Int, name: String)(implicit rs: RecordStreamI): Unit = {
+  def check(expectedPos: Pos, start: Int, name: String)(implicit rs: RecordStreamI[_]): Unit = {
     val (pos, rec) = rs.next
     convTuple(pos, rec) should be(
       (expectedPos, start, name)
     )
   }
 
-  def checkFirstRecords(implicit rs: RecordStreamI): Unit = {
+  def checkFirstRecords(implicit rs: RecordStreamI[_]): Unit = {
     check(
       ( 2454 →     0, 10001, "HWI-ST807:461:C2P0JACXX:4:2115:8592:79724"),
       ( 2454 →   624, 10009, "HWI-ST807:461:C2P0JACXX:4:2115:8592:79724"),
