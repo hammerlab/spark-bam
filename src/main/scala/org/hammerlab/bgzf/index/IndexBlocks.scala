@@ -15,7 +15,7 @@ import org.hammerlab.timing.Interval.heartbeat
 case class Args(@ExtraName("b") bamFile: String,
                 @ExtraName("o") outFile: Option[String] = None,
                 @ExtraName("c") useChannel: Boolean = false,
-                @ExtraName("i") includeEmptyFinalBlock: Boolean = true)
+                @ExtraName("i") includeEmptyFinalBlock: Boolean = false)
 
 object IndexBlocks
   extends CaseApp[Args]

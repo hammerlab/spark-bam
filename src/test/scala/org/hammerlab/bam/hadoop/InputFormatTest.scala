@@ -18,23 +18,23 @@ class InputFormatTest
   {
     implicit val path: Path = "1k.bam"
 
-    test(s"1k-1m") {
+    test("1k-1m") {
       checkSplits(1000000, 1)
     }
 
-    test(s"1k-100k") {
+    test("1k-100k") {
       checkSplits(100000, 2)
     }
 
-    test(s"1k-50k") {
+    test("1k-50k") {
       checkSplits(50000, 4)
     }
 
-    test(s"1k-30k") {
+    test("1k-30k") {
       checkSplits(30000, 3)
     }
 
-    test(s"1k-10k") {
+    test("1k-10k") {
       checkSplits(10000, 1)
     }
   }
@@ -42,38 +42,26 @@ class InputFormatTest
   {
     implicit val path: Path = "5k.bam"
 
-    test(s"5k-1m") {
+    test("5k-1m") {
       checkSplits(1000000, 1)
     }
 
-    test(s"5k-100k") {
+    test("5k-100k") {
       checkSplits(100000, 11)
     }
 
-    test(s"5k-50k") {
+    test("5k-50k") {
       checkSplits(50000, 21)
     }
 
-    test(s"5k-30k") {
+    test("5k-30k") {
       checkSplits(30000, 16)
     }
 
-    test(s"5k-10k") {
-      checkSplits(10000, 2)
+    test("5k-10k") {
+      checkSplits(10000, 1)
     }
   }
-
-//  {
-//    implicit val path: Path = "22gb.bam"
-//
-//    test("idxd splits") {
-//      implicit val mss = MaxSplitSize(128 * 1024 * 1024)
-//      implicit val extraConf = Map("file.length.override" → 24614355629L.toString)
-//      val ours = ourSplits
-//      ours.size should be(1)
-//      ours(0) should be(VirtualPos(0, 0))
-//    }
-//  }
 
   def checkSplits(maxSplitSize: MaxSplitSize,
                   numSplits: Int)(implicit path: Path): Unit =
