@@ -26,16 +26,16 @@ class MetadataStreamTest
       .take(10)
       .toList should be(
       List(
-        Metadata(     0,  5650,  2454),
-        Metadata(  2454, 65092, 25330),
-        Metadata( 27784, 64902, 23602),
-        Metadata( 51386, 65248, 25052),
-        Metadata( 76438, 64839, 21680),
-        Metadata( 98118, 64643, 20314),
-        Metadata(118432, 65187, 19775),
-        Metadata(138207, 64752, 20396),
-        Metadata(158603, 64893, 21533),
-        Metadata(180136, 64960, 19644)
+        Metadata(     0,  2454,  5650),
+        Metadata(  2454, 25330, 65092),
+        Metadata( 27784, 23602, 64902),
+        Metadata( 51386, 25052, 65248),
+        Metadata( 76438, 21680, 64839),
+        Metadata( 98118, 20314, 64643),
+        Metadata(118432, 19775, 65187),
+        Metadata(138207, 20396, 64752),
+        Metadata(158603, 21533, 64893),
+        Metadata(180136, 19644, 64960)
       )
     )
 

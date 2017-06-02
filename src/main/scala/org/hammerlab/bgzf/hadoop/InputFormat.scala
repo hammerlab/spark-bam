@@ -5,16 +5,13 @@ import java.io.IOException
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FSDataInputStream
 import org.hammerlab.bgzf.block.Block.MAX_BLOCK_SIZE
-import org.hammerlab.bgzf.block.{ Block, HeaderParseException, MetadataStream }
-import org.hammerlab.bgzf.hadoop.RecordReader.make
-import org.hammerlab.hadoop.{ FileInputFormat, FileSplits, Path }
-import org.hammerlab.iterator.SimpleBufferedIterator
+import org.hammerlab.bgzf.block.{ HeaderParseException, MetadataStream }
+import org.hammerlab.hadoop.{ FileSplits, Path }
 import org.hammerlab.iterator.Sliding2Iterator._
 
-case class InputFormat(override val path: Path,
+case class InputFormat(path: Path,
                        conf: Configuration,
-                       bgzfBlockHeadersToCheck: Int = 5)
-  extends FileInputFormat[Long, Block, Split, SimpleBufferedIterator[(Long, Block)]](path) {
+                       bgzfBlockHeadersToCheck: Int = 5) {
 
   def nextBlockAlignment(path: Path,
                          start: Long,
@@ -41,7 +38,7 @@ case class InputFormat(override val path: Path,
     throw HeaderSearchFailedException(path, start, pos)
   }
 
-  override lazy val splits: Seq[Split] = {
+  lazy val splits: Seq[Split] = {
 
     val fileSplits = FileSplits(path, conf)
 

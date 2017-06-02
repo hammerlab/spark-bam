@@ -21,8 +21,8 @@ class StreamTest
   implicit def blockToMetadata(block: Block): Metadata =
     Metadata(
       block.start,
-      block.uncompressedSize,
-      block.compressedSize
+      block.compressedSize,
+      block.uncompressedSize
     )
 
   test("seekable") {
@@ -30,18 +30,18 @@ class StreamTest
     val ch = FileChannel.open(File("5k.bam").path)
     val stream = SeekableStream(ch)
 
-    stream.next() should ===(Metadata(    0,  5650,  2454))
+    stream.next() should ===(Metadata(    0,  2454,  5650))
     stream.seek(0)
-    stream.next() should ===(Metadata(    0,  5650,  2454))
+    stream.next() should ===(Metadata(    0,  2454,  5650))
     stream.seek(0)
-    stream.next() should ===(Metadata(    0,  5650,  2454))
-    stream.next() should ===(Metadata( 2454, 65092, 25330))
+    stream.next() should ===(Metadata(    0,  2454,  5650))
+    stream.next() should ===(Metadata( 2454, 25330, 65092))
 
     stream.seek(0)
-    stream.next() should ===(Metadata(    0,  5650,  2454))
+    stream.next() should ===(Metadata(    0,  2454,  5650))
 
     stream.seek(27784)
-    stream.next() should ===(Metadata(27784, 64902, 23602))
+    stream.next() should ===(Metadata(27784, 23602, 64902))
   }
 
   test("5k.bam") {
@@ -50,9 +50,9 @@ class StreamTest
     val blocks = bgzfStream.toList
     blocks.size should be(50)
 
-    blocks(0) should ===(Metadata(     0,  5650,  2454))
-    blocks(1) should ===(Metadata(  2454, 65092, 25330))
-    blocks(2) should ===(Metadata( 27784, 64902, 23602))
+    blocks(0) should ===(Metadata(     0,  2454,  5650))
+    blocks(1) should ===(Metadata(  2454, 25330, 65092))
+    blocks(2) should ===(Metadata( 27784, 23602, 64902))
 
     val compressedStats =
       Stats(

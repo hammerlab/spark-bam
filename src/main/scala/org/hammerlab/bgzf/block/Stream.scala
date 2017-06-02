@@ -49,6 +49,7 @@ trait StreamI
 
       val uncompressedSize = encBuf.getInt(compressedSize - 4)
 
+      //println(s"decompressing block: $start")
       val inflater = new Inflater(true)
       inflater.setInput(encBuf.array(), actualHeaderSize, dataLength)
       val bytesDecompressed = inflater.inflate(decBuf, 0, uncompressedSize)
@@ -93,11 +94,14 @@ case class SeekableStream(ch: SeekableByteChannel)
 
   override protected def _advance: Option[Block] = {
     val start = ch.position()
+//    println(s"advancing block stream: $start")
     cache
       .get(start)
       .map {
         block ⇒
+//          println(s"fetched block from cache: $block")
           ch.seek(start + block.compressedSize)
+//          println("seeked channel")
           block.idx = 0
           block
       }
@@ -105,13 +109,21 @@ case class SeekableStream(ch: SeekableByteChannel)
         super._advance.map {
           block ⇒
             cache(start) = block
+//            println(s"putting block in cache: $block")
             block
         }
       }
   }
 
-  def seek(newPos: Long): Unit = {
-    clear()
-    ch.seek(newPos)
+  def seek(newPos: Long): Boolean = {
+//    println(s"block.Stream seek: $newPos")
+    if (!hasNext || pos != newPos) {
+      clear()
+      ch.seek(newPos)
+      true
+    } else {
+//      println(s"no-op seek: $newPos")
+      false
+    }
   }
 }

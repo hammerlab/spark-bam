@@ -51,8 +51,8 @@ case class MetadataStream(ch: ByteChannel,
       Some(
         Metadata(
           start,
-          uncompressedSize,
-          compressedSize
+          compressedSize,
+          uncompressedSize
         )
       )
   }

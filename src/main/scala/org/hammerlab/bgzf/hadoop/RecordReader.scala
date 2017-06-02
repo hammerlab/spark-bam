@@ -1,75 +1,68 @@
 package org.hammerlab.bgzf.hadoop
 
-import org.apache.hadoop.mapreduce.{ InputSplit, TaskAttemptContext }
-import org.hammerlab.bgzf.block.{ Block, Stream }
+import org.apache.hadoop.mapreduce.TaskAttemptContext
+import org.hammerlab.bgzf.block.{ Block, Metadata, Stream }
+import org.hammerlab.hadoop.RecordReader
 import org.hammerlab.io.SeekableByteChannel
-import org.hammerlab.iterator.SimpleBufferedIterator
+import org.hammerlab.iterator.CloseableIterator
 import org.hammerlab.iterator.SimpleBufferedIterator._
 
-//case class RecordReader(is: InputStream,
-//                        start: Long,
-//                        length: Long,
-//                        blocks: Stream,
-//                        blocksWhitelist: Option[Set[Long]])
-//  extends SimpleBufferedIterator[(Long, Block)] {
-//
-//}
-
 object RecordReader {
-  def apply(split: InputSplit,
-            context: TaskAttemptContext): SimpleBufferedIterator[(Long, Block)] = {
 
-    val Split(
-      path,
-      start,
-      length,
-      _,
-      blocksWhitelistOpt
-    ) =
-      split.asInstanceOf[Split]
-
-    val fs = path.getFileSystem(context.getConfiguration)
-
-    val is: SeekableByteChannel = fs.open(path)
-    is.seek(start)
-
-    val blocks = Stream(is)
-
-    RecordReader(
-      start,
-      start + length,
-      blocks,
-      blocksWhitelistOpt
-    )
+  implicit case object MetadataReader extends RecordReader[BlocksSplit, Long, Metadata] {
+    override def records(split: BlocksSplit, ctx: TaskAttemptContext): CloseableIterator[(Long, Metadata)] =
+      split
+        .blocks
+        .iterator
+        .map(m ⇒ m.start → m)
+        .buffer
   }
 
-  def apply(start: Long,
-            end: Long,
-            blocks: Stream,
-            blocksWhitelist: Option[Set[Long]]): SimpleBufferedIterator[(Long, Block)] = {
-    blocksWhitelist
-      .map(
-        whitelist ⇒
+  implicit case object BlockReader extends RecordReader[Split, Long, Block] {
+    override def records(split: Split, ctx: TaskAttemptContext): CloseableIterator[(Long, Block)] = {
+
+      val Split(
+        path,
+        start,
+        length,
+        _,
+        blocksWhitelistOpt
+      ) =
+        split.asInstanceOf[Split]
+
+      val fs = path.getFileSystem(ctx.getConfiguration)
+
+      val is: SeekableByteChannel = fs.open(path)
+      is.seek(start)
+
+      val blocks = Stream(is)
+
+      val end = start + length
+
+      blocksWhitelistOpt
+        .map(
+          whitelist ⇒
+            blocks
+              .filter(
+                block ⇒
+                  whitelist.contains(block.start)
+              )
+              .buffered
+        )
+        .getOrElse(
           blocks
-            .filter(
-              block ⇒
-                whitelist.contains(block.start)
-            )
-            .buffered
-      )
-      .getOrElse(
-        blocks
-      )
-      .map(
-        block ⇒
-          block.start →
-            block
-      )
-      .takeWhile(_._1 < end)
-      .buffer
+        )
+        .map(
+          block ⇒
+            block.start →
+              block
+        )
+        .takeWhile(_._1 < end)
+        .buffer
+    }
   }
 
-  implicit def make(split: InputSplit,
-                    context: TaskAttemptContext): SimpleBufferedIterator[(Long, Block)] =
-    apply(split, context)
+//  implicit def make(split: InputSplit,
+//                    context: TaskAttemptContext): SimpleBufferedIterator[(Long, Block)] =
+//    apply(split, context)
 }

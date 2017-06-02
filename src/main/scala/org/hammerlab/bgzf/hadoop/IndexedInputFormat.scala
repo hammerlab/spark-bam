@@ -1,35 +1,31 @@
 package org.hammerlab.bgzf.hadoop
 
+import java.net.URI
 import java.util
 
 import org.apache.hadoop.conf.Configuration
-import org.hammerlab.bgzf.block.Block
-import org.hammerlab.bgzf.hadoop.RecordReader.make
-import org.hammerlab.hadoop.{ FileInputFormat, FileSplit, FileSplits, Path }
-import org.hammerlab.iterator.SimpleBufferedIterator
+import org.hammerlab.bgzf.block.Metadata
+import org.hammerlab.hadoop.{ FileSplits, Path }
 
-import scala.collection.JavaConverters._
 import scala.io.Source.fromInputStream
 
-case class IndexedInputFormat(override val path: Path,
+case class IndexedInputFormat(path: Path,
                               indexPath: Path,
-                              splits: Seq[Split],
-                              blocksWhitelistOpt: Option[Set[Long]])
-  extends FileInputFormat[Long, Block, Split, SimpleBufferedIterator[(Long, Block)]](path)
+                              splits: Seq[BlocksSplit])
 
 object IndexedInputFormat {
 
   def apply(path: Path,
             conf: Configuration,
             indexPath: Path = null,
-            maxSplitSize: Int = -1,
+            blocksPerPartition: Int,
             numBlocks: Int = -1,
             blocksWhitelist: Set[Long] = Set()): IndexedInputFormat =
     apply(
       path,
       conf,
       Option(indexPath).getOrElse(path.suffix(".blocks"): Path),
-      if (maxSplitSize < 0) None else Some(maxSplitSize),
+      blocksPerPartition,
       if (numBlocks < 0) None else Some(numBlocks),
       if (blocksWhitelist.isEmpty)
         None
@@ -40,13 +36,17 @@ object IndexedInputFormat {
 
   def apply(path: Path,
             conf: Configuration,
+            indexPathOpt: Option[String],
+            blocksPerPartition: Int,
             numBlocksOpt: Option[Int],
             blocksWhitelistOpt: Option[Set[Long]]): IndexedInputFormat =
     apply(
       path,
       conf,
-      path.suffix(".blocks"),
-      maxSplitSizeOpt = None,
+      indexPathOpt
+        .map(str ⇒ Path(new URI(str)))
+        .getOrElse(path.suffix(".blocks"): Path),
+      blocksPerPartition,
       numBlocksOpt,
       blocksWhitelistOpt.map(treeSet)
     )
@@ -54,88 +54,78 @@ object IndexedInputFormat {
   def apply(path: Path,
             conf: Configuration,
             indexPath: Path,
-            maxSplitSizeOpt: Option[Int],
+            blocksPerPartition: Int,
             numBlocksOpt: Option[Int],
             blocksWhitelistOpt: Option[util.NavigableSet[Long]]): IndexedInputFormat = {
 
-    val fileSplits = FileSplits(path, conf, maxSplitSizeOpt)
+    val fileSplits = FileSplits(path, conf)
 
     val fs = path.getFileSystem(conf)
 
     val indexStream = fs.open(indexPath)
 
-    val (blocks, blocksWhitelist) = {
-
-      val blockStarts =
-        fromInputStream(indexStream)
+    val allBlocks =
+      fromInputStream(indexStream)
         .getLines()
         .map(
           line ⇒
             line.split(",") match {
-              case Array(block, _) ⇒
-                block.toLong
+              case Array(block, compressedSize, uncompressedSize) ⇒
+                Metadata(
+                  block.toLong,
+                  compressedSize.toInt,
+                  uncompressedSize.toInt
+                )
               case _ ⇒
                 throw new IllegalArgumentException(s"Bad blocks-index line: $line")
             }
         )
 
+    val blocks =
       (blocksWhitelistOpt, numBlocksOpt) match {
         case (Some(_), Some(_)) ⇒
           throw new IllegalArgumentException(
             s"Specify exactly one of {blocksWhitelist, numBlocks}"
           )
         case (Some(whitelist), _) ⇒
-          blockStarts →
-            Some(whitelist)
+          allBlocks
+            .filter {
+              case Metadata(block, _, _) ⇒
+                whitelist.contains(block)
+            }
         case (_, Some(numBlocks)) ⇒
-          val blocks = blockStarts.take(numBlocks).toList
-
-          blocks.iterator →
-            Some(treeSet(blocks))
+          allBlocks.take(numBlocks)
         case _ ⇒
-          blockStarts →
-            None
+          allBlocks
       }
-    }
 
-    val blockPosMap = treeSet(blocks)
+    val fileSplitsMap = treeSet(fileSplits.map(_.start))
+
+    val fileSplitsByStart =
+      fileSplits
+        .map(fs ⇒ fs.start → fs)
+        .toMap
 
     val splits =
-      fileSplits
-        .flatMap {
-          case FileSplit(_, start, length, locations) ⇒
-            val end = start + length
-            val blockStart = Option(blockPosMap.ceiling(start)).getOrElse(end)
-            val blockEnd = Option(blockPosMap.ceiling(end)).getOrElse(end)
-
-            val splitWhitelist: Option[Set[Long]] =
-              blocksWhitelist
-                .map(
-                  _
-                    .subSet(blockStart, blockEnd)
-                    .asScala
-                    .toSet
-                )
-
-            if (blockEnd > blockStart)
-              Some(
-                Split(
-                  path,
-                  blockStart,
-                  blockEnd - blockStart,
-                  locations,
-                  splitWhitelist
-                )
-              )
-            else
-              None
+      blocks
+        .grouped(blocksPerPartition)
+        .map {
+          blocks ⇒
+            val Metadata(start, _, _) = blocks.head
+            val fileSplitStart = fileSplitsMap.floor(start)
+            val fileSplit = fileSplitsByStart(fileSplitStart)
+            BlocksSplit(
+              path,
+              blocks,
+              fileSplit.locations
+            )
         }
+        .toList
 
     new IndexedInputFormat(
       path,
       indexPath,
-      splits,
-      blocksWhitelist.map(_.asScala.toSet)
+      splits
     )
   }
 
