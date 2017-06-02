@@ -16,7 +16,7 @@ trait ByteStreamI[S <: StreamI]
 
   override def clear(): Unit = {
     super.clear()
-    it.clear()
+//    it.clear()
   }
 }
 
@@ -31,10 +31,13 @@ case class SeekableByteStream(stream: SeekableStream)
   extends ByteStreamI[SeekableStream] {
   def seek(pos: Pos): Unit = {
     stream.seek(pos.blockPos)
+//    println(s"resetting smushed: $pos")
+    it.reset()
     clear()
     curBlock
       .foreach {
         block ⇒
+//          println(s"block idx: ${pos.offset}")
           block.idx = pos.offset
       }
 

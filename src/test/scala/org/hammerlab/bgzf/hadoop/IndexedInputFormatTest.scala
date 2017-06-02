@@ -1,41 +1,33 @@
 package org.hammerlab.bgzf.hadoop
 
-import org.hammerlab.bgzf.block.Block
+import org.hammerlab.bgzf.block.Metadata
+import org.hammerlab.bgzf.hadoop.RecordReader.MetadataReader
 import org.hammerlab.hadoop.{ FileSplits, Path }
-import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.magic.rdd.hadoop.HadoopRDD._
 import org.hammerlab.spark.test.suite.SparkSuite
 import org.hammerlab.test.resources.File
-import RecordReader.make
 
 class IndexedInputFormatTest
   extends SparkSuite {
 
   lazy val hc = sc.hadoopConfiguration
 
-  def check(maxSplitSize: Int, expected: ExpectedSplit*): Unit =
-    check(maxSplitSize, None, expected)
+  def check(blocksPerPartition: Int, expected: ExpectedSplit*): Unit =
+    check(blocksPerPartition, None, expected)
 
-  def check(maxSplitSize: Int, numBlocks: Int, expected: ExpectedSplit*): Unit =
-    check(maxSplitSize, Some(numBlocks), expected)
+  def check(blocksPerPartition: Int, numBlocks: Int, expected: ExpectedSplit*): Unit =
+    check(blocksPerPartition, Some(numBlocks), expected)
 
-  case class ExpectedSplit(start: Long, end: Long, whitelist: Option[Set[Long]])
+  case class ExpectedSplit(start: Long, end: Long, numBlocks: Int)
 
-  implicit def convTuple2(t: (Int, Int)): ExpectedSplit =
-    ExpectedSplit(
-      t._1,
-      t._2,
-      None
-    )
-
-  implicit def convTuple3(t: ((Int, Int), Seq[Int])): ExpectedSplit =
+  implicit def convTuple3(t: ((Int, Int), Int)): ExpectedSplit =
     ExpectedSplit(
       t._1._1,
       t._1._2,
-      Some(t._2.map(_.toLong).toSet)
+      t._2
     )
 
-  def check(maxSplitSize: Int,
+  def check(blocksPerPartition: Int,
             numBlocks: Option[Int],
             expected: Seq[ExpectedSplit]): Unit = {
 
@@ -44,66 +36,63 @@ class IndexedInputFormatTest
       IndexedInputFormat(
         path,
         hc,
-        maxSplitSize = maxSplitSize,
+        blocksPerPartition = blocksPerPartition,
         numBlocks = numBlocks.getOrElse(-1)
       )
 
     val hostname = FileSplits(path, hc).head.locations.head
 
-    fmt.splits should be(
-      expected
-        .map {
-          case ExpectedSplit(start, end, whitelist) ⇒
-            Split(
-              path,
-              start,
-              end - start,
-              Array(hostname),
-              whitelist
-            )
-        }
+    for {
+      ((actual, expected), idx) ← fmt.splits.zip(expected).zipWithIndex
+    } {
+      withClue(s"Split $idx: $actual vs. $expected\n") {
+        actual.path should be(path)
+        actual.start should be(expected.start)
+        actual.end should be(expected.end)
+        actual.blocks.length should be(expected.numBlocks)
+        actual.locations should be(Array(hostname))
+      }
+    }
+  }
+
+  test("5k.bam: 1 block per partition") {
+    check(
+      blocksPerPartition = 60,  // 1 split: 5k.bam is 50 blocks
+      0 → 1010675 → 50
     )
   }
 
-  test("5k-max") {
+  test("5k.bam: 2 blocks per partition") {
     check(
-      1500000,
-      0 → 1010703
+      blocksPerPartition = 40,
+           0 →  825923 → 40,
+      825923 → 1010675 → 10
     )
   }
 
-  test("5k-900k") {
+  test("5k.bam: 5 blocks per partition") {
     check(
-      900000,
-           0 →  905238,
-      905238 → 1010703
+      5,
+            0 →   98118 → 5,
+        98118 →  199780 → 5,
+       199780 →  310975 → 5,
+       310975 →  406097 → 5,
+       406097 →  501675 → 5,
+       501675 →  618149 → 5,
+       618149 →  718074 → 5,
+       718074 →  825923 → 5,
+       825923 →  928569 → 5,
+       928569 → 1010675 → 5
     )
   }
 
-  test("5k-100k") {
+  test("5k.bam: 5-block splits, 12 blocks") {
     check(
-      100000,
-            0 →  118432,
-       118432 →  219987,
-       219987 →  310975,
-       310975 →  406097,
-       406097 →  501675,
-       501675 →  618149,
-       618149 →  718074,
-       718074 →  800863,
-       800863 →  905238,
-       905238 → 1006167,
-      1006167 → 1010703
-    )
-  }
-
-  test("5k-100k-12") {
-    check(
-      100000,
+      blocksPerPartition = 5,
       numBlocks = 12,
-           0 →  118432 → Seq(     0,   2454,  27784,  51386,  76438, 98118),
-      118432 →  219987 → Seq(118432, 138207, 158603, 180136, 199780),
-      219987 →  300000 → Seq(219987)
+           0 →   98118 → 5,
+       98118 →  199780 → 5,
+      199780 →  241208 → 2
     )
   }
 
@@ -113,11 +102,11 @@ class IndexedInputFormatTest
       IndexedInputFormat(
         path,
         hc,
-        maxSplitSize = 100000
+        blocksPerPartition = 5
       )
 
     val blocks =
-      sc.loadHadoopRDD[Long, Block, Split, SimpleBufferedIterator[(Long, Block)]](
+      sc.loadHadoopRDD[Long, Metadata, BlocksSplit](
         path,
         fmt.splits
       )
@@ -154,12 +143,12 @@ class IndexedInputFormatTest
       IndexedInputFormat(
         path,
         hc,
-        maxSplitSize = 100000,
+        blocksPerPartition = 2,
         numBlocks = 8
       )
 
     val blocks =
-      sc.loadHadoopRDD[Long, Block, Split, SimpleBufferedIterator[(Long, Block)]](
+      sc.loadHadoopRDD[Long, Metadata, BlocksSplit](
         path,
         fmt.splits
       )
@@ -192,12 +181,12 @@ class IndexedInputFormatTest
       IndexedInputFormat(
         path,
         hc,
-        maxSplitSize = 100000,
+        blocksPerPartition = 2,
         blocksWhitelist = Set[Long](180136, 284685, 310975, 501675,778353)
       )
 
     val blocks =
-      sc.loadHadoopRDD[Long, Block, Split, SimpleBufferedIterator[(Long, Block)]](
+      sc.loadHadoopRDD[Long, Metadata, BlocksSplit](
         path,
         fmt.splits
       )

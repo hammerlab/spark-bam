@@ -1,22 +1,20 @@
 package org.hammerlab.bam.check
 
 import java.io.IOException
-import java.nio.ByteBuffer
 
 import org.hammerlab.bam.check.Error.Flags
+import org.hammerlab.bam.check.RecordFinder.{ FIXED_FIELDS_SIZE, allowedReadNameChars }
 import org.hammerlab.genomics.reference.NumLoci
-import org.hammerlab.io.ByteChannel
-import java.nio.ByteOrder.LITTLE_ENDIAN
-
-import org.hammerlab.bam.check.RecordFinder.{ FIXED_FIELDS_SIZE, allowedReadNameChars, buffer }
+import org.hammerlab.io.{ Buffer, ByteChannel }
 
 class RecordFinder {
-  val buf = buffer(FIXED_FIELDS_SIZE)
-  val readNameBuffer = buffer(255)
+  val buf = Buffer(FIXED_FIELDS_SIZE)
+  val readNameBuffer = Buffer(255)
 
   def apply(ch: ByteChannel,
             contigLengths: Map[Int, NumLoci]): Option[Flags] = {
 
+    buf.position(0)
     try {
       ch.read(buf)
     } catch {
@@ -29,6 +27,7 @@ class RecordFinder {
         )
     }
 
+    buf.position(0)
     val remainingBytes = buf.getInt
 
     def getRefPosError: Option[RefPosError] = {
@@ -74,9 +73,6 @@ class RecordFinder {
     buf.getInt  // unused: template length
 
     try {
-      ch.read(readNameBuffer)
-      val readNameBytes = readNameBuffer.array()
-
       implicit val readNameError: Option[ReadNameError] =
         readNameLength match {
           case 0 ⇒
@@ -84,6 +80,14 @@ class RecordFinder {
           case 1 ⇒
             Some(EmptyReadName)
           case _ ⇒
+            readNameBuffer.position(0)
+            if (readNameLength < 0 || readNameLength > 255) {
+              println(s"uh oh: $readNameLength")
+            }
+            readNameBuffer.limit(readNameLength)
+            ch.read(readNameBuffer)
+            val readNameBytes = readNameBuffer.array().view.slice(0, readNameLength)
+
             if (readNameBytes.last != 0)
               Some(NonNullTerminatedReadName)
             else if (
@@ -134,11 +138,6 @@ object RecordFinder {
       ('A' to '~')
     )
     .toSet
-
-  def buffer(len: Int): ByteBuffer =
-    ByteBuffer
-      .allocate(FIXED_FIELDS_SIZE)
-      .order(LITTLE_ENDIAN)
 
   val FIXED_FIELDS_SIZE = 9 * 4  // 9 4-byte ints at the start of every BAM record
 }

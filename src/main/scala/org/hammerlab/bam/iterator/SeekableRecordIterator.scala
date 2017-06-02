@@ -30,7 +30,9 @@ trait SeekableRecordIterator[T]
 //          block.idx = to.offset
 //      )
 
-      require(curPos.get == to)
+//      println("record seek done")
+      assert(curPos.get == to)
+//      println("record seek assertion done")
     }
   }
 }

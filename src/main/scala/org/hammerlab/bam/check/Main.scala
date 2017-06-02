@@ -8,9 +8,12 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.hammerlab.bam.check.Error.{ Counts, CountsWrapper, Flags, toCounts }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.SeekableByteStream
+import org.hammerlab.bgzf.block.{ Metadata, SeekableByteStream }
+import org.hammerlab.bgzf.hadoop.RecordReader.MetadataReader
+import org.hammerlab.bgzf.hadoop.{ BlocksSplit, IndexedInputFormat }
 import org.hammerlab.genomics.reference.NumLoci
 import org.hammerlab.hadoop.Path
+import org.hammerlab.magic.rdd.hadoop.HadoopRDD._
 import org.hammerlab.magic.rdd.hadoop.SerializableConfiguration
 import org.hammerlab.math.Monoid.{ mzero ⇒ zero }
 import org.hammerlab.math.MonoidSyntax._
@@ -27,8 +30,7 @@ case class Args(@ExtraName("b") bamFile: String,
                 @ExtraName("r") recordsFile: Option[String] = None,
                 @ExtraName("n") numBlocks: Option[Int] = None,
                 @ExtraName("w") blocksWhitelist: Option[String] = None,
-                @ExtraName("p") blocksPerPartition: Int = 20,
-                @ExtraName("f") blocksToBuffer: Int = 3)
+                @ExtraName("p") blocksPerPartition: Int = 20)
 
 sealed trait Call
 
@@ -153,20 +155,28 @@ object Main
         )
         .toMap
 
-    val blockSizesRDD: RDD[(Long, Int)] =
+    val fmt =
+      IndexedInputFormat(
+        path,
+        conf,
+        args.blocksFile,
+        args.blocksPerPartition,
+        args.numBlocks,
+        args
+          .blocksWhitelist
+          .map(
+            _
+              .split(",")
+              .map(_.toLong)
+              .toSet
+          )
+      )
+
+    val blocks: RDD[(Long, Metadata)] =
       sc
-        .textFile(
-          args
-            .blocksFile
-            .getOrElse(path.suffix(".blocks").toString)
-        )
-        .map(
-          _.split(",") match {
-            case Array(a, b) ⇒
-              (a.toLong, b.toInt)
-            case a ⇒
-              throw new IllegalArgumentException(s"Bad record-pos line: ${a.mkString(",")}")
-          }
+        .loadHadoopRDD(
+          path,
+          fmt.splits
         )
 
     val recordsFile =
@@ -175,6 +185,15 @@ object Main
         .getOrElse(
           args.bamFile + ".records"
         )
+
+    val blocksWhitelist =
+      sc.broadcast(
+        fmt
+          .splits
+          .flatMap(_.blocks)
+          .map(_.start)
+          .toSet
+      )
 
     /** Parse the true read-record-boundary positions from [[recordsFile]] */
     val recordPosRDD: RDD[Pos] =
@@ -188,40 +207,55 @@ object Main
             throw new IllegalArgumentException(s"Bad record-pos line: ${a.mkString(",")}")
         }
       )
+      .filter {
+        pos ⇒
+          blocksWhitelist.value(pos.blockPos)
+      }
 
     val errors: RDD[(Pos, Option[Flags])] =
-      blockSizesRDD
+      blocks
         .flatMap {
-          case (blockPos, uncompressedSize) ⇒
+          case (blockPos, Metadata(_, _, uncompressedSize)) ⇒
+            val stream =
+              SeekableByteStream(
+                path
+                .getFileSystem(confBroadcast)
+                .open(path)
+              )
+
+            logger.info(s"Processing block: $blockPos")
             PosCallIterator(
               blockPos,
               uncompressedSize,
-              SeekableByteStream(
-                path
-                  .getFileSystem(confBroadcast)
-                  .open(path)
-              ),
+              stream,
               contigLengths
             )
         }
 
     val calls: RDD[(Pos, Call)] =
       errors
-        .leftOuterJoin(recordPosRDD.map(_ → null))
+        .fullOuterJoin(recordPosRDD.map(_ → null))
         .map {
-          case (pos, (error, isReadStart)) ⇒
+          case (pos, (errorOpt, isReadStart)) ⇒
             pos → (
-              (error, isReadStart) match {
-                case (Some(error), Some(_)) ⇒
-                  FalseNegative(error)
-                case (Some(error), None) ⇒
-                  TrueNegative(error)
-                case (None, Some(_)) ⇒
-                  TruePositive
-                case (None, None) ⇒
-                  FalsePositive
-              }
-            )
+              errorOpt
+                .map {
+                  error ⇒
+                    (error, isReadStart) match {
+                      case (Some(error), Some(_)) ⇒
+                        FalseNegative(error)
+                      case (Some(error), None) ⇒
+                        TrueNegative(error)
+                      case (None, Some(_)) ⇒
+                        TruePositive
+                      case (None, None) ⇒
+                        FalsePositive
+                    }
+                }
+                .getOrElse(
+                  throw new Exception(s"No call detected at $pos")
+                )
+              )
         }
 
     // Compute true/false/total counts in one stage

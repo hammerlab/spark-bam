@@ -15,7 +15,7 @@ import org.hammerlab.timing.Interval.heartbeat
 case class Args(@ExtraName("b") bamFile: String,
                 @ExtraName("o") outFile: Option[String] = None,
                 @ExtraName("c") useChannel: Boolean = false,
-                @ExtraName("i") omitEmptyFinalBlock: Boolean = false)
+                @ExtraName("i") includeEmptyFinalBlock: Boolean = true)
 
 object IndexBlocks
   extends CaseApp[Args]
@@ -33,7 +33,7 @@ object IndexBlocks
     val stream =
       MetadataStream(
         ch,
-        includeEmptyFinalBlock = !args.omitEmptyFinalBlock
+        includeEmptyFinalBlock = args.includeEmptyFinalBlock
       )
 
     val outPath =
@@ -58,9 +58,9 @@ object IndexBlocks
         ),
       try {
         for {
-          Metadata(start, uncompressedSize, _) ← stream
+          Metadata(start, compressedSize, uncompressedSize) ← stream
         } {
-          out.println(s"$start,$uncompressedSize")
+          out.println(s"$start,$compressedSize,$uncompressedSize")
           idx += 1
         }
       } catch {
