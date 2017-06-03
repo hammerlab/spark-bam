@@ -126,12 +126,12 @@ class CheckBAMTest
       3139404,
       ErrorT[Long](
                      invalidCigarOp = 3051420,
-                tooLargeNextReadIdx = 3018664,
-                    tooLargeReadIdx = 3018664,
-          nonNullTerminatedReadName = 2754409,
-        tooFewRemainingBytesImplied = 2640906,
+                tooLargeNextReadIdx = 3018629,
+                    tooLargeReadIdx = 3018629,
+          nonNullTerminatedReadName = 2754305,
+        tooFewRemainingBytesImplied = 2640873,
                    nonASCIIReadName =  181648,
-                         noReadName =  179964,
+                         noReadName =  179963,
                 negativeNextReadIdx =   80277,
                     negativeReadIdx =   80277,
                     negativeReadPos =   80277,
@@ -139,9 +139,9 @@ class CheckBAMTest
                 tooLargeNextReadPos =   13099,
                     tooLargeReadPos =   13099,
                       emptyReadName =   10402,
-             tooFewBytesForReadName =       0,
-             tooFewBytesForCigarOps =       0,
-              tooFewFixedBlockBytes =       0
+             tooFewBytesForReadName =      70,
+              tooFewFixedBlockBytes =      35,
+             tooFewBytesForCigarOps =      22
       )
     )
   }

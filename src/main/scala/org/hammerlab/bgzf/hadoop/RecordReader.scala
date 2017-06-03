@@ -61,8 +61,4 @@ object RecordReader {
         .buffer
     }
   }
-
-//  implicit def make(split: InputSplit,
-//                    context: TaskAttemptContext): SimpleBufferedIterator[(Long, Block)] =
-//    apply(split, context)
 }

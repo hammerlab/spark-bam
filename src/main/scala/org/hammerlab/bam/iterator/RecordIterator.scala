@@ -1,14 +1,11 @@
 package org.hammerlab.bam.iterator
 
 import java.io.InputStream
-import java.nio.ByteBuffer
-import java.nio.ByteOrder.LITTLE_ENDIAN
 
-import org.hammerlab.bgzf.block.{ Block, ByteStream, ByteStreamI }
-import org.hammerlab.bgzf.{ Pos, block }
+import org.hammerlab.bgzf.Pos
+import org.hammerlab.bgzf.block.{ Block, ByteStreamI }
 import org.hammerlab.io.{ Buffer, ByteChannel }
-import org.hammerlab.iterator.FlatteningIterator._
-import org.hammerlab.iterator.{ FlatteningIterator, SimpleBufferedIterator }
+import org.hammerlab.iterator.SimpleBufferedIterator
 
 /**
  * Interface for iterators that wrap a (compressed) BAM-file [[InputStream]] and emit one object for each underlying
@@ -17,17 +14,8 @@ import org.hammerlab.iterator.{ FlatteningIterator, SimpleBufferedIterator }
 trait RecordIterator[T, Stream <: ByteStreamI[_]]
   extends SimpleBufferedIterator[T] {
 
-//  def makeBlockStream: Stream
-
-//  val compressedByteChannel: Channel
-
-  // Uncompressed BGZF blocks
-//  val blockStream: Stream = makeBlockStream //block.Stream(compressedByteChannel)
-
   // Uncompressed bytes; also exposes pointer to current-block
   val stream: Stream
-
-//  val uncompressedBytes: FlatteningIterator[Byte, Block] = blockStream.smush
 
   // Uncompressed byte-channel, for reading ints into a buffer
   val uncompressedByteChannel: ByteChannel = stream
@@ -68,9 +56,3 @@ trait RecordIterator[T, Stream <: ByteStreamI[_]]
   def curBlock: Option[Block] = stream.curBlock
   def curPos: Option[Pos] = stream.curPos
 }
-
-//trait MakeBlockStream {
-//  self: RecordIterator[_, ByteStream] ⇒
-//  def makeBlockStream: block.Stream =
-//    block.Stream(compressedByteChannel)
-//}

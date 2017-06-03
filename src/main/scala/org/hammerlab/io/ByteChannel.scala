@@ -1,10 +1,10 @@
 package org.hammerlab.io
 
 import java.io.{ IOException, InputStream }
-import java.nio.channels.ReadableByteChannel
 import java.nio.{ ByteBuffer, ByteOrder, channels }
 
 import org.apache.hadoop.fs.Seekable
+import org.hammerlab.iterator.Closeable
 
 /**
  * Readable, "skippable" interface over [[InputStream]]s, [[Iterator[Byte]]]s, and [[channels.SeekableByteChannel]]s.
@@ -12,15 +12,23 @@ import org.apache.hadoop.fs.Seekable
  * When wrapping [[channels.SeekableByteChannel]]s or [[Seekable]]s, exposes [[SeekableByteChannel.seek]] as well.
  */
 trait ByteChannel
-  extends ReadableByteChannel {
+  extends InputStream
+    with Closeable {
+
   protected var _position = 0L
 
-  final def read(dst: ByteBuffer): Int = {
-    val n = _read(dst)
+  /**
+   * Read as many bytes into `dst` as it has remaining, throw an [[IOException]] if too few bytes exist or are read.
+   */
+  final def read(dst: ByteBuffer): Unit = {
+    val n = dst.remaining()
+    _read(dst)
     _position += n
-    n
   }
 
+  /**
+   * Convenience method for reading a string of known length
+   */
   def readString(length: Int, includesNull: Boolean = true): String = {
     val buffer = Buffer(length)
     read(buffer)
@@ -48,15 +56,14 @@ trait ByteChannel
     b4.getInt(0)
   }
 
-  protected def _read(dst: ByteBuffer): Int
+  protected def _read(dst: ByteBuffer): Unit
 
-  def read(dst: ByteBuffer, offset: Int, length: Int): Int = {
+  def read(dst: ByteBuffer, offset: Int, length: Int): Unit = {
     dst.position(offset)
     val prevLimit = dst.limit()
     dst.limit(offset + length)
-    val n = read(dst)
+    read(dst)
     dst.limit(prevLimit)
-    n
   }
 
   final def skip(n: Int): Unit = {
@@ -83,10 +90,29 @@ object ByteChannel {
 
   implicit class ChannelByteChannel(ch: channels.SeekableByteChannel)
     extends SeekableByteChannel {
-    override def _read(dst: ByteBuffer): Int = ch.read(dst)
+
+    private val b1 = Buffer(1)
+    override def read(): Int = {
+      if (ch.read(b1) < 1)
+        -1
+      else
+        b1.get(0)
+    }
+
+    override def _read(dst: ByteBuffer): Unit = {
+      val n = dst.remaining()
+      var read = ch.read(dst)
+      if (read < n) {
+        read += ch.read(dst)
+      }
+      if (read < n) {
+        throw new IOException(
+          s"Only read $read of $n bytes in 2 tries from position ${position()}"
+        )
+      }
+    }
     override def _skip(n: Int): Unit = ch.position(ch.position() + n)
-    override def isOpen = ch.isOpen
-    override def close(): Unit = { ch.close() }
+    override def close(): Unit = { super.close(); ch.close() }
     override def position(): Long = ch.position()
     override protected def _seek(newPos: Long): Unit = ch.position(newPos)
   }
@@ -94,40 +120,68 @@ object ByteChannel {
   implicit class SeekableHadoopByteChannel(is: InputStream with Seekable)
     extends InputStreamByteChannel(is)
       with SeekableByteChannel {
-    override protected def _seek(newPos: Long): Unit = is.seek(newPos)
+    override protected def _seek(newPos: Long): Unit =
+      is.seek(newPos)
   }
 
   implicit class IteratorByteChannel(it: Iterator[Byte])
     extends ByteChannel {
-    override def _read(dst: ByteBuffer): Int = {
+
+    override def read(): Int =
+      if (it.hasNext)
+        it.next & 0xff
+      else
+        -1
+
+    override def _read(dst: ByteBuffer): Unit = {
       var idx = 0
       val size = dst.limit() - dst.position()
       while (idx < size && it.hasNext) {
         dst.put(it.next)
         idx += 1
       }
-      if (idx == 0 && !it.hasNext)
-        -1
-      else
-        idx
+      if (idx < size)
+        throw new IOException(
+          s"Only found $idx of $size bytes at position ${position()}"
+        )
     }
 
     override def _skip(n: Int): Unit = {
       it.drop(n)
     }
-
-    override def isOpen: Boolean = true
-    override def close(): Unit = {}
   }
 
   implicit class InputStreamByteChannel(is: InputStream)
     extends ByteChannel {
-    override def _read(dst: ByteBuffer): Int =
-      is.read(
-        dst.array(),
-        dst.position(),
-        dst.remaining()
-      )
+
+    override def read(): Int = is.read()
+
+    //override def read(b: Array[Byte], off: Int, len: Int): Int = super.read(b, off, len)
+
+    override def _read(dst: ByteBuffer): Unit = {
+      val bytesToRead = dst.remaining()
+      var bytesRead =
+        is.read(
+          dst.array(),
+          dst.position(),
+          dst.remaining()
+        )
+
+      if (bytesRead < bytesToRead) {
+        bytesRead +=
+          is.read(
+            dst.array(),
+            dst.position() + bytesRead,
+            dst.remaining() - bytesRead
+          )
+      }
+
+      if (bytesRead < bytesToRead) {
+        throw new IOException(
+          s"Only read $bytesRead of $bytesToRead bytes from position ${position()}"
+        )
+      }
+    }
 
     override def _skip(n: Int): Unit = {
       var remaining = n.toLong
@@ -141,7 +195,9 @@ object ByteChannel {
       }
     }
 
-    override def isOpen: Boolean = is.isOpen
-    override def close(): Unit = is.close()
+    override def close(): Unit = {
+      super.close()
+      is.close()
+    }
   }
 }

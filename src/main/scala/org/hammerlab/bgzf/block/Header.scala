@@ -19,10 +19,7 @@ object Header {
 
   def apply(ch: ByteChannel)(implicit buf: ByteBuffer): Header = {
     buf.limit(EXPECTED_HEADER_SIZE)
-    val headerBytesRead = ch.read(buf)
-    if (headerBytesRead != EXPECTED_HEADER_SIZE) {
-      throw new IOException(s"Expected $EXPECTED_HEADER_SIZE header bytes, got $headerBytesRead")
-    }
+    ch.read(buf)
 
     implicit val arr = buf.array
     val header = apply()

@@ -81,9 +81,6 @@ class RecordFinder {
             Some(EmptyReadName)
           case _ ⇒
             readNameBuffer.position(0)
-            if (readNameLength < 0 || readNameLength > 255) {
-              println(s"uh oh: $readNameLength")
-            }
             readNameBuffer.limit(readNameLength)
             ch.read(readNameBuffer)
             val readNameBytes = readNameBuffer.array().view.slice(0, readNameLength)

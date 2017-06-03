@@ -1,6 +1,5 @@
 package org.hammerlab.bam.iterator
 
-import java.io.InputStream
 import java.nio.channels.FileChannel
 
 import htsjdk.samtools.{ BAMRecordCodec, SAMRecord }
@@ -8,7 +7,6 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ ByteStream, ByteStreamI, SeekableByteStream }
 import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.LazyBAMRecordFactory
-import sun.nio.ch.ChannelInputStream
 
 /**
  * Interface for iterating over BAM records (keyed by [[Pos]])
@@ -16,11 +14,9 @@ import sun.nio.ch.ChannelInputStream
 trait RecordStreamI[Stream <: ByteStreamI[_]]
   extends RecordIterator[(Pos, SAMRecord), Stream] {
 
-  lazy val byteStream: InputStream = new ChannelInputStream(uncompressedByteChannel)
-
   lazy val bamCodec = {
     val codec = new BAMRecordCodec(null, new LazyBAMRecordFactory)
-    codec.setInputStream(byteStream)
+    codec.setInputStream(uncompressedByteChannel)
     codec
   }
 

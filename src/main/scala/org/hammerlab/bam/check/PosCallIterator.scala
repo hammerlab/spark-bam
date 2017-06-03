@@ -22,10 +22,6 @@ case class PosCallIterator(block: Long,
     else {
       val pos = Pos(block, up)
 
-//      if (up % 10000 == 0) {
-//        println(s"pos: $pos")
-//      }
-
       ch.seek(pos)
 
       Some(
@@ -40,6 +36,4 @@ case class PosCallIterator(block: Long,
   override protected def postNext(): Unit = {
     up += 1
   }
-
-  override def close(): Unit = ch.close()
 }
