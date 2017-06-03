@@ -22,8 +22,6 @@ case class Block(bytes: Array[Byte],
 
   def pos = Pos(start, idx)
 
-  //def iterator: Iterator[Byte] = bytes.iterator
-
   var idx = 0
   override def hasNext: Boolean = idx < uncompressedSize
   override def next(): Byte = {

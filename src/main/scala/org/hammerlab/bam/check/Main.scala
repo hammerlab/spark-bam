@@ -9,21 +9,19 @@ import org.apache.spark.{ SparkConf, SparkContext }
 import org.hammerlab.bam.check.Error.{ Counts, CountsWrapper, Flags, toCounts }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, SeekableByteStream }
-import org.hammerlab.bgzf.hadoop.RecordReader.MetadataReader
-import org.hammerlab.bgzf.hadoop.{ BlocksSplit, IndexedInputFormat }
 import org.hammerlab.genomics.reference.NumLoci
 import org.hammerlab.hadoop.Path
-import org.hammerlab.magic.rdd.hadoop.HadoopRDD._
 import org.hammerlab.magic.rdd.hadoop.SerializableConfiguration
+import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
+import org.hammerlab.magic.rdd.size._
 import org.hammerlab.math.Monoid.{ mzero ⇒ zero }
 import org.hammerlab.math.MonoidSyntax._
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFrom
 import org.seqdoop.hadoop_bam.util.WrapSeekable
 
 import scala.collection.JavaConverters._
-import scala.collection.generic.CanBuildFrom
-import scala.collection.mutable
-import scala.reflect.ClassTag
+import scala.collection.SortedMap
+import scala.math.ceil
 
 case class Args(@ExtraName("b") bamFile: String,
                 @ExtraName("k") blocksFile: Option[String] = None,
@@ -65,17 +63,53 @@ case class Result(numCalls: Long,
                   falseCalls: RDD[(Pos, False)],
                   criticalErrorCounts: Counts,
                   totalErrorCounts: Counts,
-                  countsByNonZeroFields: Array[(Int, (Counts, Counts))])
+                  countsByNonZeroFields: SortedMap[Int, (Counts, Counts)]) {
+
+  var falseCallsSampleSize = 100
+
+  lazy val falseCallsSample =
+    if (numFalseCalls > falseCallsSampleSize)
+      falseCalls.take(falseCallsSampleSize)
+    else if (numFalseCalls > 0)
+      falseCalls.collect()
+    else
+      Array()
+
+  lazy val falseCallsHist =
+    falseCalls
+      .values
+      .map(_ → 1L)
+      .reduceByKey(_ + _)
+      .map(_.swap)
+      .sortByKey(ascending = false)
+
+  var falseCallsHistSampleSize = 100
+
+  lazy val falseCallsHistSample =
+    if (numFalseCalls > falseCallsHistSampleSize)
+      falseCallsHist.take(falseCallsHistSampleSize)
+    else if (numFalseCalls > 0)
+      falseCallsHist.collect()
+    else
+      Array()
+}
+
+object Result {
+  def sampleString(sampledLines: Seq[String], total: Long): String =
+    sampledLines
+      .mkString(
+        "\t",
+        "\n\t",
+        if (sampledLines.size < total)
+          "\n\t…"
+        else
+          ""
+      )
+}
 
 object Main
   extends CaseApp[Args]
     with Logging {
-
-  implicit def CanBuildArrayFromSeq[T, U: ClassTag] =
-    new CanBuildFrom[Seq[T], U, Array[U]] {
-      def apply(from: Seq[T]): mutable.Builder[U, Array[U]] = mutable.ArrayBuilder.make[U]()
-      def apply(): mutable.Builder[U, Array[U]] = mutable.ArrayBuilder.make[U]()
-    }
 
   /**
    * Entry-point delegated to by [[caseapp]]'s [[main]]; computes [[Result]] and prints some statistics to stdout.
@@ -86,44 +120,73 @@ object Main
 
     val sc = new SparkContext(sparkConf)
 
+    val result = run(sc, args)
+
     val Result(
       numCalls,
       _,
       numFalseCalls,
-      falseCalls,
+      _,
       criticalErrorCounts,
       totalErrorCounts,
-      _
-    ) =
-      run(sc, args)
+      countsByNonZeroFields
+    ) = result
 
-    val falseCallsSample =
-      if (numFalseCalls > 1000)
-        falseCalls.take(1000)
-      else
-        falseCalls.collect()
+    import Result.sampleString
 
     numFalseCalls match {
       case 0 ⇒
         println(s"$numCalls calls, no errors!")
       case _ ⇒
-        println(s"$numCalls calls, $falseCallsSample errors; first 1000:")
+
+        println(s"$numCalls calls, $numFalseCalls errors")
+
+        println(s"hist:")
         println(
-          falseCallsSample
-            .mkString(
-              "\t",
-              "\n\t",
-              if (numFalseCalls > 1000)
-                "\n…\n"
-              else
-                "\n"
-            )
+          sampleString(
+            result
+              .falseCallsHistSample
+              .map {
+                case (count, call) ⇒
+                  s"$count:\t$call"
+              },
+            result.falseCallsHistSampleSize
+          )
         )
+        println("")
+
+        println(s"first ${result.falseCallsSampleSize}:")
+        println(
+          sampleString(
+            result
+              .falseCallsSample
+              .map {
+                case (pos, call) ⇒
+                  s"$pos:\t$call"
+              },
+            numFalseCalls
+          )
+        )
+        println("")
     }
 
     println("Critical error counts (true negatives where only one check failed):")
     println(criticalErrorCounts.pp(includeZeros = false))
     println("")
+
+    countsByNonZeroFields
+      .get(2)
+      .foreach {
+        counts ⇒
+          println("True negatives where exactly two checks failed:")
+          println(
+            counts
+              ._1
+              .pp(includeZeros = false)
+          )
+          println("")
+      }
+
     println("Total error counts:")
     println(totalErrorCounts.pp())
     println("")
@@ -140,6 +203,12 @@ object Main
 
     val ss = WrapSeekable.openPath(conf, path)
 
+    val blocksPath =
+      args
+        .blocksFile
+        .map(str ⇒ Path(new URI(str)))
+        .getOrElse(path.suffix(".blocks"): Path)
+
     /**
      * [[htsjdk.samtools.SAMFileHeader]] information used in identifying valid reads: contigs by index and their lengths
      */
@@ -155,29 +224,77 @@ object Main
         )
         .toMap
 
-    val fmt =
-      IndexedInputFormat(
-        path,
-        conf,
-        args.blocksFile,
-        args.blocksPerPartition,
-        args.numBlocks,
-        args
-          .blocksWhitelist
-          .map(
-            _
-              .split(",")
-              .map(_.toLong)
-              .toSet
-          )
+    val allBlocks =
+      sc
+      .textFile(blocksPath.toString)
+      .map(
+        line ⇒
+          line.split(",") match {
+            case Array(block, compressedSize, uncompressedSize) ⇒
+              Metadata(
+                block.toLong,
+                compressedSize.toInt,
+                uncompressedSize.toInt
+              )
+            case _ ⇒
+              throw new IllegalArgumentException(s"Bad blocks-index line: $line")
+          }
       )
 
-    val blocks: RDD[(Long, Metadata)] =
-      sc
-        .loadHadoopRDD(
-          path,
-          fmt.splits
+    val blocksWhitelist =
+      args
+        .blocksWhitelist
+        .map(
+          _
+          .split(",")
+          .map(_.toLong)
+          .toSet
         )
+
+    val (blocks, filteredBlockSet) =
+      (blocksWhitelist, args.numBlocks) match {
+        case (Some(_), Some(_)) ⇒
+          throw new IllegalArgumentException(
+            s"Specify exactly one of {blocksWhitelist, numBlocks}"
+          )
+        case (Some(whitelist), _) ⇒
+          allBlocks
+            .filter {
+              case Metadata(block, _, _) ⇒
+                whitelist.contains(block)
+            } →
+            Some(whitelist)
+        case (_, Some(numBlocks)) ⇒
+          val filteredBlocks = allBlocks.take(numBlocks)
+          sc.parallelize(filteredBlocks) →
+            Some(
+              filteredBlocks
+                .map(_.start)
+                .toSet
+            )
+        case _ ⇒
+          allBlocks → None
+      }
+
+    val numBlocks = blocks.size
+
+    val blocksPerPartition = args.blocksPerPartition
+
+    val numPartitions =
+      ceil(
+        numBlocks * 1.0 / blocksPerPartition
+      )
+      .toInt
+
+    val partitionedBlocks =
+      (for {
+        (block, idx) ← blocks.zipWithIndex()
+      } yield
+        (idx / blocksPerPartition).toInt →
+          idx →
+          block
+      )
+      .partitionByKey(numPartitions)
 
     val recordsFile =
       args
@@ -186,50 +303,49 @@ object Main
           args.bamFile + ".records"
         )
 
-    val blocksWhitelist =
-      sc.broadcast(
-        fmt
-          .splits
-          .flatMap(_.blocks)
-          .map(_.start)
-          .toSet
-      )
-
     /** Parse the true read-record-boundary positions from [[recordsFile]] */
     val recordPosRDD: RDD[Pos] =
       sc
-      .textFile(recordsFile)
-      .map(
-        _.split(",") match {
-          case Array(a, b) ⇒
-            Pos(a.toLong, b.toInt)
-          case a ⇒
-            throw new IllegalArgumentException(s"Bad record-pos line: ${a.mkString(",")}")
+        .textFile(recordsFile)
+        .map(
+          _.split(",") match {
+            case Array(a, b) ⇒
+              Pos(a.toLong, b.toInt)
+            case a ⇒
+              throw new IllegalArgumentException(s"Bad record-pos line: ${a.mkString(",")}")
+          }
+        )
+        .filter {
+          pos ⇒
+            filteredBlockSet
+              .forall(_ (pos.blockPos))
         }
-      )
-      .filter {
-        pos ⇒
-          blocksWhitelist.value(pos.blockPos)
-      }
 
     val errors: RDD[(Pos, Option[Flags])] =
-      blocks
+      partitionedBlocks
         .flatMap {
-          case (blockPos, Metadata(_, _, uncompressedSize)) ⇒
-            val stream =
-              SeekableByteStream(
-                path
+          case Metadata(start, _, uncompressedSize) ⇒
+
+            val is =
+              path
                 .getFileSystem(confBroadcast)
                 .open(path)
-              )
 
-            logger.info(s"Processing block: $blockPos")
-            PosCallIterator(
-              blockPos,
+            val stream = SeekableByteStream(is)
+
+            logger.info(s"Processing block: $start")
+            new PosCallIterator(
+              start,
               uncompressedSize,
               stream,
               contigLengths
-            )
+            ) {
+              override def done(): Unit = {
+                super.done()
+                logger.info(s"Closing stream for block $start")
+                is.close()
+              }
+            }
         }
 
     val calls: RDD[(Pos, Call)] =
@@ -346,7 +462,7 @@ object Main
       falseCalls,
       criticalErrorCounts,
       totalErrorCounts,
-      countsByNonZeroFields
+      SortedMap(countsByNonZeroFields: _*)
     )
   }
 }

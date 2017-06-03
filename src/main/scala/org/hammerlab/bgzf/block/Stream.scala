@@ -41,15 +41,10 @@ trait StreamI
 
       val dataLength = remainingBytes - FOOTER_SIZE
 
-      //encBuf.limit(remainingBytes)
-      val bytesRead = ch.read(encBuf, actualHeaderSize, remainingBytes)
-      if (bytesRead != remainingBytes) {
-        throw new IOException(s"Expected $remainingBytes bytes for block data+footer, found $bytesRead")
-      }
+      ch.read(encBuf, actualHeaderSize, remainingBytes)
 
       val uncompressedSize = encBuf.getInt(compressedSize - 4)
 
-      //println(s"decompressing block: $start")
       val inflater = new Inflater(true)
       inflater.setInput(encBuf.array(), actualHeaderSize, dataLength)
       val bytesDecompressed = inflater.inflate(decBuf, 0, uncompressedSize)
