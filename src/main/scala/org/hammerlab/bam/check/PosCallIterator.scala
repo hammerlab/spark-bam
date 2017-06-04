@@ -1,35 +1,26 @@
 package org.hammerlab.bam.check
 
-import org.hammerlab.bam.check.Error.Flags
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.SeekableByteStream
-import org.hammerlab.genomics.reference.NumLoci
 import org.hammerlab.iterator.SimpleBufferedIterator
 
-case class PosCallIterator(block: Long,
-                           usize: Int,
-                           ch: SeekableByteStream,
-                           contigLengths: Map[Int, NumLoci])
-  extends SimpleBufferedIterator[(Pos, Option[Flags])] {
-
-  val finder = new RecordFinder
+case class PosCallIterator[Call](block: Long,
+                                 usize: Int,
+                                 checker: Checker[Call])
+  extends SimpleBufferedIterator[(Pos, Call)] {
 
   var up = 0
 
-  override protected def _advance: Option[(Pos, Option[Flags])] =
+  override protected def _advance: Option[(Pos, Call)] =
     if (up >= usize)
       None
     else {
       val pos = Pos(block, up)
 
-      ch.seek(pos)
+      checker.seek(pos)
 
       Some(
         pos →
-          finder(
-            ch,
-            contigLengths
-          )
+          checker()
       )
     }
 
