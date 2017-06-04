@@ -1,17 +1,17 @@
-package org.hammerlab.bam.check
+package org.hammerlab.bam.check.full
 
 import org.apache.hadoop.conf.Configuration
+import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableByteStream
 import org.hammerlab.hadoop.Path
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
-class RecordFinderTest
+class CheckerTest
   extends Suite {
 
   test("EoF") {
-    val recordFinder = new RecordFinder
     val conf = new Configuration
     val path = Path(File("5k.bam").uri)
     val uncompressedBytes =
@@ -21,11 +21,17 @@ class RecordFinderTest
           .open(path)
       )
 
+    val checker =
+      Checker(
+        uncompressedBytes,
+        Map()
+      )
+
     uncompressedBytes.seek(Pos(1006167, 15243))
 
-    recordFinder(uncompressedBytes, Map()) should be(
+    checker() should be(
       Some(
-        Error(
+        Flags(
           tooFewFixedBlockBytes = true,
           None, None, None, None, false
         )

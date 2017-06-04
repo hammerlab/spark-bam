@@ -1,10 +1,11 @@
-package org.hammerlab.bam.check
+package org.hammerlab.bam.check.full
 
-import org.hammerlab.bam.check.Error.Counts
+import org.hammerlab.bam.check.Args
+import org.hammerlab.bam.check.full.error.Counts
 import org.hammerlab.spark.test.suite.SparkSuite
 import org.hammerlab.test.resources.File
 
-class CheckBAMTest
+class RunTest
   extends SparkSuite {
 
   def check(args: Args,
@@ -12,20 +13,17 @@ class CheckBAMTest
             expectedFlagCounts: Counts): Unit = {
     val Result(
       numPositions,
-      calls,
+      _,
       numFalseCalls,
       falseCalls,
-      criticalErrorCounts,
+      _,
       totalErrorCounts,
       _
     ) =
-      Main.run(sc, args)
+      Run(sc, args)
 
     numPositions should be(expectedNumPositions)
 
-    if (numFalseCalls > 0) {
-      println(falseCalls.take(10).mkString("\n"))
-    }
     numFalseCalls should be(0)
 
     totalErrorCounts should be(expectedFlagCounts)
@@ -38,7 +36,7 @@ class CheckBAMTest
         numBlocks = Some(1)
       ),
       5650,
-      ErrorT[Long](
+      Counts(
                     tooLargeReadIdx = 5457,
                 tooLargeNextReadIdx = 5452,
                      invalidCigarOp = 5402,
@@ -67,7 +65,7 @@ class CheckBAMTest
         blocksWhitelist = Some("27784")
       ),
       64902,
-      ErrorT[Long](
+      Counts(
                      invalidCigarOp = 63101,
                 tooLargeNextReadIdx = 62661,
                     tooLargeReadIdx = 62661,
@@ -96,7 +94,7 @@ class CheckBAMTest
         numBlocks = Some(10)
       ),
       590166,
-      ErrorT[Long](
+      Counts(
                      invalidCigarOp = 573463,
                     tooLargeReadIdx = 569630,
                 tooLargeNextReadIdx = 569624,
@@ -124,7 +122,7 @@ class CheckBAMTest
         File("5k.bam")
       ),
       3139404,
-      ErrorT[Long](
+      Counts(
                      invalidCigarOp = 3051420,
                 tooLargeNextReadIdx = 3018629,
                     tooLargeReadIdx = 3018629,
