@@ -11,9 +11,12 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.JobID
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.task.JobContextImpl
+import org.apache.spark.SparkContext
 import org.hammerlab.bam.hadoop.InputFormat.NUM_GET_SPLITS_WORKERS_KEY
+import org.hammerlab.bam.hadoop.LoadBam._
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.iterator.SimpleBufferedIterator
+import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.timing.Timer.time
 import org.seqdoop.hadoop_bam.util.WrapSeekable
 import org.seqdoop.hadoop_bam.{ FileVirtualSplit, LazyBAMRecordFactory }
@@ -26,6 +29,7 @@ case class JW(conf: Configuration) {
 
 case class Args(@ExtraName("n") numWorkers: Option[Int],
                 @ExtraName("u") useSeqdoop: Boolean = false,
+                @ExtraName("f") useForkedSeqdoop: Boolean = false,
                 @ExtraName("g") gsBuffer: Option[Int] = None,
                 @ExtraName("o") outFile: Option[String] = None)
 
@@ -60,54 +64,74 @@ object Main extends CaseApp[Args] {
     val path = new Path(remainingArgs.remainingArgs.head)
     val conf = new Configuration
 
-    args.gsBuffer match {
-      case Some(gsBuffer) ⇒
-        conf.setInt("fs.gs.io.buffersize", gsBuffer)
-      case None ⇒
-    }
+    if (!args.useSeqdoop && !args.useForkedSeqdoop) {
+      val sc = new SparkContext()
+      val reads = sc.loadBam(path)
+      val partitionSizes = reads.partitionSizes
+      println("Partition sizes:")
+      println(
+        partitionSizes
+          .grouped(10)
+          .map(
+            _
+              .map("% 5d".format(_))
+              .mkString("")
+          )
+          .mkString("\n")
+      )
+    } else {
 
-    val ifmt =
-      if (args.useSeqdoop)
-        new org.seqdoop.hadoop_bam.BAMInputFormat
-      else
-        new InputFormat
-
-    val job = org.apache.hadoop.mapreduce.Job.getInstance(conf)
-    val jobConf = job.getConfiguration
-
-    args.numWorkers match {
-      case Some(numWorkers) ⇒
-        jobConf.setInt(NUM_GET_SPLITS_WORKERS_KEY, numWorkers)
-      case None ⇒
-    }
-
-    val jobID = new JobID("get-splits", 1)
-    val jc = new JobContextImpl(jobConf, jobID)
-
-    FileInputFormat.setInputPaths(job, path)
-
-    val splits = time("get splits") { ifmt.getSplits(jc) }
-
-    val pw =
-      args.outFile match {
-        case Some(outFile) ⇒
-          new PrintStream(outFile)
+      args.gsBuffer match {
+        case Some(gsBuffer) ⇒
+          conf.setInt("fs.gs.io.buffersize", gsBuffer)
         case None ⇒
-          System.out
       }
 
-    pw.println(
-      splits
-        .asScala
-        .map(split ⇒
-          if (args.useSeqdoop)
-            split.asInstanceOf[FileVirtualSplit]: Split
-          else
-            split.asInstanceOf[Split]
-        )
-        .map(split ⇒ s"${split.start}-${split.end}")
-        .mkString("\t", "\n\t", "\n")
-    )
+      val ifmt =
+        if (args.useSeqdoop)
+          new org.seqdoop.hadoop_bam.BAMInputFormat
+        else
+          new InputFormat
+
+      val job = org.apache.hadoop.mapreduce.Job.getInstance(conf)
+      val jobConf = job.getConfiguration
+
+      args.numWorkers match {
+        case Some(numWorkers) ⇒
+          jobConf.setInt(NUM_GET_SPLITS_WORKERS_KEY, numWorkers)
+        case None ⇒
+      }
+
+      val jobID = new JobID("get-splits", 1)
+      val jc = new JobContextImpl(jobConf, jobID)
+
+      FileInputFormat.setInputPaths(job, path)
+
+      val splits = time("get splits") {
+        ifmt.getSplits(jc)
+      }
+
+      val pw =
+        args.outFile match {
+          case Some(outFile) ⇒
+            new PrintStream(outFile)
+          case None ⇒
+            System.out
+        }
+
+      pw.println(
+        splits
+          .asScala
+          .map(split ⇒
+            if (args.useSeqdoop)
+              split.asInstanceOf[FileVirtualSplit]: Split
+            else
+              split.asInstanceOf[Split]
+          )
+          .map(split ⇒ s"${split.start}-${split.end}")
+          .mkString("\t", "\n\t", "\n")
+      )
+    }
   }
 }
 

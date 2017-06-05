@@ -10,6 +10,7 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, SeekableByteStream }
 import org.hammerlab.genomics.reference.NumLoci
 import org.hammerlab.hadoop.Path
+import org.hammerlab.io.ByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.magic.rdd.hadoop.SerializableConfiguration
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
 import org.hammerlab.magic.rdd.size._
@@ -232,12 +233,8 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
         .flatMap {
           case Metadata(start, _, uncompressedSize) ⇒
 
-            val is =
-              path
-              .getFileSystem(confBroadcast)
-              .open(path)
-
-            val stream = SeekableByteStream(is)
+            val channel = SeekableHadoopByteChannel(path, confBroadcast.value)
+            val stream = SeekableByteStream(channel)
 
             new PosCallIterator(
               start,
@@ -246,7 +243,7 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
             ) {
               override def done(): Unit = {
                 super.done()
-                is.close()
+                stream.close()
               }
             }
         }

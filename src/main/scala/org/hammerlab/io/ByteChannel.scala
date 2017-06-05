@@ -3,7 +3,9 @@ package org.hammerlab.io
 import java.io.{ EOFException, IOException, InputStream }
 import java.nio.{ ByteBuffer, ByteOrder, channels }
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Seekable
+import org.hammerlab.hadoop.Path
 import org.hammerlab.iterator.Closeable
 
 /**
@@ -86,7 +88,11 @@ trait SeekableByteChannel
     _seek(newPos)
   }
 
-  protected def _seek(newPos: Long): Unit
+  override def _skip(n: Int): Unit = _seek(position() + n)
+
+  def size: Long
+
+  def _seek(newPos: Long): Unit
 }
 
 object ByteChannel {
@@ -101,6 +107,8 @@ object ByteChannel {
       else
         b1.get(0)
     }
+
+    override def size: Long = ch.size
 
     override def _read(dst: ByteBuffer): Unit = {
       val n = dst.remaining()
@@ -117,14 +125,22 @@ object ByteChannel {
     override def _skip(n: Int): Unit = ch.position(ch.position() + n)
     override def close(): Unit = { super.close(); ch.close() }
     override def position(): Long = ch.position()
-    override protected def _seek(newPos: Long): Unit = ch.position(newPos)
+    override def _seek(newPos: Long): Unit = ch.position(newPos)
   }
 
-  implicit class SeekableHadoopByteChannel(is: InputStream with Seekable)
+  case class SeekableHadoopByteChannel(is: InputStream with Seekable, size: Long)
     extends InputStreamByteChannel(is)
       with SeekableByteChannel {
-    override protected def _seek(newPos: Long): Unit =
+    override def _seek(newPos: Long): Unit =
       is.seek(newPos)
+  }
+
+  object SeekableHadoopByteChannel {
+    def apply(path: Path, conf: Configuration): CachingChannel = {
+      val fs = path.getFileSystem(conf)
+      val len = fs.getFileStatus(path).getLen
+      SeekableHadoopByteChannel(fs.open(path), len)
+    }
   }
 
   implicit class IteratorByteChannel(it: Iterator[Byte])

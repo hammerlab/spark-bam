@@ -8,7 +8,8 @@ import org.hammerlab.bam.iterator.SeekableRecordStream
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ FindBlockStart, SeekableByteStream }
 import org.hammerlab.hadoop.{ FileSplits, Path }
-import org.hammerlab.io.SeekableByteChannel
+import org.hammerlab.io.ByteChannel.SeekableHadoopByteChannel
+import org.hammerlab.io.CachingChannel
 import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.iterator.Sliding2Iterator._
 import org.hammerlab.magic.rdd.hadoop.SerializableConfiguration._
@@ -41,22 +42,30 @@ object LoadBam {
       val conf = sc.hadoopConfiguration
       val fileSplitStarts = FileSplits(path, conf, config.maxSplitSize).map(_.start)
 
-      val fs = path.getFileSystem(conf)
+      val fileSplitStartsRDD =
+        sc.parallelize(
+          fileSplitStarts,
+          fileSplitStarts.size
+        )
 
+      val confBroadcast = sc.broadcast(conf.serializable)
+
+      val fs = path.getFileSystem(conf)
       val len = fs.getFileStatus(path).getLen
       val endPos = Pos(len, 0)
 
-      val compressedChannel: SeekableByteChannel = fs.open(path)
-
-      val uncompressedBytes = SeekableByteStream(compressedChannel)
-
-      val header = Header(uncompressedBytes)
-      val Header(contigLengths, _, _) = header
-
       val bamRecordStarts =
-        fileSplitStarts
+        fileSplitStartsRDD
             .map {
               fileSplitStart ⇒
+
+                val compressedChannel: CachingChannel = SeekableHadoopByteChannel(path, confBroadcast.value)
+
+                val uncompressedBytes = SeekableByteStream(compressedChannel)
+
+                val header = Header(uncompressedBytes)
+                val Header(contigLengths, _, _) = header
+
                 val bgzfBlockStart =
                   FindBlockStart(
                     path,
@@ -65,48 +74,39 @@ object LoadBam {
                     config.bgzfBlockHeadersToCheck
                   )
 
-                FindRecordStart(
-                  path,
-                  uncompressedBytes,
-                  bgzfBlockStart,
-                  contigLengths,
-                  config.maxReadSize
-                )
+                val bamRecordStart =
+                  FindRecordStart(
+                    path,
+                    uncompressedBytes,
+                    bgzfBlockStart,
+                    contigLengths,
+                    config.maxReadSize
+                  )
+
+                uncompressedBytes.close()
+
+                bamRecordStart
             }
+            .collect
             .sliding2(endPos)
-            .flatMap {
+            .filter {
               case (start, end) ⇒
-                if (end > start)
-                  Some(start)
-                else if (end == start)
-                  None
-                else
-                  throw new Exception(s"Invalid bgzf-block split-bounds: $start,$end")
+                end > start
             }
             .toVector
 
-      uncompressedBytes.close()
+      val bamRecordStartsRDD = sc.parallelize(bamRecordStarts, bamRecordStarts.size)
+      println(s"${bamRecordStarts.length} bam record starts:\n${bamRecordStarts.mkString("\n")}")
 
-      val confBroadcast = sc.broadcast(conf.serializable)
-
-      /**
-       * Delegate a partition to each [[bamRecordStarts]] position above, which will read all [[SAMRecord]]s up to the
-       * next [[bamRecordStarts]] entry
-       */
-      sc
-        .parallelize(
-          bamRecordStarts
-            .sliding2(endPos)
-            .toSeq,
-          bamRecordStarts.size
-        )
+      bamRecordStartsRDD
         .flatMap {
           case (start, end) ⇒
             val uncompressedBytes =
               SeekableByteStream(
-                path
-                  .getFileSystem(confBroadcast.value)
-                  .open(path)
+                SeekableHadoopByteChannel(
+                  path,
+                  confBroadcast.value
+                )
               )
 
             val recordStream = SeekableRecordStream(uncompressedBytes)
