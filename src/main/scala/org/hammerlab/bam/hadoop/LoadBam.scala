@@ -53,51 +53,37 @@ object LoadBam {
       val header = Header(uncompressedBytes)
       val Header(contigLengths, _, _) = header
 
-      /** Find the next bgzf-block-boundary from each [[org.hammerlab.hadoop.FileSplit]]'s start. */
-      val bgzfBlockSplitStarts =
-        fileSplitStarts
-          .map(
-            FindBlockStart(
-              path,
-              _,
-              compressedChannel,
-              config.bgzfBlockHeadersToCheck
-            )
-          )
-          .sliding2(len)
-          .flatMap {
-            case (start, end) ⇒
-              if (end > start)
-                Some(start)
-              else if (end == start)
-                None
-              else
-                throw new Exception(s"Invalid bgzf-block split-bounds: $start,$end")
-          }
-
-      /** Find the next BAM-record-boundary from each bgzf-block-aligned split-offset in [[bgzfBlockSplitStarts]]. */
       val bamRecordStarts =
-        bgzfBlockSplitStarts
-          .map(
-            FindRecordStart(
-              path,
-              uncompressedBytes,
-              _,
-              contigLengths,
-              config.maxReadSize
-            )
-          )
-          .sliding2(endPos)
-          .flatMap {
-            case (start, end) ⇒
-              if (end > start)
-                Some(start)
-              else if (end == start)
-                None
-              else
-                throw new Exception(s"Invalid bgzf-block split-bounds: $start,$end")
-          }
-          .toVector
+        fileSplitStarts
+            .map {
+              fileSplitStart ⇒
+                val bgzfBlockStart =
+                  FindBlockStart(
+                    path,
+                    fileSplitStart,
+                    compressedChannel,
+                    config.bgzfBlockHeadersToCheck
+                  )
+
+                FindRecordStart(
+                  path,
+                  uncompressedBytes,
+                  bgzfBlockStart,
+                  contigLengths,
+                  config.maxReadSize
+                )
+            }
+            .sliding2(endPos)
+            .flatMap {
+              case (start, end) ⇒
+                if (end > start)
+                  Some(start)
+                else if (end == start)
+                  None
+                else
+                  throw new Exception(s"Invalid bgzf-block split-bounds: $start,$end")
+            }
+            .toVector
 
       uncompressedBytes.close()
 
