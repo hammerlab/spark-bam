@@ -1,5 +1,9 @@
 package org.hammerlab.bgzf
 
+/**
+ * A "virtual position" in a BGZF file: [[blockPos]] (offset to bgzf-block-start in compressed file) and [[offset]] into
+ * that block's uncompressed data.
+ */
 case class Pos(blockPos: Long, offset: Int)
   extends Ordered[Pos] {
 

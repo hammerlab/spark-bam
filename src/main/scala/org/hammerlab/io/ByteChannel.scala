@@ -1,6 +1,6 @@
 package org.hammerlab.io
 
-import java.io.{ IOException, InputStream }
+import java.io.{ EOFException, IOException, InputStream }
 import java.nio.{ ByteBuffer, ByteOrder, channels }
 
 import org.apache.hadoop.fs.Seekable
@@ -66,6 +66,9 @@ trait ByteChannel
     dst.limit(prevLimit)
   }
 
+  /**
+   * Skip `n` bytes, throw [[IOException]] if unable to
+   */
   final def skip(n: Int): Unit = {
     _skip(n)
     _position += n
@@ -149,14 +152,20 @@ object ByteChannel {
     override def _skip(n: Int): Unit = {
       it.drop(n)
     }
+
+    override def close(): Unit = {
+      super.close()
+      it match {
+        case c: Closeable ⇒
+          c.close()
+      }
+    }
   }
 
   implicit class InputStreamByteChannel(is: InputStream)
     extends ByteChannel {
 
     override def read(): Int = is.read()
-
-    //override def read(b: Array[Byte], off: Int, len: Int): Int = super.read(b, off, len)
 
     override def _read(dst: ByteBuffer): Unit = {
       val bytesToRead = dst.remaining()
@@ -167,20 +176,34 @@ object ByteChannel {
           dst.remaining()
         )
 
-      if (bytesRead < bytesToRead) {
-        bytesRead +=
-          is.read(
-            dst.array(),
-            dst.position() + bytesRead,
-            dst.remaining() - bytesRead
-          )
-      }
+      if (bytesRead == -1)
+        throw new EOFException
+
+      val nextBytesRead =
+        if (bytesRead < bytesToRead) {
+          val moreBytesRead =
+            is.read(
+              dst.array(),
+              dst.position() + bytesRead,
+              dst.remaining() - bytesRead
+            )
+
+          if (moreBytesRead == -1)
+            throw new EOFException
+
+          bytesRead += moreBytesRead
+
+          moreBytesRead
+        } else
+          0
 
       if (bytesRead < bytesToRead) {
         throw new IOException(
-          s"Only read $bytesRead of $bytesToRead bytes from position ${position()}"
+          s"Only read $bytesRead (${bytesRead - nextBytesRead} then $nextBytesRead) of $bytesToRead bytes from position ${position()}"
         )
       }
+
+      dst.position(dst.position() + bytesRead)
     }
 
     override def _skip(n: Int): Unit = {

@@ -39,11 +39,13 @@ class ByteChannelTest
     ch.read(b4)
     b4.array.map(_.toChar).mkString("") should be("1234")
 
+    b4.position(0)
     ch.read(b4)
     b4.array.map(_.toChar).mkString("") should be("5678")
 
+    b4.position(0)
     intercept[IOException] {
-      ch.read(b4) should be(4)
-    }.getMessage should be("Only read 3 of 4 bytes from position 8")
+      ch.read(b4)
+    }.getMessage should be("Only read 3 (2 then 1) of 4 bytes from position 8")
   }
 }

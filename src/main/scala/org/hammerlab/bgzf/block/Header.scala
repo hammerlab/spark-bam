@@ -7,6 +7,7 @@ import org.hammerlab.io.ByteChannel
 
 /**
  * BGZF-block header
+ *
  * @param size size of header, in bytes
  * @param compressedSize compressed size of block, parsed from header
  */
@@ -22,7 +23,7 @@ object Header {
     ch.read(buf)
 
     implicit val arr = buf.array
-    val header = apply()
+    val header = make
     buf.clear()
     ch.skip(header.size - EXPECTED_HEADER_SIZE)
 
@@ -37,14 +38,13 @@ object Header {
         s"Expected $EXPECTED_HEADER_SIZE header bytes, got $headerBytesRead"
       )
 
-    val header = apply()
+    val header = make
     is.skip(header.size - EXPECTED_HEADER_SIZE)
 
     header
   }
 
-  def apply(offset: Int = 0)(implicit bytes: Array[Byte]): Header = make(offset, bytes.length)
-  def make(offset: Int, length: Int)(implicit bytes: Array[Byte]): Header = {
+  def make(implicit bytes: Array[Byte]): Header = {
 
     def check(idx: Int, expected: Byte): Unit = {
       val actual = bytes(idx)

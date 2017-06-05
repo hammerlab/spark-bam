@@ -8,6 +8,9 @@ import org.hammerlab.bam.check.full.error.{ CigarOpsError, EmptyReadName, Flags,
 import org.hammerlab.bgzf.block.SeekableByteStream
 import org.hammerlab.genomics.reference.NumLoci
 
+/**
+ * [[check.Checker]] that builds [[Flags]] of all failing checks at each [[org.hammerlab.bgzf.Pos]].
+ */
 case class Checker(uncompressedStream: SeekableByteStream,
                    contigLengths: Map[Int, NumLoci])
   extends check.Checker[Option[Flags]] {
@@ -45,15 +48,21 @@ case class Checker(uncompressedStream: SeekableByteStream,
             readNameBuffer.position(0)
             readNameBuffer.limit(readNameLength)
             ch.read(readNameBuffer)
-            val readNameBytes = readNameBuffer.array().view.slice(0, readNameLength)
+
+            // Drop trailing '\0'
+            val readNameBytes =
+              readNameBuffer
+                .array()
+                .view
+                .slice(0, readNameLength)
 
             if (readNameBytes.last != 0)
               Some(NonNullTerminatedReadName)
             else if (
               readNameBytes
-              .view
-              .slice(0, readNameLength - 1)
-              .exists(byte ⇒ !allowedReadNameChars(byte.toChar))
+                .view
+                .slice(0, readNameLength - 1)
+                .exists(byte ⇒ !allowedReadNameChars(byte.toChar))
             )
               Some(NonASCIIReadName)
             else

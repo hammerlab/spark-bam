@@ -5,6 +5,9 @@ import com.esotericsoftware.kryo.{ Kryo, Serializer }
 
 import scala.collection.immutable.BitSet
 
+/**
+ * Serialize a [[Flags]] as a [[BitSet]] to save IO.
+ */
 class FlagsSerializer
   extends Serializer[Flags] {
   override def read(kryo: Kryo, input: Input, clz: Class[Flags]): Flags = {

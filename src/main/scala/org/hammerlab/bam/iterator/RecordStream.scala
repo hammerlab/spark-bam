@@ -32,11 +32,11 @@ trait RecordStreamI[Stream <: ByteStreamI[_]]
 /**
  * Non-seekable [[RecordStreamI]]
  */
-case class RecordStream(stream: ByteStream)
-  extends RecordStreamI[ByteStream]
+case class RecordStream[Stream <: ByteStreamI[_]](stream: Stream)
+  extends RecordStreamI[Stream]
 
 object RecordStream {
-  def apply(path: Path): RecordStream =
+  def apply(path: Path): RecordStream[ByteStream] =
     RecordStream(
       ByteStream(
         path.inputStream

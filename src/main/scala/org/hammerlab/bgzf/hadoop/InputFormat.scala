@@ -3,42 +3,14 @@ package org.hammerlab.bgzf.hadoop
 import java.io.IOException
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FSDataInputStream
-import org.hammerlab.bgzf.block.Block.MAX_BLOCK_SIZE
-import org.hammerlab.bgzf.block.{ HeaderParseException, MetadataStream }
+import org.hammerlab.bgzf.block.FindBlockStart
 import org.hammerlab.hadoop.{ FileSplits, Path }
 import org.hammerlab.iterator.Sliding2Iterator._
 
-case class InputFormat(path: Path,
-                       conf: Configuration,
-                       bgzfBlockHeadersToCheck: Int = 5) {
-
-  def nextBlockAlignment(path: Path,
-                         start: Long,
-                         in: FSDataInputStream): Long = {
-    in.seek(start)
-
-    val headerStream = MetadataStream(in, closeStream = false)
-
-    var pos = 0
-    while (pos < MAX_BLOCK_SIZE) {
-      try {
-        in.seek(start + pos)
-        headerStream.clear()
-        headerStream
-          .take(bgzfBlockHeadersToCheck)
-          .size
-        return start + pos
-      } catch {
-        case _: HeaderParseException ⇒
-          pos += 1
-      }
-    }
-
-    throw HeaderSearchFailedException(path, start, pos)
-  }
-
-  lazy val splits: Seq[Split] = {
+object Splits {
+  def apply(path: Path,
+            conf: Configuration,
+            bgzfBlockHeadersToCheck: Int = 5): Seq[Split] = {
 
     val fileSplits = FileSplits(path, conf)
 
@@ -52,10 +24,11 @@ case class InputFormat(path: Path,
       fileSplits
         .map(
           fileSplit ⇒
-            nextBlockAlignment(
+            FindBlockStart(
               fileSplit.getPath,
               fileSplit.getStart,
-              is
+              is,
+              bgzfBlockHeadersToCheck
             )
         )
 

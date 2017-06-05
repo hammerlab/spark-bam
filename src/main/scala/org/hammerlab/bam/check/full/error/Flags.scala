@@ -4,6 +4,9 @@ import shapeless.{ Generic, Poly1 }
 
 import scala.collection.immutable.BitSet
 
+/**
+ * Information about BAM-record checks at a [[org.hammerlab.bgzf.Pos]].
+ */
 case class Flags(tooFewFixedBlockBytes: Boolean,
                  negativeReadIdx: Boolean,
                  tooLargeReadIdx: Boolean,
@@ -79,6 +82,7 @@ object Flags {
       tooFewRemainingBytesImplied = tooFewRemainingBytesImplied
     )
 
+  /** Convert to and from a [[BitSet]] during serialization. */
   implicit def toBitSet(flags: Flags): BitSet =
     BitSet(
       Generic[Flags]

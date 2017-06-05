@@ -9,8 +9,11 @@ import org.hammerlab.iterator.SimpleBufferedIterator._
 
 object RecordReader {
 
-  implicit case object MetadataReader extends RecordReader[BlocksSplit, Long, Metadata] {
-    override def records(split: BlocksSplit, ctx: TaskAttemptContext): CloseableIterator[(Long, Metadata)] =
+  implicit case object MetadataReader
+    extends RecordReader[BlocksSplit, Long, Metadata] {
+
+    override def records(split: BlocksSplit,
+                         ctx: TaskAttemptContext): CloseableIterator[(Long, Metadata)] =
       split
         .blocks
         .iterator
@@ -18,8 +21,11 @@ object RecordReader {
         .buffer
   }
 
-  implicit case object BlockReader extends RecordReader[Split, Long, Block] {
-    override def records(split: Split, ctx: TaskAttemptContext): CloseableIterator[(Long, Block)] = {
+  implicit case object BlockReader
+    extends RecordReader[Split, Long, Block] {
+
+    override def records(split: Split,
+                         ctx: TaskAttemptContext): CloseableIterator[(Long, Block)] = {
 
       val Split(
         path,

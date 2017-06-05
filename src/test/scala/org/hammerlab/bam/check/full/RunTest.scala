@@ -10,12 +10,15 @@ class RunTest
 
   def check(args: Args,
             expectedNumPositions: Int,
+            expectedNumReadStarts: Int,
             expectedFlagCounts: Counts): Unit = {
     val Result(
       numPositions,
       _,
       numFalseCalls,
       falseCalls,
+      numReadStarts,
+      _,
       _,
       totalErrorCounts,
       _
@@ -36,6 +39,7 @@ class RunTest
         numBlocks = Some(1)
       ),
       5650,
+      0,
       Counts(
                     tooLargeReadIdx = 5457,
                 tooLargeNextReadIdx = 5452,
@@ -65,6 +69,7 @@ class RunTest
         blocksWhitelist = Some("27784")
       ),
       64902,
+      101,
       Counts(
                      invalidCigarOp = 63101,
                 tooLargeNextReadIdx = 62661,
@@ -94,6 +99,7 @@ class RunTest
         numBlocks = Some(10)
       ),
       590166,
+      918,
       Counts(
                      invalidCigarOp = 573463,
                     tooLargeReadIdx = 569630,
@@ -122,6 +128,7 @@ class RunTest
         File("5k.bam")
       ),
       3139404,
+      4910,
       Counts(
                      invalidCigarOp = 3051420,
                 tooLargeNextReadIdx = 3018629,

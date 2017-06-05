@@ -12,7 +12,20 @@ import org.hammerlab.io.ByteChannel
 import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat
 
-case class Args(@ExtraName("b") bamFile: String,
+/**
+ * CLI app for recording the offsets of all bgzf-block start-positions in a bgzf-compressed file.
+ *
+ * Format of output file is:
+ *
+ * <position>,<compressed block size>,<uncompressed block size>
+ *
+ * @param inFile input bgzf-compressed file
+ * @param outFile path to write bgzf-block-positions to
+ * @param useChannel open [[inFile]] using [[FileChannel]] interface, as opposed to the default
+ *                   [[java.nio.file.Files.newInputStream]]
+ * @param includeEmptyFinalBlock whether to emit a record for the final, empty bgzf-block
+ */
+case class Args(@ExtraName("b") inFile: String,
                 @ExtraName("o") outFile: Option[String] = None,
                 @ExtraName("c") useChannel: Boolean = false,
                 @ExtraName("i") includeEmptyFinalBlock: Boolean = false)
@@ -23,7 +36,7 @@ object IndexBlocks
 
   override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
     val conf = new Configuration
-    val path = Path(new URI(args.bamFile))
+    val path = Path(new URI(args.inFile))
     val ch: ByteChannel =
       if (args.useChannel)
         FileChannel.open(path)
@@ -42,7 +55,7 @@ object IndexBlocks
           args
             .outFile
             .getOrElse(
-              args.bamFile + ".blocks"
+              args.inFile + ".blocks"
             )
         )
       )
