@@ -5,6 +5,7 @@ import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableByteStream
 import org.hammerlab.hadoop.Path
+import org.hammerlab.io.ByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -16,9 +17,10 @@ class CheckerTest
     val path = Path(File("5k.bam").uri)
     val uncompressedBytes =
       SeekableByteStream(
-        path
-          .getFileSystem(conf)
-          .open(path)
+        SeekableHadoopByteChannel(
+          path,
+          conf
+        )
       )
 
     val checker =

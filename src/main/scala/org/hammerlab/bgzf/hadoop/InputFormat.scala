@@ -5,6 +5,7 @@ import java.io.IOException
 import org.apache.hadoop.conf.Configuration
 import org.hammerlab.bgzf.block.FindBlockStart
 import org.hammerlab.hadoop.{ FileSplits, Path }
+import org.hammerlab.io.ByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.iterator.Sliding2Iterator._
 
 object Splits {
@@ -18,7 +19,7 @@ object Splits {
 
     val len = fs.getFileStatus(path).getLen
 
-    val is = fs.open(path)
+    val is = SeekableHadoopByteChannel(path, conf)
 
     val blockStarts =
       fileSplits
