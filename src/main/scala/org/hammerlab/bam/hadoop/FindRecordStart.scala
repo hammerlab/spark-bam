@@ -1,6 +1,5 @@
 package org.hammerlab.bam.hadoop
 
-import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.hammerlab.bam.check.eager.Checker
 import org.hammerlab.bgzf.Pos
@@ -8,28 +7,6 @@ import org.hammerlab.bgzf.block.SeekableByteStream
 import org.hammerlab.genomics.reference.NumLoci
 
 object FindRecordStart {
-
-//  def apply(path: Path,
-//            conf: Configuration,
-//            blockStart: Long,
-//            contigLengths: Map[Int, NumLoci],
-//            maxReadSize: Int = 100000): Pos = {
-//    val fs = path.getFileSystem(conf)
-//
-//    val uncompressedBytes = SeekableByteStream(fs.open(path))
-//
-//    try {
-//      apply(
-//        path,
-//        uncompressedBytes,
-//        blockStart,
-//        contigLengths,
-//        maxReadSize
-//      )
-//    } finally {
-//      uncompressedBytes.close()
-//    }
-//  }
 
   def apply(path: Path,
             uncompressedBytes: SeekableByteStream,
