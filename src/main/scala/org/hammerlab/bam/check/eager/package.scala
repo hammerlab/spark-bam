@@ -3,8 +3,9 @@ package org.hammerlab.bam.check
 import org.hammerlab.bam.check
 
 package object eager {
-  implicit object MakePosResult extends MakePosResult[Boolean, PosResult] {
-    override def apply(call: Boolean, isReadStart: Boolean): PosResult =
+  type Call = Boolean
+  implicit object MakePosResult extends MakePosResult[Call, PosResult] {
+    override def apply(call: Call, isReadStart: Boolean): PosResult =
       (call, isReadStart) match {
         case (true, true) ⇒
           TruePositive

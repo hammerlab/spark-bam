@@ -5,10 +5,14 @@ import org.hammerlab.bgzf.Pos
 
 trait Result[PosResult] {
 
-  def numCalls: Long
-  def results: RDD[(Pos, PosResult)]
+  def numPositions: Long
+  def positionResults: RDD[(Pos, PosResult)]
+
   def numFalseCalls: Long
   def falseCalls: RDD[(Pos, False)]
+
+  def numReadStarts: Long
+  def readStarts: RDD[Pos]
 
   var falseCallsSampleSize = 100
 
@@ -40,17 +44,11 @@ trait Result[PosResult] {
 }
 
 object Result {
-  def unapply[PosResult](result: Result[PosResult]): Option[(
-    Long,
-      RDD[(Pos, PosResult)],
-      Long,
-      RDD[(Pos, False)]
-    )] =
+  def unapply[PosResult](result: Result[PosResult]): Option[(Long, Long, Long)] =
     Some(
-      result.numCalls,
-      result.results,
+      result.numPositions,
       result.numFalseCalls,
-      result.falseCalls
+      result.numReadStarts
     )
 
   def sampleString(sampledLines: Seq[String], total: Long): String =

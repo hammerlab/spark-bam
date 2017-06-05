@@ -11,15 +11,21 @@ import org.hammerlab.io.{ Buffer, ByteChannel }
 
 trait Checker[Call] {
 
+  // Buffers (re-)used for reading presumptive BAM records
   val buf = Buffer(FIXED_FIELDS_SIZE)
   val readNameBuffer = Buffer(255)
 
   def uncompressedStream: SeekableByteStream
-  lazy val ch: ByteChannel = uncompressedStream
   def contigLengths: Map[Int, NumLoci]
+
+  lazy val ch: ByteChannel = uncompressedStream
 
   def seek(pos: Pos): Unit = uncompressedStream.seek(pos)
 
+  /**
+   * Special-cased [[Call]] for when there are fewer than [[FIXED_FIELDS_SIZE]] bytes remaining in
+   * [[uncompressedStream]], which case is handled here in the superclass.
+   */
   def tooFewFixedBlockBytes: Call
 
   def apply(): Call = {
@@ -37,8 +43,10 @@ trait Checker[Call] {
     apply(remainingBytes)
   }
 
+  /** Main record-checking entry-point */
   def apply(remainingBytes: Int): Call
 
+  /** Reusable logic for fetching a reference-sequence index and reference-position */
   def getRefPosError(): Option[RefPosError] = {
     val refIdx = buf.getInt
     val refPos = buf.getInt

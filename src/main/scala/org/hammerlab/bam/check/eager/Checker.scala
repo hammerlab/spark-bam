@@ -7,8 +7,12 @@ import org.hammerlab.bam.check.Checker.allowedReadNameChars
 import org.hammerlab.bgzf.block.SeekableByteStream
 import org.hammerlab.genomics.reference.NumLoci
 
+/**
+ * [[check.Checker]] implementation that emits a [[Boolean]] at each [[org.hammerlab.bgzf.Pos]] indicating whether it is
+ * a read-record boundary.
+ */
 case class Checker(uncompressedStream: SeekableByteStream,
-                        contigLengths: Map[Int, NumLoci])
+                   contigLengths: Map[Int, NumLoci])
   extends check.Checker[Boolean] {
 
   override def tooFewFixedBlockBytes: Boolean = false

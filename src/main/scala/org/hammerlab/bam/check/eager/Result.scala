@@ -5,8 +5,10 @@ import org.hammerlab.bam.check
 import org.hammerlab.bam.check.False
 import org.hammerlab.bgzf.Pos
 
-case class Result(numCalls: Long,
-                  results: RDD[(Pos, PosResult)],
+case class Result(numPositions: Long,
+                  positionResults: RDD[(Pos, PosResult)],
                   numFalseCalls: Long,
-                  falseCalls: RDD[(Pos, False)])
+                  falseCalls: RDD[(Pos, False)],
+                  numReadStarts: Long,
+                  readStarts: RDD[Pos])
   extends check.Result[PosResult]

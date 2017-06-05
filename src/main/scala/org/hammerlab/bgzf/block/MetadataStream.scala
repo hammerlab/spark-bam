@@ -1,15 +1,15 @@
 package org.hammerlab.bgzf.block
 
 import java.io.IOException
-import java.nio.ByteBuffer
-import java.nio.ByteOrder.LITTLE_ENDIAN
 
-import org.hammerlab.bgzf.block.Block.{ FOOTER_SIZE, MAX_BLOCK_SIZE }
-import org.hammerlab.io.ByteChannel
+import org.hammerlab.bgzf.block.Block.FOOTER_SIZE
+import org.hammerlab.bgzf.block.Header.EXPECTED_HEADER_SIZE
+import org.hammerlab.io.{ Buffer, ByteChannel }
 import org.hammerlab.iterator.SimpleBufferedIterator
 
 /**
- * Iterator over bgzf-block [[Metadata]]
+ * Iterator over bgzf-block [[Metadata]]; useful when loading/decompressing [[Block]] payloads is unnecessary.
+ *
  * @param ch input stream/channel containing compressed bgzf data
  * @param includeEmptyFinalBlock if true, include the final, empty bgzf-block in this stream
  */
@@ -18,17 +18,14 @@ case class MetadataStream(ch: ByteChannel,
                           closeStream: Boolean = true)
   extends SimpleBufferedIterator[Metadata] {
 
-  // Buffer for compressed-block data
-  implicit val encBuf =
-    ByteBuffer
-      .allocate(MAX_BLOCK_SIZE)
-      .order(LITTLE_ENDIAN)
+  // Buffer for the standard bits of the header that we care about
+  implicit val buf = Buffer(EXPECTED_HEADER_SIZE)
 
   override protected def _advance: Option[Metadata] = {
 
     val start = ch.position()
 
-    encBuf.clear()
+    buf.clear()
     val Header(actualHeaderSize, compressedSize) =
       try {
         Header(ch)

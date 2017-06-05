@@ -17,7 +17,9 @@ class RunTest
       numPositions,
       _,
       numFalseCalls,
-      falseCalls
+      falseCalls,
+      numReadStarts,
+      _
     ) =
       result
 
@@ -25,14 +27,7 @@ class RunTest
 
     numFalseCalls should be(0)
 
-    result
-      .results
-      .values
-      .filter {
-        case _: Positive ⇒ true
-        case _ ⇒ false
-      }
-      .count should be(expectedReadStarts)
+    numReadStarts should be(expectedReadStarts)
   }
 
   test("5k.bam header block") {

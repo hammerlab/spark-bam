@@ -14,16 +14,26 @@ import org.hammerlab.math.MonoidSyntax._
 
 import scala.collection.SortedMap
 
+/**
+ * [[check.Run]] implementation that uses the "full" [[Checker]], which records information about as many checks' as
+ * possible at each [[Pos]], for analyzing which rules are useful/necessary to correctly identify
+ * read-record-boundaries.
+ */
 object Run
   extends check.Run[Option[Flags], PosResult] {
 
   override def makeChecker: (SeekableByteStream, Map[Int, NumLoci]) ⇒ Checker =
     Checker.apply
 
+  /**
+   * Augment the standard [[check.Result]] fields with some extra information that is specific to this [[Checker]].
+   */
   override def makeResult(numCalls: Long,
                           results: RDD[(Pos, PosResult)],
                           numFalseCalls: Long,
-                          falseCalls: RDD[(Pos, False)]): Result = {
+                          falseCalls: RDD[(Pos, False)],
+                          numReadStarts: Long,
+                          readStarts: RDD[Pos]): Result = {
     /**
      * How many times each flag correctly rules out a [[Pos]], grouped by how many total flags ruled out that [[Pos]].
      *
@@ -89,6 +99,8 @@ object Run
       results,
       numFalseCalls,
       falseCalls,
+      numReadStarts,
+      readStarts,
       criticalErrorCounts,
       totalErrorCounts,
       SortedMap(countsByNonZeroFields: _*)
@@ -97,13 +109,18 @@ object Run
 
   override def makePosResult: check.MakePosResult[Option[Flags], PosResult] = MakePosResult
 
+  /**
+   * Print a few statistics beyond the generic ones output by [[check.Run]].
+   */
   override def apply(sc: SparkContext, args: Args): check.Result[PosResult] = {
     val result = super.apply(sc, args)
 
     val Result(
-      numCalls,
       _,
-      numFalseCalls,
+      _,
+      _,
+      _,
+      _,
       _,
       criticalErrorCounts,
       totalErrorCounts,

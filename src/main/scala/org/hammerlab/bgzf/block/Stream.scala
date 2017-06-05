@@ -1,12 +1,10 @@
 package org.hammerlab.bgzf.block
 
-import java.io.{ IOException, InputStream }
-import java.nio.ByteBuffer
-import java.nio.ByteOrder.LITTLE_ENDIAN
+import java.io.{ EOFException, IOException, InputStream }
 import java.util.zip.Inflater
 
 import org.hammerlab.bgzf.block.Block.{ FOOTER_SIZE, MAX_BLOCK_SIZE }
-import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
+import org.hammerlab.io.{ Buffer, ByteChannel, SeekableByteChannel }
 import org.hammerlab.iterator.SimpleBufferedIterator
 
 import scala.collection.mutable
@@ -19,13 +17,13 @@ trait StreamI
 
   def ch: ByteChannel
 
-  private implicit val encBuf =
-    ByteBuffer
-      .allocate(MAX_BLOCK_SIZE)
-      .order(LITTLE_ENDIAN)
+  // Buffer for input, bgzf-compressed block data
+  private implicit val encBuf = Buffer(MAX_BLOCK_SIZE)
 
+  // Buffer for output, bgzf-decompressed data
   private val decBuf = Array.fill[Byte](MAX_BLOCK_SIZE)(0)
 
+  // Start position of next block to be emitted
   def pos = head.start
 
   override protected def _advance: Option[Block] = {
@@ -34,7 +32,7 @@ trait StreamI
 
       val start = ch.position()
 
-      encBuf.position(0)
+      encBuf.clear()
       val Header(actualHeaderSize, compressedSize) = Header(ch)
 
       val remainingBytes = compressedSize - actualHeaderSize
@@ -64,9 +62,14 @@ trait StreamI
           )
         )
     } catch {
-      case e: IOException ⇒
+      case e: EOFException ⇒
         None
     }
+  }
+
+  override def close(): Unit = {
+    super.close()
+    ch.close()
   }
 }
 
@@ -89,14 +92,11 @@ case class SeekableStream(ch: SeekableByteChannel)
 
   override protected def _advance: Option[Block] = {
     val start = ch.position()
-//    println(s"advancing block stream: $start")
     cache
       .get(start)
       .map {
         block ⇒
-//          println(s"fetched block from cache: $block")
           ch.seek(start + block.compressedSize)
-//          println("seeked channel")
           block.idx = 0
           block
       }
@@ -104,20 +104,17 @@ case class SeekableStream(ch: SeekableByteChannel)
         super._advance.map {
           block ⇒
             cache(start) = block
-//            println(s"putting block in cache: $block")
             block
         }
       }
   }
 
   def seek(newPos: Long): Boolean = {
-//    println(s"block.Stream seek: $newPos")
     if (!hasNext || pos != newPos) {
       clear()
       ch.seek(newPos)
       true
     } else {
-//      println(s"no-op seek: $newPos")
       false
     }
   }

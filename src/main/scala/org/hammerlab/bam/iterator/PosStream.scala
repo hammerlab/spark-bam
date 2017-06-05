@@ -15,7 +15,7 @@ trait PosStreamI[Stream <: ByteStreamI[_]]
     for {
       pos ← curPos
     } yield {
-      val remainingLength = readInt
+      val remainingLength = uncompressedByteChannel.getInt
       stream.drop(remainingLength)
       pos
     }
