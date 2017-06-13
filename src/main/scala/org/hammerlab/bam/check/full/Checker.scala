@@ -2,17 +2,17 @@ package org.hammerlab.bam.check.full
 
 import java.io.IOException
 
-import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Checker.allowedReadNameChars
 import org.hammerlab.bam.check.full.error.{ CigarOpsError, EmptyReadName, Flags, InvalidCigarOp, NoReadName, NonASCIIReadName, NonNullTerminatedReadName, ReadNameError, RefPosError, TooFewBytesForCigarOps, TooFewBytesForReadName }
+import org.hammerlab.bam.check
+import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.block.SeekableByteStream
-import org.hammerlab.genomics.reference.NumLoci
 
 /**
  * [[check.Checker]] that builds [[Flags]] of all failing checks at each [[org.hammerlab.bgzf.Pos]].
  */
 case class Checker(uncompressedStream: SeekableByteStream,
-                   contigLengths: Map[Int, NumLoci])
+                   contigLengths: ContigLengths)
   extends check.Checker[Option[Flags]] {
 
   override def apply(remainingBytes: Int): Option[Flags] = {

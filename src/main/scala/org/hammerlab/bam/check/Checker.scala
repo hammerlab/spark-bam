@@ -3,10 +3,10 @@ package org.hammerlab.bam.check
 import java.io.IOException
 
 import org.hammerlab.bam.check.Checker.FIXED_FIELDS_SIZE
-import org.hammerlab.bam.check.full.error.{ Flags, NegativeRefIdx, NegativeRefIdxAndPos, NegativeRefPos, RefPosError, TooLargeRefIdx, TooLargeRefIdxNegativePos, TooLargeRefPos }
+import org.hammerlab.bam.check.full.error.{ NegativeRefIdx, NegativeRefIdxAndPos, NegativeRefPos, RefPosError, TooLargeRefIdx, TooLargeRefIdxNegativePos, TooLargeRefPos }
+import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableByteStream
-import org.hammerlab.genomics.reference.NumLoci
 import org.hammerlab.io.{ Buffer, ByteChannel }
 
 trait Checker[Call] {
@@ -16,15 +16,15 @@ trait Checker[Call] {
   val readNameBuffer = Buffer(255)
 
   def uncompressedStream: SeekableByteStream
-  def contigLengths: Map[Int, NumLoci]
+  def contigLengths: ContigLengths
 
   lazy val ch: ByteChannel = uncompressedStream
 
   def seek(pos: Pos): Unit = uncompressedStream.seek(pos)
 
   /**
-   * Special-cased [[Call]] for when there are fewer than [[FIXED_FIELDS_SIZE]] bytes remaining in
-   * [[uncompressedStream]], which case is handled here in the superclass.
+   * Special-cased [[Call]] for when there are fewer than [[org.hammerlab.bam.check.Checker.FIXED_FIELDS_SIZE]] bytes
+   * remaining in [[uncompressedStream]], which case is handled here in the superclass.
    */
   def tooFewFixedBlockBytes: Call
 
@@ -63,7 +63,7 @@ trait Checker[Call] {
         Some(TooLargeRefIdx)
     else if (refPos < -1)
       Some(NegativeRefPos)
-    else if (refIdx >= 0 && refPos > contigLengths(refIdx))
+    else if (refIdx >= 0 && refPos.toLong > contigLengths(refIdx)._2)
       Some(TooLargeRefPos)
     else
       None

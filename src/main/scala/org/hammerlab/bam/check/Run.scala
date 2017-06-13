@@ -6,18 +6,15 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Result.sampleString
+import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, SeekableByteStream }
-import org.hammerlab.genomics.reference.NumLoci
-import org.hammerlab.hadoop.Path
+import org.hammerlab.hadoop.{ Path, SerializableConfiguration }
 import org.hammerlab.io.ByteChannel.SeekableHadoopByteChannel
-import org.hammerlab.magic.rdd.hadoop.SerializableConfiguration
+import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
 import org.hammerlab.magic.rdd.size._
-import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFrom
-import org.seqdoop.hadoop_bam.util.WrapSeekable
 
-import scala.collection.JavaConverters._
 import scala.math.ceil
 import scala.reflect.ClassTag
 
@@ -35,7 +32,7 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
   /**
    * Given a bgzf-decompressed byte stream and map from reference indices to lengths, build a [[Checker]]
    */
-  def makeChecker: (SeekableByteStream, Map[Int, NumLoci]) ⇒ Checker[Call]
+  def makeChecker: (SeekableByteStream, ContigLengths) ⇒ Checker[Call]
 
   /**
    * Main CLI entry point: build a [[Result]] and print some statistics about it.
@@ -99,22 +96,7 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
     val confBroadcast = sc.broadcast(new SerializableConfiguration(conf))
     val path = Path(new URI(args.bamFile))
 
-    val ss = WrapSeekable.openPath(conf, path)
-
-    /**
-     * [[htsjdk.samtools.SAMFileHeader]] information used in identifying valid reads: contigs by index and their lengths
-     */
-    val contigLengths: Map[Int, NumLoci] =
-      readSAMHeaderFrom(ss, conf)
-        .getSequenceDictionary
-        .getSequences
-        .asScala
-        .map(
-          seq ⇒
-            seq.getSequenceIndex →
-              NumLoci(seq.getSequenceLength)
-        )
-        .toMap
+    val Header(contigLengths, _, _) = Header(path, sc.hadoopConfiguration)
 
     val blocksPath =
       args
@@ -236,16 +218,14 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
             val channel = SeekableHadoopByteChannel(path, confBroadcast.value)
             val stream = SeekableByteStream(channel)
 
-            new PosCallIterator(
+            PosCallIterator(
               start,
               uncompressedSize,
               makeChecker(stream, contigLengths)
-            ) {
-              override def done(): Unit = {
-                super.done()
-                stream.close()
-              }
-            }
+            )
+            .finish(
+              stream.close()
+            )
         }
 
     /**

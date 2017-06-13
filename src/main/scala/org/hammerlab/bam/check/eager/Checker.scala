@@ -2,17 +2,17 @@ package org.hammerlab.bam.check.eager
 
 import java.io.IOException
 
-import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Checker.allowedReadNameChars
+import org.hammerlab.bam.check
+import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.block.SeekableByteStream
-import org.hammerlab.genomics.reference.NumLoci
 
 /**
  * [[check.Checker]] implementation that emits a [[Boolean]] at each [[org.hammerlab.bgzf.Pos]] indicating whether it is
  * a read-record boundary.
  */
 case class Checker(uncompressedStream: SeekableByteStream,
-                   contigLengths: Map[Int, NumLoci])
+                   contigLengths: ContigLengths)
   extends check.Checker[Boolean] {
 
   override def tooFewFixedBlockBytes: Boolean = false

@@ -8,6 +8,7 @@ class PosStreamTest
   extends Suite {
 
   def checkFirstPositions(implicit stream: PosStreamI[_]): Unit = {
+    stream.headerEndPos should be(Pos(2454, 0))
     stream.take(10).toList should be(
       Seq(
         Pos(2454,    0),

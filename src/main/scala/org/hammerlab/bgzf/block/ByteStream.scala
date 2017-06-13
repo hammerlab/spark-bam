@@ -31,7 +31,7 @@ case class ByteStream(stream: Stream)
   extends ByteStreamI[Stream]
 
 object ByteStream {
-  def apply(ch: ByteChannel): ByteStream = ByteStream(Stream(ch))
+  def apply(compressedBytes: ByteChannel): ByteStream = ByteStream(Stream(compressedBytes))
 }
 
 /**

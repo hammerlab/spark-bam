@@ -2,16 +2,16 @@ package org.hammerlab.bam.hadoop
 
 import org.apache.hadoop.fs.Path
 import org.hammerlab.bam.check.eager.Checker
+import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableByteStream
-import org.hammerlab.genomics.reference.NumLoci
 
 object FindRecordStart {
 
   def apply(path: Path,
             uncompressedBytes: SeekableByteStream,
             blockStart: Long,
-            contigLengths: Map[Int, NumLoci],
+            contigLengths: ContigLengths,
             maxReadSize: Int = 100000): Pos = {
 
     uncompressedBytes.seek(Pos(blockStart, 0))

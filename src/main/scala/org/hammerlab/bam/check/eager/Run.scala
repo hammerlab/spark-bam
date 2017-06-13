@@ -3,14 +3,14 @@ package org.hammerlab.bam.check.eager
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.False
+import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableByteStream
-import org.hammerlab.genomics.reference.NumLoci
 
 object Run
   extends check.Run[Boolean, PosResult] {
 
-  override def makeChecker: (SeekableByteStream, Map[Int, NumLoci]) ⇒ Checker =
+  override def makeChecker: (SeekableByteStream, ContigLengths) ⇒ Checker =
     Checker.apply
 
   override def makePosResult: check.MakePosResult[Boolean, PosResult] = MakePosResult

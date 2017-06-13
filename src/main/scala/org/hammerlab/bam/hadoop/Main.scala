@@ -1,25 +1,19 @@
 package org.hammerlab.bam.hadoop
 
-import java.io.{ IOException, PrintStream }
+import java.io.PrintStream
 
-import caseapp._
-import htsjdk.samtools.seekablestream.ByteArraySeekableStream
-import htsjdk.samtools.util.BlockCompressedInputStream
-import htsjdk.samtools.{ BAMRecordCodec, SAMRecord }
+import caseapp.{ CaseApp, ExtraName ⇒ O, RemainingArgs }
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.JobID
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.task.JobContextImpl
 import org.apache.spark.SparkContext
-import org.hammerlab.bam.hadoop.InputFormat.NUM_GET_SPLITS_WORKERS_KEY
 import org.hammerlab.bam.hadoop.LoadBam._
-import org.hammerlab.bgzf.Pos
-import org.hammerlab.iterator.SimpleBufferedIterator
+import org.hammerlab.hadoop.MaxSplitSize
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.timing.Timer.time
-import org.seqdoop.hadoop_bam.util.WrapSeekable
-import org.seqdoop.hadoop_bam.{ FileVirtualSplit, LazyBAMRecordFactory }
+import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 
 import scala.collection.JavaConverters._
 
@@ -27,34 +21,12 @@ case class JW(conf: Configuration) {
   val job = org.apache.hadoop.mapreduce.Job.getInstance(conf)
 }
 
-case class Args(@ExtraName("n") numWorkers: Option[Int],
-                @ExtraName("u") useSeqdoop: Boolean = false,
-                @ExtraName("f") useForkedSeqdoop: Boolean = false,
-                @ExtraName("g") gsBuffer: Option[Int] = None,
-                @ExtraName("o") outFile: Option[String] = None)
+case class Args(@O("n") numWorkers: Option[Int],
+                @O("u") useSeqdoop: Boolean = false,
+                @O("g") gsBuffer: Option[Int] = None,
+                @O("o") outFile: Option[String] = None)
 
 object Main extends CaseApp[Args] {
-
-  def readFrom(path: Path, conf: Configuration, pos: Pos): Iterator[SAMRecord] = {
-    val sin = WrapSeekable.openPath(conf, path)
-    sin.seek(pos.blockPos)
-    val BLOCKS_NEEDED_FOR_GUESS = 3 * 0xffff + 0xfffe
-    val arr = Array.fill[Byte](BLOCKS_NEEDED_FOR_GUESS)(0)
-    if (sin.read(arr) < arr.length) {
-      throw new IOException(s"Too few bytes read")
-    }
-    val in = new ByteArraySeekableStream(arr)
-    val bgzf = new BlockCompressedInputStream(in)
-    bgzf.setCheckCrcs(true)
-    bgzf.seek(pos.offset)
-
-    val bamCodec = new BAMRecordCodec(null, new LazyBAMRecordFactory)
-    bamCodec.setInputStream(bgzf)
-    new SimpleBufferedIterator[SAMRecord] {
-      override protected def _advance: Option[SAMRecord] =
-        Option(bamCodec.decode())
-    }
-  }
 
   override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
     if (remainingArgs.remainingArgs.size != 1) {
@@ -62,9 +34,11 @@ object Main extends CaseApp[Args] {
     }
 
     val path = new Path(remainingArgs.remainingArgs.head)
-    val conf = new Configuration
+    implicit val conf = new Configuration
 
-    if (!args.useSeqdoop && !args.useForkedSeqdoop) {
+    implicit val config = Config(maxSplitSize = MaxSplitSize())
+
+    if (!args.useSeqdoop) {
       val sc = new SparkContext()
       val reads = sc.loadBam(path)
       val partitionSizes = reads.partitionSizes
@@ -87,20 +61,10 @@ object Main extends CaseApp[Args] {
         case None ⇒
       }
 
-      val ifmt =
-        if (args.useSeqdoop)
-          new org.seqdoop.hadoop_bam.BAMInputFormat
-        else
-          new InputFormat
+      val ifmt = new BAMInputFormat
 
       val job = org.apache.hadoop.mapreduce.Job.getInstance(conf)
       val jobConf = job.getConfiguration
-
-      args.numWorkers match {
-        case Some(numWorkers) ⇒
-          jobConf.setInt(NUM_GET_SPLITS_WORKERS_KEY, numWorkers)
-        case None ⇒
-      }
 
       val jobID = new JobID("get-splits", 1)
       val jc = new JobContextImpl(jobConf, jobID)
@@ -122,11 +86,9 @@ object Main extends CaseApp[Args] {
       pw.println(
         splits
           .asScala
-          .map(split ⇒
-            if (args.useSeqdoop)
+          .map(
+            split ⇒
               split.asInstanceOf[FileVirtualSplit]: Split
-            else
-              split.asInstanceOf[Split]
           )
           .map(split ⇒ s"${split.start}-${split.end}")
           .mkString("\t", "\n\t", "\n")

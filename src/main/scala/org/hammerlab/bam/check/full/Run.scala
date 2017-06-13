@@ -6,6 +6,7 @@ import org.hammerlab.bam.check
 import org.hammerlab.bam.check.full.error.Flags.toCounts
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
 import org.hammerlab.bam.check.{ Args, False }
+import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableByteStream
 import org.hammerlab.genomics.reference.NumLoci
@@ -22,7 +23,7 @@ import scala.collection.SortedMap
 object Run
   extends check.Run[Option[Flags], PosResult] {
 
-  override def makeChecker: (SeekableByteStream, Map[Int, NumLoci]) ⇒ Checker =
+  override def makeChecker: (SeekableByteStream, ContigLengths) ⇒ Checker =
     Checker.apply
 
   /**

@@ -1,5 +1,7 @@
 package org.hammerlab.bgzf
 
+import math.max
+
 /**
  * A "virtual position" in a BGZF file: [[blockPos]] (offset to bgzf-block-start in compressed file) and [[offset]] into
  * that block's uncompressed data.
@@ -15,6 +17,22 @@ case class Pos(blockPos: Long, offset: Int)
       case 0 ⇒ offset.compare(that.offset)
       case x ⇒ x
     }
+
+  def -(other: Pos)(implicit estimatedCompressionRatio: EstimatedCompressionRatio): Double =
+    max(
+      0L,
+      blockPos - other.blockPos +
+        ((offset - other.offset) / estimatedCompressionRatio).toLong
+    )
+}
+
+case class EstimatedCompressionRatio(ratio: Double)
+
+object EstimatedCompressionRatio {
+  implicit def makeEstimatedCompressionRatio(ratio: Double): EstimatedCompressionRatio =
+    EstimatedCompressionRatio(ratio)
+  implicit def unmakeEstimatedCompressionRatio(ratio: EstimatedCompressionRatio): Double =
+    ratio.ratio
 }
 
 object Pos {

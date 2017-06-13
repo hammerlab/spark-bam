@@ -2,10 +2,10 @@ package org.hammerlab.bam.iterator
 
 import java.io.InputStream
 
-import org.hammerlab.bam.Header
+import org.hammerlab.bam.header.Header
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Block, ByteStreamI }
-import org.hammerlab.io.{ Buffer, ByteChannel }
+import org.hammerlab.io.ByteChannel
 import org.hammerlab.iterator.SimpleBufferedIterator
 
 /**
@@ -21,11 +21,12 @@ trait RecordIterator[T, Stream <: ByteStreamI[_]]
   // Uncompressed byte-channel, for reading ints into a buffer
   val uncompressedByteChannel: ByteChannel = stream
 
-  val Header(_, headerEndPos, _) = Header(stream)
+  val header = Header(stream)
+  val headerEndPos = header.endPos
 
   def curBlock: Option[Block] = stream.curBlock
   def curPos: Option[Pos] = stream.curPos
 
   override def close(): Unit =
-    stream.close()
+    uncompressedByteChannel.close()
 }

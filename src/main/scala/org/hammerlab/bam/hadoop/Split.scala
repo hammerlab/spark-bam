@@ -5,17 +5,11 @@ import org.apache.hadoop.mapreduce.InputSplit
 import org.hammerlab.bgzf.Pos
 import org.seqdoop.hadoop_bam.FileVirtualSplit
 
-sealed trait SplitResult
-
-case class ExtendPrevious(path: Path, newEndPos: Pos)
-  extends SplitResult
-
 case class Split(path: Path,
                  start: Pos,
                  end: Pos,
                  locations: Array[String])
-  extends InputSplit
-    with SplitResult {
+  extends InputSplit {
 
   override def getLength: Long =
     (end.blockPos - start.blockPos) match {

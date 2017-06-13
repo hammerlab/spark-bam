@@ -1,6 +1,5 @@
 package org.hammerlab.bam.iterator
 
-import org.hammerlab.bam.Header
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableByteStream
 

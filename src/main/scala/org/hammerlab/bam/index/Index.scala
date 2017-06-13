@@ -1,23 +1,20 @@
 package org.hammerlab.bam.index
 
 import java.io.IOException
-import java.nio.ByteBuffer
-import java.nio.ByteOrder._
-import java.nio.channels.FileChannel
-import java.nio.file.Paths
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.hammerlab.bam.index.Index.{ Bin, Chunk, Reference }
-import org.hammerlab.bgzf.Pos
-import org.hammerlab.io.Buffer
-import org.hammerlab.stats.Stats
+import org.hammerlab.bam.index.Read._
+import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
+import org.hammerlab.io.ByteChannel
 
 case class Index(references: Seq[Reference]) {
   @transient lazy val offsets = references.flatMap(_.offsets)
 
   @transient lazy val chunkStarts =
     for {
-      Reference(bins, _) ← references
+      Reference(bins, _, _) ← references
       Bin(_, chunks) ← bins
       Chunk(start, _) ← chunks
     } yield
@@ -25,103 +22,64 @@ case class Index(references: Seq[Reference]) {
 
   @transient lazy val chunkEnds =
     for {
-      Reference(bins, _) ← references
+      Reference(bins, _, _) ← references
       Bin(_, chunks) ← bins
       Chunk(_, end) ← chunks
     } yield
       end
 
+  @transient lazy val chunks =
+    for {
+      Reference(bins, _, _) ← references
+      Bin(_, chunks) ← bins
+      chunk ← chunks
+    } yield
+      chunk
+
   @transient lazy val chunkBoundaries = chunkStarts ++ chunkEnds
 
   @transient lazy val allAddresses = (offsets ++ chunkBoundaries).distinct.sorted
-
-  //@transient lazy val allCPs = allAddresses.map(_.blockPos).distinct.sorted
 }
 
 object Index {
 
-  def getDiffStats(offsets: Seq[Pos]): Stats[Long, Int] =
-    getDiffStats(
-      offsets
-        .map(_.blockPos)
-        .toArray
-        .sorted
-    )
+  case class Reference(bins: Seq[Bin],
+                       offsets: Seq[Pos],
+                       metadata: Option[Metadata])
 
-  def getDiffStats(compressedPositions: Array[Long]): Stats[Long, Int] = {
-    val diffs = compressedPositions.sliding(2).map(l => l(1) - l(0)).toArray
-    Stats(diffs)
+  case class Bin(id: Long,
+                 chunks: Seq[Chunk])
+
+  case class Chunk(start: Pos,
+                   end: Pos) {
+    def size(implicit estimatedCompressionRatio: EstimatedCompressionRatio): Double =
+      end - start
   }
 
-  case class Reference(bins: Seq[Bin], offsets: Seq[Pos])
+  case class Metadata(unmappedBegin: Pos,
+                      unmappedEnd: Pos,
+                      numMapped: Long,
+                      numUnmapped: Long)
 
-  case class Bin(id: Int, chunks: Seq[Chunk])
+  object Chunk {
+    implicit def fromHTSJDKChunk(chunk: htsjdk.samtools.Chunk): Chunk =
+      Chunk(
+        Pos(chunk.getChunkStart),
+        Pos(chunk.getChunkEnd)
+      )
+  }
 
-  case class Chunk(start: Pos, end: Pos)
-
-  def apply(path: Path): Index =
+  def apply(path: Path, conf: Configuration): Index =
     Index(
       {
-        val ch = FileChannel.open(Paths.get(path.toUri))
+        implicit val ch: ByteChannel = path.getFileSystem(conf).open(path)
 
-        val buf4 = Buffer(4)
-        val buf8 = Buffer(8)
+        if (ch.readString(4, includesNull = false) != "BAI\1")
+          throw new IOException(s"Bad BAI magic in $path")
 
-        ch.read(buf4)
-        if (buf4.array().map(_.toChar).mkString("") != "BAI\1") {
-          throw new IOException(s"Bad BAI magic: ${buf4.array()}")
-        }
-
-        def readInt: Int = {
-          buf4.clear()
-          val numBytes = ch.read(buf4)
-          if (numBytes < 4) {
-            throw new IOException(s"Expected 4 bytes, read $numBytes")
-          }
-          buf4.position(0)
-          buf4.getInt()
-        }
-
-        def readLong: Long = {
-          buf8.clear()
-          val numBytes = ch.read(buf8)
-          if (numBytes < 8) {
-            throw new IOException(s"Expected 8 bytes, read $numBytes")
-          }
-          buf8.position(0)
-          buf8.getLong()
-        }
-
-        /** Read an integer, then read that many instances of a given type T. */
-        def seq[T](fn: () ⇒ T): Seq[T] = {
-          val num = readInt
-          for {
-            _ ← 0 until num
-          } yield
-            fn()
-        }
-
-        def readChunk() =
-          Chunk(
-            Pos(readLong),
-            Pos(readLong)
-          )
-
-        def readChunks = seq(readChunk)
-
-        def readBin() = Bin(readInt, readChunks)
-        def readBins = seq(readBin)
-
-        def readOffset() = Pos(readLong)
-        def readOffsets = seq(readOffset)
-
-        def readReference() =
-          Reference(
-            readBins,
-            readOffsets
-          )
-
-        seq(readReference)
+        read[Seq[Reference]]
       }
     )
+
+  val METADATA_BIN_ID = 37450
 }
