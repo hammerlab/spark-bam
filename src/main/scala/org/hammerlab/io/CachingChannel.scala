@@ -6,6 +6,15 @@ import java.nio.ByteBuffer
 import scala.collection.concurrent
 import scala.math.{ max, min }
 
+/**
+ * [[SeekableByteChannel]] that wraps another [[SeekableByteChannel]] and caches data read from the latter in chunks of
+ * size [[blockSize]] (quantized to boundaries at whole multiples of [[blockSize]])
+ *
+ * @param channel underlying channel to provide a caching layer over
+ * @param blockSize size of blocks to cache
+ * @param maxReadAttempts all read/skip operations require the full requested number of bytes to be returned in at most
+ *                        this many attempts, or they will throw an [[IOException]].
+ */
 case class CachingChannel(channel: SeekableByteChannel,
                           blockSize: Int,
                           maxReadAttempts: Int = 2)

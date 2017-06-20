@@ -8,9 +8,9 @@ import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Result.sampleString
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.{ Metadata, SeekableByteStream }
+import org.hammerlab.bgzf.block.{ Metadata, SeekableUncompressedBytes }
 import org.hammerlab.hadoop.{ Path, SerializableConfiguration }
-import org.hammerlab.io.ByteChannel.SeekableHadoopByteChannel
+import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
 import org.hammerlab.magic.rdd.size._
@@ -32,7 +32,7 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
   /**
    * Given a bgzf-decompressed byte stream and map from reference indices to lengths, build a [[Checker]]
    */
-  def makeChecker: (SeekableByteStream, ContigLengths) ⇒ Checker[Call]
+  def makeChecker: (SeekableUncompressedBytes, ContigLengths) ⇒ Checker[Call]
 
   /**
    * Main CLI entry point: build a [[Result]] and print some statistics about it.
@@ -216,7 +216,7 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
           case Metadata(start, _, uncompressedSize) ⇒
 
             val channel = SeekableHadoopByteChannel(path, confBroadcast.value)
-            val stream = SeekableByteStream(channel)
+            val stream = SeekableUncompressedBytes(channel)
 
             PosCallIterator(
               start,

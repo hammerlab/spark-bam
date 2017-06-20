@@ -4,11 +4,11 @@ import java.io.{ IOException, PrintWriter }
 import java.net.URI
 import java.nio.channels.FileChannel
 
-import caseapp._
+import caseapp.{ ExtraName ⇒ O, _ }
 import grizzled.slf4j.Logging
 import org.apache.hadoop.conf.Configuration
 import org.hammerlab.bgzf.block.{ Metadata, MetadataStream }
-import org.hammerlab.io.ByteChannel
+import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
 import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat
 
@@ -25,10 +25,10 @@ import org.hammerlab.timing.Interval.heartbeat
  *                   [[java.nio.file.Files.newInputStream]]
  * @param includeEmptyFinalBlock whether to emit a record for the final, empty bgzf-block
  */
-case class Args(@ExtraName("b") inFile: String,
-                @ExtraName("o") outFile: Option[String] = None,
-                @ExtraName("c") useChannel: Boolean = false,
-                @ExtraName("i") includeEmptyFinalBlock: Boolean = false)
+case class Args(@O("b") inFile: String,
+                @O("o") outFile: Option[String] = None,
+                @O("c") useChannel: Boolean = false,
+                @O("i") includeEmptyFinalBlock: Boolean = false)
 
 object IndexBlocks
   extends CaseApp[Args]
@@ -39,7 +39,7 @@ object IndexBlocks
     val path = Path(new URI(args.inFile))
     val ch: ByteChannel =
       if (args.useChannel)
-        FileChannel.open(path)
+        FileChannel.open(path): SeekableByteChannel
       else
         path.inputStream
 

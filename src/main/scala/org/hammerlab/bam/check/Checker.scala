@@ -6,7 +6,7 @@ import org.hammerlab.bam.check.Checker.FIXED_FIELDS_SIZE
 import org.hammerlab.bam.check.full.error.{ NegativeRefIdx, NegativeRefIdxAndPos, NegativeRefPos, RefPosError, TooLargeRefIdx, TooLargeRefIdxNegativePos, TooLargeRefPos }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.SeekableByteStream
+import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.io.{ Buffer, ByteChannel }
 
 trait Checker[Call] {
@@ -15,7 +15,7 @@ trait Checker[Call] {
   val buf = Buffer(FIXED_FIELDS_SIZE)
   val readNameBuffer = Buffer(255)
 
-  def uncompressedStream: SeekableByteStream
+  def uncompressedStream: SeekableUncompressedBytes
   def contigLengths: ContigLengths
 
   lazy val ch: ByteChannel = uncompressedStream

@@ -3,7 +3,7 @@ package org.hammerlab.bam.header
 import htsjdk.samtools.{ SAMFileHeader, SAMSequenceDictionary, SAMSequenceRecord }
 import org.apache.hadoop.conf.Configuration
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.{ ByteStream, ByteStreamI }
+import org.hammerlab.bgzf.block.{ UncompressedBytes, UncompressedBytesI }
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
 import org.hammerlab.hadoop.Path
 import org.hammerlab.io.ByteChannel
@@ -18,13 +18,13 @@ case class Header(contigLengths: ContigLengths,
 object Header {
 
   def apply(path: Path, conf: Configuration): Header = {
-    val uncompressedBytes = ByteStream(path.getFileSystem(conf).open(path))
+    val uncompressedBytes = UncompressedBytes(path.getFileSystem(conf).open(path))
     val header = apply(uncompressedBytes)
     uncompressedBytes.close()
     header
   }
 
-  def apply(byteStream: ByteStreamI[_]): Header = {
+  def apply(byteStream: UncompressedBytesI[_]): Header = {
     val uncompressedByteChannel: ByteChannel = byteStream
     require(
       uncompressedByteChannel.readString(4, includesNull = false) ==

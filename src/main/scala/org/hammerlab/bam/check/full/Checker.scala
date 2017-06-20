@@ -6,12 +6,12 @@ import org.hammerlab.bam.check.Checker.allowedReadNameChars
 import org.hammerlab.bam.check.full.error.{ CigarOpsError, EmptyReadName, Flags, InvalidCigarOp, NoReadName, NonASCIIReadName, NonNullTerminatedReadName, ReadNameError, RefPosError, TooFewBytesForCigarOps, TooFewBytesForReadName }
 import org.hammerlab.bam.check
 import org.hammerlab.bam.header.ContigLengths
-import org.hammerlab.bgzf.block.SeekableByteStream
+import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 
 /**
  * [[check.Checker]] that builds [[Flags]] of all failing checks at each [[org.hammerlab.bgzf.Pos]].
  */
-case class Checker(uncompressedStream: SeekableByteStream,
+case class Checker(uncompressedStream: SeekableUncompressedBytes,
                    contigLengths: ContigLengths)
   extends check.Checker[Option[Flags]] {
 

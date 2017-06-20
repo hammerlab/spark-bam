@@ -8,9 +8,8 @@ import org.hammerlab.bam.check.full.error.{ Counts, Flags }
 import org.hammerlab.bam.check.{ Args, False }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.SeekableByteStream
-import org.hammerlab.genomics.reference.NumLoci
-import org.hammerlab.math.Monoid.{ mzero ⇒ zero }
+import org.hammerlab.bgzf.block.SeekableUncompressedBytes
+import org.hammerlab.math.Monoid.zero
 import org.hammerlab.math.MonoidSyntax._
 
 import scala.collection.SortedMap
@@ -23,7 +22,7 @@ import scala.collection.SortedMap
 object Run
   extends check.Run[Option[Flags], PosResult] {
 
-  override def makeChecker: (SeekableByteStream, ContigLengths) ⇒ Checker =
+  override def makeChecker: (SeekableUncompressedBytes, ContigLengths) ⇒ Checker =
     Checker.apply
 
   /**

@@ -9,14 +9,14 @@ import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bam.index.Index.Chunk
 import org.hammerlab.bam.iterator.SeekableRecordStream
-import org.hammerlab.bgzf.block.{ FindBlockStart, SeekableByteStream }
+import org.hammerlab.bgzf.block.{ FindBlockStart, SeekableUncompressedBytes }
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
 import org.hammerlab.hadoop.SerializableConfiguration._
 import org.hammerlab.hadoop.{ FileSplits, MaxSplitSize, Path }
-import org.hammerlab.io.ByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.io.CachingChannel
+import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.iterator.CappedCostGroupsIterator.ElementTooCostlyStrategy.EmitAlone
 import org.hammerlab.iterator.CappedCostGroupsIterator._
 import org.hammerlab.iterator.FinishingIterator._
@@ -49,14 +49,13 @@ object LoadBam
   case class Config(bgzfBlockHeadersToCheck: Int = 5,
                     maxReadSize: Int = 1000000,
                     maxSplitSize: MaxSplitSize,
-                    parallelizer: parallel.Config = threads.Config(8),
+                    @transient parallelizer: parallel.Config = threads.Config(8),
                     estimatedBamCompressionRatio: EstimatedCompressionRatio = 3.0)
     extends bgzf.hadoop.Config
 
   def getIntevalChunks(path: Path,
                        intervals: LociSet)(
       implicit
-      config: FileSplits.Config,
       conf: Configuration
   ): Seq[Chunk] = {
     val fs = path.getFileSystem(conf)
@@ -166,7 +165,7 @@ object LoadBam
                 confBroadcast.value
               )
 
-            val uncompressedBytes = SeekableByteStream(compressedChannel)
+            val uncompressedBytes = SeekableUncompressedBytes(compressedChannel)
 
             val records = SeekableRecordStream(uncompressedBytes)
 
@@ -259,7 +258,7 @@ object LoadBam
                     config.bgzfBlockHeadersToCheck
                   )
 
-                val uncompressedBytes = SeekableByteStream(compressedChannel)
+                val uncompressedBytes = SeekableUncompressedBytes(compressedChannel)
 
                 val bamRecordStart =
                   FindRecordStart(
@@ -291,7 +290,7 @@ object LoadBam
         .flatMap {
           case (start, end) ⇒
             val uncompressedBytes =
-              SeekableByteStream(
+              SeekableUncompressedBytes(
                 SeekableHadoopByteChannel(
                   path,
                   confBroadcast.value

@@ -3,6 +3,7 @@ package org.hammerlab.bam.iterator
 import htsjdk.samtools.SAMRecord
 import org.apache.hadoop.conf.Configuration
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.io.SeekableByteChannel.ChannelByteChannel
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -103,5 +104,23 @@ class RecordStreamTest
     check(
       ( 2454 →  1244, 10048, "HWI-ST807:461:C2P0JACXX:4:1304:9505:89866")
     )
+
+    val compressedByteChannel = rs.uncompressedBytes.blockStream.compressedBytes
+
+    compressedByteChannel match {
+      case ChannelByteChannel(ch) ⇒
+        ch.isOpen should be(true)
+      case _ ⇒
+        fail("Expected ChannelByteChannel")
+    }
+
+    rs.close()
+
+    compressedByteChannel match {
+      case ChannelByteChannel(ch) ⇒
+        ch.isOpen should be(false)
+      case _ ⇒
+        fail("Expected ChannelByteChannel")
+    }
   }
 }

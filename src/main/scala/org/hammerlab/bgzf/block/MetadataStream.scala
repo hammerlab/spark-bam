@@ -1,6 +1,6 @@
 package org.hammerlab.bgzf.block
 
-import java.io.IOException
+import java.io.{ Closeable, IOException }
 
 import org.hammerlab.bgzf.block.Block.FOOTER_SIZE
 import org.hammerlab.bgzf.block.Header.EXPECTED_HEADER_SIZE
@@ -14,9 +14,9 @@ import org.hammerlab.iterator.SimpleBufferedIterator
  * @param includeEmptyFinalBlock if true, include the final, empty bgzf-block in this stream
  */
 case class MetadataStream(ch: ByteChannel,
-                          includeEmptyFinalBlock: Boolean = false,
-                          closeStream: Boolean = true)
-  extends SimpleBufferedIterator[Metadata] {
+                          includeEmptyFinalBlock: Boolean = false)
+  extends SimpleBufferedIterator[Metadata]
+    with Closeable {
 
   // Buffer for the standard bits of the header that we care about
   implicit val buf = Buffer(EXPECTED_HEADER_SIZE)
@@ -55,6 +55,5 @@ case class MetadataStream(ch: ByteChannel,
   }
 
   override def close(): Unit =
-    if (closeStream)
-      ch.close()
+    ch.close()
 }

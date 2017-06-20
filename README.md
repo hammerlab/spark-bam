@@ -1,19 +1,17 @@
-# hadoop-bam
-[![Build Status](https://travis-ci.org/hammerlab/hadoop-bam.svg?branch=master)](https://travis-ci.org/hammerlab/hadoop-bam)
-[![Coverage Status](https://coveralls.io/repos/github/hammerlab/hadoop-bam/badge.svg?branch=master)](https://coveralls.io/github/hammerlab/hadoop-bam?branch=master)
-[![Maven Central](https://img.shields.io/maven-central/v/org.hammerlab/hadoop-bam_2.11.svg?maxAge=600)](http://search.maven.org/#search%7Cga%7C1%7Chadoop-bam)
+# spark-bam
+[![Build Status](https://travis-ci.org/hammerlab/spark-bam.svg?branch=master)](https://travis-ci.org/hammerlab/spark-bam)
+[![Coverage Status](https://coveralls.io/repos/github/hammerlab/spark-bam/badge.svg?branch=master)](https://coveralls.io/github/hammerlab/spark-bam?branch=master)
+[![Maven Central](https://img.shields.io/maven-central/v/org.hammerlab/spark-bam_2.11.svg?maxAge=600)](http://search.maven.org/#search%7Cga%7C1%7Cspark-bam)
 
-Extension of [HadoopGenomics/Hadoop-bam](https://github.com/HadoopGenomics/Hadoop-BAM)
+Load [BAM files](http://samtools.github.io/hts-specs/SAMv1.pdf) using [Apache Spark](https://spark.apache.org/) and [HTSJDK](https://github.com/samtools/htsjdk).
 
-Implements [a `BAMInputFormat`](src/main/scala/org/hammerlab/hadoop_bam/BAMInputFormat.scala) that fetches BAM-ranges in parallel using a configurable number of worker-threads:
-
-[![Scaling log-log plot](https://cl.ly/3C0k2Y203U0i/image%20(22).png)](https://docs.google.com/a/hammerlab.org/spreadsheets/d/11c6T-HxR7bMdPOeS6l3n4klBuC9PhgrR5JcSg2qa_H4/edit?usp=sharing)
+Inspired by [HadoopGenomics/hadoop-bam](https://github.com/HadoopGenomics/Hadoop-BAM).
 
 *Timings from `time spark-submit $JAR -n <NUM> <BAM>` for various numbers of threads (`NUM`), against a 178GB `BAM`; [raw data here](https://docs.google.com/spreadsheets/d/11c6T-HxR7bMdPOeS6l3n4klBuC9PhgrR5JcSg2qa_H4/edit#gid=1917204057).*
 
 ## Impetus
 
-With [the upstream BAMInputFormat](https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMInputFormat.java), computing splits on a Google Cloud Storage (GCS)-resident BAM typically took O(minutes), e.g. 2mins for a 20GB BAM and 15mins on a 178GB BAM in recent benchmarks.
+With hadoop-bam's [BAMInputFormat](https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMInputFormat.java), computing splits on a Google Cloud Storage (GCS)-resident BAM typically took O(minutes), e.g. 2mins for a 20GB BAM and 15mins on a 178GB BAM in recent benchmarks.
 
 During this time, the driver node fetches data from each split-offset returned by `FileInputFormat`, typically ≈4 64KB BGZF blocks (or 256KB) every 32MB, 64MB, or 128MB according to the HDFS-block-size being used (or simulated in the case of a [`GoogleHadoopFS`](https://github.com/GoogleCloudPlatform/bigdata-interop/blob/v1.6.1/gcs/src/main/java/com/google/cloud/hadoop/fs/gcs/GoogleHadoopFS.java)). 
 

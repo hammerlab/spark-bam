@@ -10,7 +10,7 @@ import org.hammerlab.test.resources.File
 class ByteStreamTest
   extends Suite {
 
-  def checkHeader(implicit byteStream: ByteStreamI[_], byteChannel: ByteChannel): Unit = {
+  def checkHeader(implicit byteStream: UncompressedBytesI[_], byteChannel: ByteChannel): Unit = {
     byteChannel.readString(4, includesNull = false) should be("BAM\1")
 
     val headerTextLength = 4253
@@ -50,7 +50,7 @@ class ByteStreamTest
 
   test("ByteStream") {
     implicit val byteStream =
-      ByteStream(
+      UncompressedBytes(
         File("5k.bam")
           .inputStream
       )
@@ -62,7 +62,7 @@ class ByteStreamTest
 
   test("SeekableByteStream") {
     implicit val byteStream =
-      SeekableByteStream(
+      SeekableUncompressedBytes(
         FileChannel.open(File("5k.bam").path)
       )
 

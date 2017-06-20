@@ -3,6 +3,7 @@ package org.hammerlab.bgzf.block
 import java.nio.channels.FileChannel
 import java.nio.file.Paths
 
+import org.hammerlab.io.SeekableByteChannel._
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -14,8 +15,7 @@ class MetadataStreamTest
 
     MetadataStream(
       ch,
-      includeEmptyFinalBlock = true,
-      closeStream = false
+      includeEmptyFinalBlock = true
     )
     .size should be(
       51
@@ -40,12 +40,18 @@ class MetadataStreamTest
     )
 
     ch.position(0)
-    MetadataStream(
-      ch,
-      includeEmptyFinalBlock = false
-    )
-    .size should be(
+    val stream =
+      MetadataStream(
+        ch,
+        includeEmptyFinalBlock = false
+      )
+
+    stream.size should be(
       50
     )
+
+    ch.isOpen should be(true)
+    stream.close()
+    ch.isOpen should be(false)
   }
 }

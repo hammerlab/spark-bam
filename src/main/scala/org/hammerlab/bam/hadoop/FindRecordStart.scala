@@ -4,12 +4,12 @@ import org.apache.hadoop.fs.Path
 import org.hammerlab.bam.check.eager.Checker
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.SeekableByteStream
+import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 
 object FindRecordStart {
 
   def apply(path: Path,
-            uncompressedBytes: SeekableByteStream,
+            uncompressedBytes: SeekableUncompressedBytes,
             blockStart: Long,
             contigLengths: ContigLengths,
             maxReadSize: Int = 100000): Pos = {

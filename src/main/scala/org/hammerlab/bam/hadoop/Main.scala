@@ -2,16 +2,18 @@ package org.hammerlab.bam.hadoop
 
 import java.io.PrintStream
 
-import caseapp.{ CaseApp, ExtraName ⇒ O, RemainingArgs }
+import caseapp.{ CaseApp, RemainingArgs, ExtraName ⇒ O }
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.JobID
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.task.JobContextImpl
 import org.apache.spark.SparkContext
+import org.hammerlab.parallel.threads
 import org.hammerlab.bam.hadoop.LoadBam._
 import org.hammerlab.hadoop.MaxSplitSize
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
+import org.hammerlab.parallel.spark
 import org.hammerlab.timing.Timer.time
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 
@@ -24,6 +26,7 @@ case class JW(conf: Configuration) {
 case class Args(@O("n") numWorkers: Option[Int],
                 @O("u") useSeqdoop: Boolean = false,
                 @O("g") gsBuffer: Option[Int] = None,
+                @O("s") maxSplitSize: Option[Long] = None,
                 @O("o") outFile: Option[String] = None)
 
 object Main extends CaseApp[Args] {
@@ -36,12 +39,27 @@ object Main extends CaseApp[Args] {
     val path = new Path(remainingArgs.remainingArgs.head)
     implicit val conf = new Configuration
 
-    implicit val config = Config(maxSplitSize = MaxSplitSize())
-
     if (!args.useSeqdoop) {
-      val sc = new SparkContext()
+      implicit val sc = new SparkContext()
+
+      val parallelizer =
+        args.numWorkers match {
+          case Some(numWorkers) ⇒
+            threads.Config(numWorkers)
+          case _ ⇒
+            spark.Config()
+        }
+
+      implicit val config =
+        Config(
+          parallelizer = parallelizer,
+          maxSplitSize = MaxSplitSize(args.maxSplitSize)
+        )
+
       val reads = sc.loadBam(path)
+
       val partitionSizes = reads.partitionSizes
+
       println("Partition sizes:")
       println(
         partitionSizes

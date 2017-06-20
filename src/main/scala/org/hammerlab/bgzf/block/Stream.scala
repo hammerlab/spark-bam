@@ -1,6 +1,6 @@
 package org.hammerlab.bgzf.block
 
-import java.io.{ EOFException, IOException, InputStream }
+import java.io.{ Closeable, EOFException, IOException, InputStream }
 import java.util.zip.Inflater
 
 import org.hammerlab.bgzf.block.Block.{ FOOTER_SIZE, MAX_BLOCK_SIZE }
@@ -13,9 +13,10 @@ import scala.collection.mutable
  * Iterator over BGZF [[Block]]s pointed to by a BGZF-compressed [[InputStream]]
  */
 trait StreamI
-  extends SimpleBufferedIterator[Block] {
+  extends SimpleBufferedIterator[Block]
+    with Closeable {
 
-  def ch: ByteChannel
+  def compressedBytes: ByteChannel
 
   // Buffer for input, bgzf-compressed block data
   private implicit val encBuf = Buffer(MAX_BLOCK_SIZE)
@@ -30,16 +31,16 @@ trait StreamI
 
     try {
 
-      val start = ch.position()
+      val start = compressedBytes.position()
 
       encBuf.clear()
-      val Header(actualHeaderSize, compressedSize) = Header(ch)
+      val Header(actualHeaderSize, compressedSize) = Header(compressedBytes)
 
       val remainingBytes = compressedSize - actualHeaderSize
 
       val dataLength = remainingBytes - FOOTER_SIZE
 
-      ch.read(encBuf, actualHeaderSize, remainingBytes)
+      compressedBytes.read(encBuf, actualHeaderSize, remainingBytes)
 
       val uncompressedSize = encBuf.getInt(compressedSize - 4)
 
@@ -67,16 +68,14 @@ trait StreamI
     }
   }
 
-  override def close(): Unit = {
-    super.close()
-    ch.close()
-  }
+  override def close(): Unit =
+    compressedBytes.close()
 }
 
-case class Stream(ch: ByteChannel)
+case class Stream(compressedBytes: ByteChannel)
   extends StreamI
 
-case class SeekableStream(ch: SeekableByteChannel)
+case class SeekableStream(compressedBytes: SeekableByteChannel)
   extends StreamI {
 
   val maxCacheSize = 100
@@ -91,12 +90,12 @@ case class SeekableStream(ch: SeekableByteChannel)
     .asScala
 
   override protected def _advance: Option[Block] = {
-    val start = ch.position()
+    val start = compressedBytes.position()
     cache
       .get(start)
       .map {
         block ⇒
-          ch.seek(start + block.compressedSize)
+          compressedBytes.seek(start + block.compressedSize)
           block.idx = 0
           block
       }
@@ -112,7 +111,7 @@ case class SeekableStream(ch: SeekableByteChannel)
   def seek(newPos: Long): Boolean = {
     if (!hasNext || pos != newPos) {
       clear()
-      ch.seek(newPos)
+      compressedBytes.seek(newPos)
       true
     } else {
       false

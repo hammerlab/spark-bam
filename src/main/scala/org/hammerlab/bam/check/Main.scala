@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check
 
-import caseapp._
+import caseapp.{ ExtraName ⇒ O, _ }
 import grizzled.slf4j.Logging
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.hammerlab.bam.check.full.error.Registrar
@@ -23,13 +23,13 @@ import org.hammerlab.bam.check.full.error.Registrar
  *              as possible and aggregates statistics about how many times each check participates in ruling out a given
  *              position.
  */
-case class Args(@ExtraName("b") bamFile: String,
-                @ExtraName("k") blocksFile: Option[String] = None,
-                @ExtraName("r") recordsFile: Option[String] = None,
-                @ExtraName("n") numBlocks: Option[Int] = None,
-                @ExtraName("w") blocksWhitelist: Option[String] = None,
-                @ExtraName("p") blocksPerPartition: Int = 20,
-                @ExtraName("e") eager: Boolean = false)
+case class Args(@O("b") bamFile: String,
+                @O("k") blocksFile: Option[String] = None,
+                @O("r") recordsFile: Option[String] = None,
+                @O("n") numBlocks: Option[Int] = None,
+                @O("w") blocksWhitelist: Option[String] = None,
+                @O("p") blocksPerPartition: Int = 20,
+                @O("e") eager: Boolean = false)
 
 object Main
   extends CaseApp[Args]

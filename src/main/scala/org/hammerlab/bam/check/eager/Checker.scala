@@ -5,13 +5,13 @@ import java.io.IOException
 import org.hammerlab.bam.check.Checker.allowedReadNameChars
 import org.hammerlab.bam.check
 import org.hammerlab.bam.header.ContigLengths
-import org.hammerlab.bgzf.block.SeekableByteStream
+import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 
 /**
  * [[check.Checker]] implementation that emits a [[Boolean]] at each [[org.hammerlab.bgzf.Pos]] indicating whether it is
  * a read-record boundary.
  */
-case class Checker(uncompressedStream: SeekableByteStream,
+case class Checker(uncompressedStream: SeekableUncompressedBytes,
                    contigLengths: ContigLengths)
   extends check.Checker[Boolean] {
 

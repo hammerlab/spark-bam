@@ -5,12 +5,12 @@ import org.hammerlab.bam.check
 import org.hammerlab.bam.check.False
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.SeekableByteStream
+import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 
 object Run
   extends check.Run[Boolean, PosResult] {
 
-  override def makeChecker: (SeekableByteStream, ContigLengths) ⇒ Checker =
+  override def makeChecker: (SeekableUncompressedBytes, ContigLengths) ⇒ Checker =
     Checker.apply
 
   override def makePosResult: check.MakePosResult[Boolean, PosResult] = MakePosResult

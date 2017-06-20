@@ -4,7 +4,7 @@ import java.io.{ EOFException, IOException, InputStream }
 
 import org.apache.hadoop.conf.Configuration
 import org.hammerlab.hadoop.Path
-import org.hammerlab.io.ByteChannel.SeekableHadoopByteChannel
+import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 

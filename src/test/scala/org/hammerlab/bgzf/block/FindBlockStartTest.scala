@@ -1,7 +1,7 @@
 package org.hammerlab.bgzf.block
 
 import org.hammerlab.hadoop.Path
-import org.hammerlab.io.ByteChannel.SeekableHadoopByteChannel
+import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.spark.test.suite.SparkSuite
 import org.hammerlab.test.resources.File
 import org.hammerlab.timing.Timer.time

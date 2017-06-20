@@ -3,7 +3,7 @@ package org.hammerlab.bam.index
 import java.io.{ IOException, PrintWriter }
 import java.net.URI
 
-import caseapp._
+import caseapp.{ ExtraName ⇒ O, _ }
 import grizzled.slf4j.Logging
 import htsjdk.samtools.util.{ RuntimeEOFException, RuntimeIOException }
 import org.apache.hadoop.conf.Configuration
@@ -25,11 +25,11 @@ import org.hammerlab.paths.Path
  * @param throwOnTruncation If true, throw an [[IOException]] in case of an unexpected EOF; default: stop traversing,
  *                          output only through end of last complete record, exit 0.
  */
-case class Args(@ExtraName("b") bamFile: String,
-                @ExtraName("o") outFile: Option[String] = None,
-                @ExtraName("r") parseRecords: Boolean = false,
-                @ExtraName("c") useChannel: Boolean = false,
-                @ExtraName("t") throwOnTruncation: Boolean = false)
+case class Args(@O("b") bamFile: String,
+                @O("o") outFile: Option[String] = None,
+                @O("r") parseRecords: Boolean = false,
+                @O("c") useChannel: Boolean = false,
+                @O("t") throwOnTruncation: Boolean = false)
 
 object IndexRecords
   extends CaseApp[Args]
