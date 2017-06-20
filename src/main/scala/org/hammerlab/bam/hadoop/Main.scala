@@ -114,19 +114,3 @@ object Main extends CaseApp[Args] {
     }
   }
 }
-
-import org.apache.hadoop.mapreduce.lib.input.{ FileInputFormat, FileSplit }
-import org.apache.hadoop.mapreduce.{ InputSplit, JobContext, RecordReader, TaskAttemptContext }
-
-import scala.collection.JavaConverters._
-class TestInputFormat extends FileInputFormat {
-
-  override def createRecordReader(split: InputSplit, context: TaskAttemptContext): RecordReader[Nothing, Nothing] = ???
-
-  def fileSplits(job: JobContext): Vector[FileSplit] =
-    super
-      .getSplits(job)
-      .asScala
-      .map(_.asInstanceOf[FileSplit])
-      .toVector
-}
