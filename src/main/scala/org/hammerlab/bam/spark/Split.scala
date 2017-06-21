@@ -1,4 +1,4 @@
-package org.hammerlab.bam.hadoop
+package org.hammerlab.bam.spark
 
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.InputSplit

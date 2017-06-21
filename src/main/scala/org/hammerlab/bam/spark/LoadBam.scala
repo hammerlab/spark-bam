@@ -1,4 +1,4 @@
-package org.hammerlab.bam.hadoop
+package org.hammerlab.bam.spark
 
 import grizzled.slf4j.Logging
 import htsjdk.samtools.SamReaderFactory.Option._

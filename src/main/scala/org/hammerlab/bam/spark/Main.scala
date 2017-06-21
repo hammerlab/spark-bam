@@ -1,4 +1,4 @@
-package org.hammerlab.bam.hadoop
+package org.hammerlab.bam.spark
 
 import java.io.PrintStream
 
@@ -9,11 +9,10 @@ import org.apache.hadoop.mapreduce.JobID
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.task.JobContextImpl
 import org.apache.spark.SparkContext
-import org.hammerlab.parallel.threads
-import org.hammerlab.bam.hadoop.LoadBam._
+import org.hammerlab.bam.spark.LoadBam._
 import org.hammerlab.hadoop.MaxSplitSize
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
-import org.hammerlab.parallel.spark
+import org.hammerlab.parallel.{ spark, threads }
 import org.hammerlab.timing.Timer.time
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 
