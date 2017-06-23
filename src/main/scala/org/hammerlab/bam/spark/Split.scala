@@ -1,31 +1,19 @@
 package org.hammerlab.bam.spark
 
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.mapreduce.InputSplit
-import org.hammerlab.bgzf.Pos
+import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.seqdoop.hadoop_bam.FileVirtualSplit
 
-case class Split(path: Path,
-                 start: Pos,
-                 end: Pos,
-                 locations: Array[String])
-  extends InputSplit {
-
-  override def getLength: Long =
-    (end.blockPos - start.blockPos) match {
-      case 0 ⇒ end.offset - start.offset
-      case diff ⇒ diff << 16
-    }
-
-  override def getLocations: Array[String] = locations
+case class Split(start: Pos,
+                 end: Pos) {
+  def length(implicit estimatedCompressionRatio: EstimatedCompressionRatio): Double =
+    end - start
 }
 
 object Split {
+  implicit def apply(t: (Pos, Pos)): Split = Split(t._1, t._2)
   implicit def apply(fvs: FileVirtualSplit): Split =
     Split(
-      fvs.getPath,
       Pos(fvs.getStartVirtualOffset),
-      Pos(fvs.getEndVirtualOffset),
-      fvs.getLocations
+      Pos(fvs.getEndVirtualOffset)
     )
 }

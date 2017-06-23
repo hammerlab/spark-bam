@@ -26,7 +26,7 @@ trait LoadBAMChecks
   def check(maxSplitSize: MaxSplitSize, sizes: Int*): Unit = {
     val records =
       sc
-        .loadBam(
+      .loadReads(
           path
         )(
           Config(

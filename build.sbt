@@ -9,7 +9,8 @@ deps ++= Seq(
   "com.github.alexarchambault" %% "case-app" % "1.2.0-M3",
   libs.value('magic_rdds),
   libs.value('paths),
-  libs.value('reference)
+  libs.value('reference),
+  "org.hammerlab" %% "spark-util" % "1.1.3"
 )
 
 compileAndTestDeps += libs.value('loci)

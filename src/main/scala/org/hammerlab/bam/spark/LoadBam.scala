@@ -24,6 +24,7 @@ import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.iterator.Sliding2Iterator._
 import org.hammerlab.math.ceil
 import org.hammerlab.parallel._
+import org.hammerlab.stats.Stats
 import org.hammerlab.{ bgzf, parallel, paths }
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFrom
 
@@ -223,10 +224,8 @@ object LoadBam
         }
     }
 
-    def loadBam(path: Path)(implicit config: Config): RDD[SAMRecord] = {
-      if (path.toString.endsWith(".sam")) {
-        return loadSam(path)
-      }
+    def loadBam(path: Path)(implicit config: Config): BAMRecordRDD = {
+
       val fileSplitStarts = FileSplits(path, conf).map(_.start)
 
       val confBroadcast = sc.broadcast(conf.serializable)
@@ -239,7 +238,7 @@ object LoadBam
 
       implicit val parallelizer = config.parallelizer
 
-      val bamRecordStarts =
+      val splits =
         fileSplitStarts
             .pmap {
               fileSplitStart ⇒
@@ -278,44 +277,56 @@ object LoadBam
               case (start, end) ⇒
                 end > start
             }
+            .map(Split(_))
             .toVector
 
-      val bamRecordStartsRDD =
+      val splitsRDD =
         sc.parallelize(
-          bamRecordStarts,
-          bamRecordStarts.size
+          splits,
+          splits.size
         )
 
-      bamRecordStartsRDD
-        .flatMap {
-          case (start, end) ⇒
-            val uncompressedBytes =
-              SeekableUncompressedBytes(
-                SeekableHadoopByteChannel(
-                  path,
-                  confBroadcast.value
+      val readsRDD =
+        splitsRDD
+          .flatMap {
+            case Split(start, end) ⇒
+              val uncompressedBytes =
+                SeekableUncompressedBytes(
+                  SeekableHadoopByteChannel(
+                    path,
+                    confBroadcast.value
+                  )
                 )
-              )
 
-            val recordStream = SeekableRecordStream(uncompressedBytes)
-            recordStream.seek(start)
+              val recordStream = SeekableRecordStream(uncompressedBytes)
+              recordStream.seek(start)
 
-            new SimpleBufferedIterator[SAMRecord] {
-              override protected def _advance: Option[SAMRecord] =
-                recordStream
-                  .nextOption
-                    .flatMap {
-                      case (pos, read) ⇒
-                        if (pos < end)
-                          Some(read)
-                        else
-                          None
-                    }
+              new SimpleBufferedIterator[SAMRecord] {
+                override protected def _advance: Option[SAMRecord] =
+                  recordStream
+                    .nextOption
+                      .flatMap {
+                        case (pos, read) ⇒
+                          if (pos < end)
+                            Some(read)
+                          else
+                            None
+                      }
 
-              override protected def done(): Unit =
-                recordStream.close()
-            }
-        }
+                override protected def done(): Unit =
+                  recordStream.close()
+              }
+          }
+
+      BAMRecordRDD(splits, readsRDD)
     }
+
+    def loadReads(path: Path)(implicit config: Config): RDD[SAMRecord] =
+      if (path.toString.endsWith(".sam")) {
+        loadSam(path)
+      } else if (path.toString.endsWith(".bam"))
+        loadBam(path)
+      else
+        throw new IllegalArgumentException(s"Can't load reads from path: $path")
   }
 }

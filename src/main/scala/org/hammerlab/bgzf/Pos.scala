@@ -33,6 +33,8 @@ object EstimatedCompressionRatio {
     EstimatedCompressionRatio(ratio)
   implicit def unmakeEstimatedCompressionRatio(ratio: EstimatedCompressionRatio): Double =
     ratio.ratio
+
+  implicit val default = EstimatedCompressionRatio(3)
 }
 
 object Pos {
