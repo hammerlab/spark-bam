@@ -4,6 +4,7 @@ import org.hammerlab.bam.check.{ Args, False }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.spark.test.suite.SparkSuite
 import org.hammerlab.test.resources.File
+import org.hammerlab.test.matchers.seqs.SeqMatcher.seqMatch
 
 trait RunTest
   extends SparkSuite {
@@ -29,7 +30,7 @@ trait RunTest
 
     numPositions should be(expectedNumPositions)
 
-    falseCalls.collect() should be(expectedFalseCalls)
+    falseCalls.collect().toSeq should seqMatch(expectedFalseCalls)
 
     numReadStarts should be(expectedReadStarts)
   }

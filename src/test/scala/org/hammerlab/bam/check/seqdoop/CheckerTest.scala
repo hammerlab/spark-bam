@@ -26,9 +26,4 @@ class CheckerTest
   test("225622:49212") {
     checker(Pos(225622, 49212)) should be(true)
   }
-
-  test("130149:34000") {
-    // False positive
-    checker(Pos(130149, 34000)) should be(true)
-  }
 }
