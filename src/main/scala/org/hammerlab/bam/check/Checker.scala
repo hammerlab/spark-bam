@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check
 
-import java.io.IOException
+import java.io.{ Closeable, IOException }
 
 import org.hammerlab.bam.check.Checker.FIXED_FIELDS_SIZE
 import org.hammerlab.bam.check.full.error.{ NegativeRefIdx, NegativeRefIdxAndPos, NegativeRefPos, RefPosError, TooLargeRefIdx, TooLargeRefIdxNegativePos, TooLargeRefPos }
@@ -9,7 +9,13 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.io.{ Buffer, ByteChannel }
 
-trait Checker[Call] {
+trait Checker[Call]
+  extends Closeable {
+  def apply(pos: Pos): Call
+}
+
+trait CheckerBase[Call]
+  extends Checker[Call] {
 
   // Buffers (re-)used for reading presumptive BAM records
   val buf = Buffer(FIXED_FIELDS_SIZE)
@@ -18,7 +24,7 @@ trait Checker[Call] {
   def uncompressedStream: SeekableUncompressedBytes
   def contigLengths: ContigLengths
 
-  lazy val ch: ByteChannel = uncompressedStream
+  lazy val uncompressedBytes: ByteChannel = uncompressedStream
 
   def seek(pos: Pos): Unit = uncompressedStream.seek(pos)
 
@@ -28,10 +34,15 @@ trait Checker[Call] {
    */
   def tooFewFixedBlockBytes: Call
 
+  override def apply(pos: Pos): Call = {
+    seek(pos)
+    apply()
+  }
+
   def apply(): Call = {
     buf.position(0)
     try {
-      ch.read(buf)
+      uncompressedBytes.read(buf)
     } catch {
       case _: IOException ⇒
         return tooFewFixedBlockBytes
@@ -68,6 +79,9 @@ trait Checker[Call] {
     else
       None
   }
+
+  override def close(): Unit =
+    uncompressedBytes.close()
 }
 
 object Checker {

@@ -1,0 +1,34 @@
+package org.hammerlab.bam.check.seqdoop
+
+import org.apache.hadoop.conf.Configuration
+import org.hammerlab.bam.header.ContigLengths
+import org.hammerlab.bgzf.Pos
+import org.hammerlab.hadoop.Path
+import org.hammerlab.test.Suite
+import org.hammerlab.test.resources.File
+
+class CheckerTest
+  extends Suite {
+
+  val path = Path(File("1.2205029-2209029.bam").uri)
+  implicit val conf = new Configuration
+  val contigLengths = ContigLengths(path)
+  val checker = Checker(path, contigLengths)
+
+  test("0:0") {
+    checker(Pos(0, 0)) should be(false)
+  }
+
+  test("441192:37166") {
+    checker(Pos(441192, 37166)) should be(false)
+  }
+
+  test("225622:49212") {
+    checker(Pos(225622, 49212)) should be(true)
+  }
+
+  test("130149:34000") {
+    // False positive
+    checker(Pos(130149, 34000)) should be(true)
+  }
+}

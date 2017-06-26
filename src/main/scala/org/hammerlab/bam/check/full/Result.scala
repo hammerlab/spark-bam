@@ -5,6 +5,7 @@ import org.hammerlab.bam.check
 import org.hammerlab.bam.check.False
 import org.hammerlab.bam.check.full.error.Counts
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.io.{ Printer, SampleSize }
 
 import scala.collection.SortedMap
 
@@ -29,10 +30,39 @@ case class Result(numPositions: Long,
                   positionResults: RDD[(Pos, PosResult)],
                   numFalseCalls: Long,
                   falseCalls: RDD[(Pos, False)],
-                  numReadStarts: Long,
-                  readStarts: RDD[Pos],
+                  numCalledReadStarts: Long,
+                  calledReadStarts: RDD[Pos],
                   criticalErrorCounts: Counts,
                   totalErrorCounts: Counts,
-                  countsByNonZeroFields: SortedMap[Int, (Counts, Counts)])
-  extends check.Result[PosResult]
+                  countsByNonZeroFields: SortedMap[Int, (Counts, Counts)])(implicit sampleSize: SampleSize)
+  extends check.Result[PosResult] {
+  override def prettyPrint(implicit printer: Printer): Unit = {
+    super.prettyPrint
+
+    print(
+      "Critical error counts (true negatives where only one check failed):",
+      criticalErrorCounts.pp(includeZeros = false),
+      ""
+    )
+
+    countsByNonZeroFields
+      .get(2)
+      .foreach {
+        counts ⇒
+          print(
+            "True negatives where exactly two checks failed:",
+            counts
+              ._1
+              .pp(includeZeros = false),
+            ""
+          )
+      }
+
+    print(
+      "Total error counts:",
+      totalErrorCounts.pp(),
+      ""
+    )
+  }
+}
 

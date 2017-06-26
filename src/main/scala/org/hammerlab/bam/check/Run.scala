@@ -2,20 +2,24 @@ package org.hammerlab.bam.check
 
 import java.net.URI
 
-import org.apache.spark.SparkContext
+import org.apache.hadoop.conf.Configuration
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{ Partitioner, SparkContext }
 import org.hammerlab.bam.check
-import org.hammerlab.bam.check.Result.sampleString
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, SeekableUncompressedBytes }
 import org.hammerlab.hadoop.{ Path, SerializableConfiguration }
+import org.hammerlab.io.CachingChannel._
+import org.hammerlab.io.SampleSize
 import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.iterator.FinishingIterator._
+import org.hammerlab.magic.rdd.partitions.OrderedRepartitionRDD._
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
 import org.hammerlab.magic.rdd.size._
+import org.hammerlab.math.ceil
 
-import scala.math.ceil
+import scala.math.min
 import scala.reflect.ClassTag
 
 /**
@@ -26,72 +30,29 @@ import scala.reflect.ClassTag
  * @tparam PosResult result of "scoring" a [[Call]] at a given position (i.e. identifying whether it was a [[True]] or
  *                   [[False]] call)
  */
-abstract class Run[Call: ClassTag, PosResult: ClassTag]
- extends Serializable {
+abstract class Run[
+  Call: ClassTag,
+  PosResult: ClassTag,
+  Res <: Result[PosResult]
+]
+  extends Serializable {
 
   /**
    * Given a bgzf-decompressed byte stream and map from reference indices to lengths, build a [[Checker]]
    */
-  def makeChecker: (SeekableUncompressedBytes, ContigLengths) ⇒ Checker[Call]
+  def makeChecker(path: Path,
+                  contigLengths: ContigLengths)(
+      implicit conf: Configuration
+  ): Checker[Call]
 
-  /**
-   * Main CLI entry point: build a [[Result]] and print some statistics about it.
-   */
-  def apply(sc: SparkContext, args: Args): Result[PosResult] = {
-
-    val result = getResult(sc, args)
-
-    val Result(
-      numCalls,
-      numFalseCalls,
-      numReadStarts
-    ) =
-      result
-
-    numFalseCalls match {
-      case 0 ⇒
-        println(s"$numCalls calls ($numReadStarts reads), no errors!")
-      case _ ⇒
-
-        println(s"$numCalls calls ($numReadStarts reads), $numFalseCalls errors")
-
-        println(s"False-call histogram:")
-        println(
-          sampleString(
-            result
-              .falseCallsHistSample
-              .map {
-                case (count, call) ⇒
-                  s"$count:\t$call"
-              },
-            result
-              .falseCallsHistSampleSize
-          )
-        )
-        println("")
-
-        println(s"First ${result.falseCallsSampleSize} false calls:")
-        println(
-          sampleString(
-            result
-              .falseCallsSample
-              .map {
-                case (pos, call) ⇒
-                  s"$pos:\t$call"
-              },
-            numFalseCalls
-          )
-        )
-        println("")
-    }
-
-    result
-  }
 
   // Configurable logic for building a [[PosResult]] from a [[Call]]
   def makePosResult: MakePosResult[Call, PosResult]
 
-  def getResult(sc: SparkContext, args: Args): Result[PosResult] = {
+  /**
+   * Main CLI entry point: build a [[Result]] and print some statistics about it.
+   */
+  def getCalls(sc: SparkContext, args: Args): (RDD[(Pos, Call)], Option[Set[Long]]) = {
     val conf = sc.hadoopConfiguration
     val confBroadcast = sc.broadcast(new SerializableConfiguration(conf))
     val path = Path(new URI(args.bamFile))
@@ -107,30 +68,32 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
     /** Parse BGZF-block [[Metadata]] emitted by [[org.hammerlab.bgzf.index.IndexBlocks]] */
     val allBlocks =
       sc
-      .textFile(blocksPath.toString)
-      .map(
-        line ⇒
-          line.split(",") match {
-            case Array(block, compressedSize, uncompressedSize) ⇒
-              Metadata(
-                block.toLong,
-                compressedSize.toInt,
-                uncompressedSize.toInt
-              )
-            case _ ⇒
-              throw new IllegalArgumentException(s"Bad blocks-index line: $line")
-          }
-      )
+        .textFile(blocksPath.toString)
+        .map(
+          line ⇒
+            line.split(",") match {
+              case Array(block, compressedSize, uncompressedSize) ⇒
+                Metadata(
+                  block.toLong,
+                  compressedSize.toInt,
+                  uncompressedSize.toInt
+                )
+              case _ ⇒
+                throw new IllegalArgumentException(
+                  s"Bad blocks-index line: $line"
+                )
+            }
+        )
 
     val blocksWhitelist =
       args
-      .blocksWhitelist
-      .map(
-        _
-        .split(",")
-        .map(_.toLong)
-        .toSet
-      )
+        .blocksWhitelist
+        .map(
+          _
+            .split(",")
+            .map(_.toLong)
+            .toSet
+        )
 
     /**
      * Apply any applicable filters to [[allBlocks]]; also store the set of filtered blocks, if applicable.
@@ -143,18 +106,18 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
           )
         case (Some(whitelist), _) ⇒
           allBlocks
-          .filter {
-            case Metadata(block, _, _) ⇒
-              whitelist.contains(block)
-          } →
+            .filter {
+              case Metadata(block, _, _) ⇒
+                whitelist.contains(block)
+            } →
             Some(whitelist)
         case (_, Some(numBlocks)) ⇒
           val filteredBlocks = allBlocks.take(numBlocks)
           sc.parallelize(filteredBlocks) →
             Some(
               filteredBlocks
-              .map(_.start)
-              .toSet
+                .map(_.start)
+                .toSet
             )
         case _ ⇒
           allBlocks → None
@@ -166,7 +129,8 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
 
     val numPartitions =
       ceil(
-        numBlocks * 1.0 / blocksPerPartition
+        numBlocks,
+        blocksPerPartition.toLong
       )
       .toInt
 
@@ -177,9 +141,42 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
       } yield
         (idx / blocksPerPartition).toInt →
           idx →
-          block
+            block
       )
       .partitionByKey(numPartitions)
+
+    /**
+     * Apply a [[PosCallIterator]] to each block, generating [[Call]]s.
+     */
+    val calls: RDD[(Pos, Call)] =
+      partitionedBlocks
+        .mapPartitions {
+          blocks ⇒
+            val checker =
+              makeChecker(
+                path,
+                contigLengths
+              )(
+                confBroadcast
+              )
+
+            blocks
+              .flatMap {
+                case Metadata(start, _, uncompressedSize) ⇒
+                  PosCallIterator(
+                    start,
+                    uncompressedSize,
+                    checker
+                  )
+              }
+              .finish(checker.close())
+        }
+
+    calls → filteredBlockSet
+  }
+
+  def apply(sc: SparkContext, args: Args): Res = {
+    val (calls, filteredBlockSet) = getCalls(sc, args)
 
     /** File with true read-record-boundary positions as output by [[org.hammerlab.bam.index.IndexRecords]]. */
     val recordsFile =
@@ -194,38 +191,20 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
       sc
         .textFile(recordsFile)
         .map(
-          _.split(",") match {
-            case Array(a, b) ⇒
-              Pos(a.toLong, b.toInt)
-            case a ⇒
-              throw new IllegalArgumentException(s"Bad record-pos line: ${a.mkString(",")}")
-          }
+          line ⇒
+            line.split(",") match {
+              case Array(a, b) ⇒
+                Pos(a.toLong, b.toInt)
+              case _ ⇒
+                throw new IllegalArgumentException(
+                  s"Bad record-pos line: $line"
+                )
+            }
         )
         .filter {
           pos ⇒
             filteredBlockSet
-            .forall(_ (pos.blockPos))
-        }
-
-    /**
-     * Apply a [[PosCallIterator]] to each block, generating [[Call]]s.
-     */
-    val calls: RDD[(Pos, Call)] =
-      partitionedBlocks
-        .flatMap {
-          case Metadata(start, _, uncompressedSize) ⇒
-
-            val channel = SeekableHadoopByteChannel(path, confBroadcast.value)
-            val stream = SeekableUncompressedBytes(channel)
-
-            PosCallIterator(
-              start,
-              uncompressedSize,
-              makeChecker(stream, contigLengths)
-            )
-            .finish(
-              stream.close()
-            )
+              .forall(_ (pos.blockPos))
         }
 
     /**
@@ -235,10 +214,14 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
      */
     val results: RDD[(Pos, PosResult)] =
       calls
-        .fullOuterJoin(recordPosRDD.map(_ → null))
+        .fullOuterJoin(
+          recordPosRDD.map(
+            _ → null
+          )
+        )
         .map {
           case (pos, (callOpt, isReadStart)) ⇒
-            pos → (
+            pos →
               callOpt
                 .map {
                   call ⇒
@@ -247,29 +230,44 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
                       isReadStart.isDefined
                     )
                 }
-              .getOrElse(
-                throw new Exception(s"No call detected at $pos")
-              )
-            )
+                .getOrElse(
+                  throw new Exception(s"No call detected at $pos")
+                )
         }
+        .sortByKey()
+
+    val posResultPartitioner =
+      new Partitioner {
+        override def numPartitions: Int = 4
+        override def getPartition(key: Any): Int =
+          key.asInstanceOf[check.PosResult] match {
+            case _:  TruePositive ⇒ 0
+            case _:  TrueNegative ⇒ 1
+            case _: FalsePositive ⇒ 2
+            case _: FalseNegative ⇒ 3
+          }
+      }
 
     /** Compute {[[True]],[[False]]} x {[[Positive]],[[Negative]]} counts in one stage */
     val trueFalseCounts: Map[check.PosResult, Long] =
       results
         .values
         .map {
-          case _: TruePositive ⇒ TruePositive → 1L
-          case _: TrueNegative ⇒ TrueNegative → 1L
+          case _:  TruePositive ⇒  TruePositive → 1L
+          case _:  TrueNegative ⇒  TrueNegative → 1L
           case _: FalsePositive ⇒ FalsePositive → 1L
           case _: FalseNegative ⇒ FalseNegative → 1L
         }
-        .reduceByKey(_ + _, 4)
+        .reduceByKey(
+          posResultPartitioner,
+          _ + _
+        )
         .collectAsMap
         .toMap
 
     val numCalls = trueFalseCounts.values.sum
 
-    val numReadStarts =
+    val numCalledReadStarts =
       trueFalseCounts
         .filterKeys {
           case _: Positive ⇒ true
@@ -288,14 +286,34 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
         .sum
 
     val falseCalls =
-      results.flatMap {
-        case (pos, f: False) ⇒
-          Some(pos → (f: False))
-        case _ ⇒
-          None
-      }
+      results
+        .flatMap {
+          case (pos, f: False) ⇒
+            Some(pos → (f: False))
+          case _ ⇒
+            None
+        }
+        .orderedRepartition(
+          min(
+            results.getNumPartitions,
+            ceil(
+              numFalseCalls,
+              args.resultPositionsPerPartition
+            )
+            .toInt
+          )
+        )
 
-    val readStarts =
+    val falsePositives =
+      falseCalls
+        .flatMap {
+          case (pos, fp: FalsePositive) ⇒
+            Some(pos → fp)
+          case _ ⇒
+            None
+        }
+
+    val calledReadStarts =
       results
         .flatMap {
           case (pos, _: Positive) ⇒
@@ -303,14 +321,26 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
           case _ ⇒
             None
         }
+        .orderedRepartition(
+          min(
+            results.getNumPartitions,
+            ceil(
+              numCalledReadStarts,
+              args.resultPositionsPerPartition
+            )
+            .toInt
+          )
+        )
+
+    implicit val sampleSize = SampleSize(args.samplesToPrint)
 
     makeResult(
       numCalls,
       results,
       numFalseCalls,
       falseCalls,
-      numReadStarts,
-      readStarts
+      numCalledReadStarts,
+      calledReadStarts
     )
   }
 
@@ -321,6 +351,25 @@ abstract class Run[Call: ClassTag, PosResult: ClassTag]
                  results: RDD[(Pos, PosResult)],
                  numFalseCalls: Long,
                  falseCalls: RDD[(Pos, False)],
-                 numReadStarts: Long,
-                 readStarts: RDD[Pos]): Result[PosResult]
+                 numCalledReadStarts: Long,
+                 calledReadStarts: RDD[Pos])(implicit sampleSize: SampleSize): Res
+}
+
+trait UncompressedStreamRun[
+  Call,
+  PosResult,
+  Result <: check.Result[PosResult]
+] {
+  self: Run[Call, PosResult, Result] ⇒
+
+  def makeChecker: (SeekableUncompressedBytes, ContigLengths) ⇒ Checker[Call]
+
+  override def makeChecker(path: Path,
+                           contigLengths: ContigLengths)(
+      implicit conf: Configuration
+  ): Checker[Call] = {
+    val channel = SeekableHadoopByteChannel(path).cache
+    val stream = SeekableUncompressedBytes(channel)
+    makeChecker(stream, contigLengths)
+  }
 }

@@ -25,6 +25,19 @@ trait ByteChannel
     _position += n
   }
 
+  val b1 = Buffer(1)
+  override def read(): Int = {
+    b1.clear()
+    read(b1)
+    b1.get(0) & 0xff
+  }
+
+
+  override def read(b: Array[Byte], off: Int, len: Int): Int = {
+    read(ByteBuffer.wrap(b), off, len)
+    len
+  }
+
   /**
    * Convenience method for reading a string of known length
    */
@@ -168,9 +181,7 @@ object ByteChannel {
       }
     }
 
-    override def close(): Unit = {
-      super.close()
+    override def close(): Unit =
       is.close()
-    }
   }
 }

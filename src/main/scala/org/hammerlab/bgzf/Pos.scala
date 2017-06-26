@@ -24,6 +24,8 @@ case class Pos(blockPos: Long, offset: Int)
       blockPos - other.blockPos +
         ((offset - other.offset) / estimatedCompressionRatio).toLong
     )
+
+  def toHTSJDK: Long = (blockPos << 16 | offset)
 }
 
 case class EstimatedCompressionRatio(ratio: Double)

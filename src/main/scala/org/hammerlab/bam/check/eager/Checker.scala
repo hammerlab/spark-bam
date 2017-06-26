@@ -2,8 +2,9 @@ package org.hammerlab.bam.check.eager
 
 import java.io.IOException
 
-import org.hammerlab.bam.check.Checker.allowedReadNameChars
 import org.hammerlab.bam.check
+import org.hammerlab.bam.check.Checker.allowedReadNameChars
+import org.hammerlab.bam.check.{ CheckerBase, simple }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 
@@ -13,7 +14,7 @@ import org.hammerlab.bgzf.block.SeekableUncompressedBytes
  */
 case class Checker(uncompressedStream: SeekableUncompressedBytes,
                    contigLengths: ContigLengths)
-  extends check.Checker[Boolean] {
+  extends CheckerBase[Boolean] {
 
   override def tooFewFixedBlockBytes: Boolean = false
 
@@ -47,7 +48,7 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
     try {
       readNameBuffer.position(0)
       readNameBuffer.limit(readNameLength)
-      ch.read(readNameBuffer)
+      uncompressedBytes.read(readNameBuffer)
       val readNameBytes = readNameBuffer.array().view.slice(0, readNameLength)
 
       if (readNameBytes.last != 0)
@@ -65,7 +66,7 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
           (0 until numCigarOps)
           .exists {
             _ ⇒
-              (ch.getInt & 0xf) > 8
+              (uncompressedBytes.getInt & 0xf) > 8
           }
         )
           return false

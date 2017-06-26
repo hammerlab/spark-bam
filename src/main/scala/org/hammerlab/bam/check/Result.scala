@@ -2,8 +2,12 @@ package org.hammerlab.bam.check
 
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.io.Printer._
+import org.hammerlab.io.{ Printer, SampleSize }
+import org.hammerlab.magic.rdd.size._
+import org.hammerlab.spark.SampleRDD.sample
 
-trait Result[PosResult] {
+abstract class Result[PosResult](implicit sampleSize: SampleSize) {
 
   def numPositions: Long
   def positionResults: RDD[(Pos, PosResult)]
@@ -11,18 +15,10 @@ trait Result[PosResult] {
   def numFalseCalls: Long
   def falseCalls: RDD[(Pos, False)]
 
-  def numReadStarts: Long
-  def readStarts: RDD[Pos]
+  def numCalledReadStarts: Long
+  def calledReadStarts: RDD[Pos]
 
-  var falseCallsSampleSize = 100
-
-  lazy val falseCallsSample =
-    if (numFalseCalls > falseCallsSampleSize)
-      falseCalls.take(falseCallsSampleSize)
-    else if (numFalseCalls > 0)
-      falseCalls.collect()
-    else
-      Array()
+  lazy val falseCallsSample = sample(falseCalls, numFalseCalls)
 
   lazy val falseCallsHist =
     falseCalls
@@ -32,33 +28,34 @@ trait Result[PosResult] {
       .map(_.swap)
       .sortByKey(ascending = false)
 
-  var falseCallsHistSampleSize = 100
+  lazy val falseCallsHistSize = falseCallsHist.size
+  lazy val falseCallsHistSample = sample(falseCallsHist, falseCallsHistSize)
 
-  lazy val falseCallsHistSample =
-    if (numFalseCalls > falseCallsHistSampleSize)
-      falseCallsHist.take(falseCallsHistSampleSize)
-    else if (numFalseCalls > 0)
-      falseCallsHist.collect()
-    else
-      Array()
-}
+  def prettyPrint(implicit printer: Printer): Unit =
+    numFalseCalls match {
+      case 0 ⇒
+        print(
+          s"$numPositions calls ($numCalledReadStarts reads), no errors!"
+        )
+      case _ ⇒
+        print(
+          s"$numPositions calls ($numCalledReadStarts reads), $numFalseCalls errors"
+        )
 
-object Result {
-  def unapply[PosResult](result: Result[PosResult]): Option[(Long, Long, Long)] =
-    Some(
-      result.numPositions,
-      result.numFalseCalls,
-      result.numReadStarts
-    )
+        printSamples(
+          falseCallsHistSample,
+          falseCallsHistSize,
+          "False-call histogram:",
+          n ⇒ s"First $n false-call histogram entries:"
+        )
+        print("")
 
-  def sampleString(sampledLines: Seq[String], total: Long): String =
-    sampledLines
-      .mkString(
-        "\t",
-        "\n\t",
-        if (sampledLines.size < total)
-          "\n\t…"
-        else
-          ""
-    )
+        printSamples(
+          falseCallsSample,
+          numFalseCalls,
+          "False calls:",
+          n ⇒ s"First $n false calls:"
+        )
+        print("")
+    }
 }

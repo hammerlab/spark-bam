@@ -35,8 +35,9 @@ package object full {
    */
   sealed trait PosResult
 
-  case object TruePositive extends PosResult with check.TruePositive
-  case class TrueNegative(flags: Flags) extends PosResult with check.TrueNegative
+  case object  TruePositive extends PosResult with  check.TruePositive
   case object FalsePositive extends PosResult with check.FalsePositive
+
+  case class  TrueNegative(flags: Flags) extends PosResult with  check.TrueNegative
   case class FalseNegative(flags: Flags) extends PosResult with check.FalseNegative
 }

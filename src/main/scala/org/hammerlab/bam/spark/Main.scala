@@ -11,7 +11,7 @@ import org.apache.spark.SparkContext
 import org.hammerlab.bam.spark.LoadBam._
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.hadoop.MaxSplitSize
-import org.hammerlab.io.{ Printer, Size }
+import org.hammerlab.io.{ Printer, SampleSize, Size }
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.GroupWithIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
@@ -26,11 +26,12 @@ import scala.collection.JavaConverters._
 case class Args(@O("n") numWorkers: Option[Int],
                 @O("d") seqdoopOnly: Boolean = false,
                 @O("c") compareSplits: Boolean = false,
-                @O("s") printReadPartitionStats: Boolean = false,
+                @O("r") printReadPartitionStats: Boolean = false,
                 @O("g") gsBuffer: Option[Int] = None,
                 @O("l") splitsPrintLimit: Option[Int] = None,
                 @O("m") maxSplitSize: Option[String] = None,
                 @O("p") propertiesFiles: String = "",
+                @O("s") sampleSize: Option[Int],
                 @O("o") outFile: Option[String] = None)
 
 object Main
@@ -116,6 +117,7 @@ object Main
       )
 
     implicit val printer = Printer(args.outFile)
+    implicit val sampleSize = SampleSize(args.sampleSize)
 
     def printSplits(splits: Seq[Split]): Unit = {
       val splitSizeStats = Stats(splits.map(_.length.toInt))
@@ -127,8 +129,7 @@ object Main
       printList(
         splits,
         s"${splits.length} org.seqdoop.hadoop_bam splits:",
-        n ⇒ s"First $n org.seqdoop.hadoop_bam splits:",
-        args.splitsPrintLimit
+        n ⇒ s"First $n org.seqdoop.hadoop_bam splits:"
       )
     }
 

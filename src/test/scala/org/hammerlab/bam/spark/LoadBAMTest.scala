@@ -35,6 +35,7 @@ trait LoadBAMTest
       105, 101, 96, 99, 99, 98, 98, 98, 23
     )
   }
+
   test("indexed all") {
     val intervals: LociSet = "1:0-100000"
 

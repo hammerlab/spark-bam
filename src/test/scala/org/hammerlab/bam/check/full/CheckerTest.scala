@@ -14,14 +14,11 @@ class CheckerTest
   extends Suite {
 
   test("EoF") {
-    val conf = new Configuration
+    implicit val conf = new Configuration
     val path = Path(File("5k.bam").uri)
     val uncompressedBytes =
       SeekableUncompressedBytes(
-        SeekableHadoopByteChannel(
-          path,
-          conf
-        )
+        SeekableHadoopByteChannel(path)
       )
 
     val checker =

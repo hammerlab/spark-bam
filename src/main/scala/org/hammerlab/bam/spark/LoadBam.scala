@@ -15,7 +15,6 @@ import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
 import org.hammerlab.hadoop.SerializableConfiguration._
 import org.hammerlab.hadoop.{ FileSplits, MaxSplitSize, Path }
-import org.hammerlab.io.CachingChannel
 import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.iterator.CappedCostGroupsIterator.ElementTooCostlyStrategy.EmitAlone
 import org.hammerlab.iterator.CappedCostGroupsIterator._
@@ -24,9 +23,9 @@ import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.iterator.Sliding2Iterator._
 import org.hammerlab.math.ceil
 import org.hammerlab.parallel._
-import org.hammerlab.stats.Stats
 import org.hammerlab.{ bgzf, parallel, paths }
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFrom
+import org.hammerlab.io.CachingChannel._
 
 import scala.collection.JavaConverters._
 
@@ -160,11 +159,8 @@ object LoadBam
         .flatMap(chunks ⇒ chunks)
         .mapPartitions {
           chunks ⇒
-            val compressedChannel: CachingChannel =
-              SeekableHadoopByteChannel(
-                path,
-                confBroadcast.value
-              )
+
+            val compressedChannel = SeekableHadoopByteChannel(path)(confBroadcast).cache
 
             val uncompressedBytes = SeekableUncompressedBytes(compressedChannel)
 
@@ -243,11 +239,8 @@ object LoadBam
             .pmap {
               fileSplitStart ⇒
 
-                val compressedChannel: CachingChannel =
-                  SeekableHadoopByteChannel(
-                    path,
-                    confBroadcast.value
-                  )
+                val compressedChannel =
+                  SeekableHadoopByteChannel(path)(confBroadcast).cache
 
                 val bgzfBlockStart =
                   FindBlockStart(
@@ -290,12 +283,10 @@ object LoadBam
         splitsRDD
           .flatMap {
             case Split(start, end) ⇒
+
               val uncompressedBytes =
                 SeekableUncompressedBytes(
-                  SeekableHadoopByteChannel(
-                    path,
-                    confBroadcast.value
-                  )
+                  SeekableHadoopByteChannel(path)(confBroadcast).cache
                 )
 
               val recordStream = SeekableRecordStream(uncompressedBytes)

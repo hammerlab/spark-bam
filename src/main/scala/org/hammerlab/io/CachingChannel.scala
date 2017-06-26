@@ -15,9 +15,9 @@ import scala.math.{ max, min }
  * @param maxReadAttempts all read/skip operations require the full requested number of bytes to be returned in at most
  *                        this many attempts, or they will throw an [[IOException]].
  */
-case class CachingChannel(channel: SeekableByteChannel,
-                          blockSize: Int,
-                          maxReadAttempts: Int = 2)
+case class CachingChannel[Channel <: SeekableByteChannel](channel: Channel,
+                                                          blockSize: Int,
+                                                          maxReadAttempts: Int = 2)
   extends SeekableByteChannel {
 
   private val _buffer = ByteBuffer.allocate(blockSize)
@@ -66,11 +66,6 @@ case class CachingChannel(channel: SeekableByteChannel,
 
   override def _seek(newPos: Long): Unit = channel._seek(newPos)
 
-  override def read(): Int = {
-    _position += 1
-    channel.read()
-  }
-
   override protected def _read(dst: ByteBuffer): Unit = {
     val start = position()
     val end = start + dst.remaining()
@@ -112,10 +107,17 @@ object CachingChannel {
     implicit val default = Config()
   }
 
-  implicit def makeCachingChannel(channel: SeekableByteChannel)(implicit config: Config): CachingChannel =
+  implicit def makeCachingChannel[Channel <: SeekableByteChannel](channel: Channel)(
+      implicit config: Config
+  ): CachingChannel[Channel] =
     CachingChannel(
       channel,
       config.blockSize,
       config.maxReadAttempts
     )
+
+  implicit class AddCaching[Channel <: SeekableByteChannel](channel: Channel) {
+    def cache(implicit config: Config): CachingChannel[Channel] =
+      makeCachingChannel(channel)
+  }
 }

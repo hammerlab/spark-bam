@@ -18,12 +18,9 @@ case class PosCallIterator[Call](block: Long,
       None
     else {
       val pos = Pos(block, up)
-
-      checker.seek(pos)
-
       Some(
         pos →
-          checker()
+          checker(pos)
       )
     }
 

@@ -1,14 +1,14 @@
 package org.hammerlab.bam.check.full
 
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.full.error.Flags.toCounts
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
-import org.hammerlab.bam.check.{ Args, False }
+import org.hammerlab.bam.check.{ False, UncompressedStreamRun }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
+import org.hammerlab.io.SampleSize
 import org.hammerlab.math.Monoid.zero
 import org.hammerlab.math.MonoidSyntax._
 
@@ -20,7 +20,8 @@ import scala.collection.SortedMap
  * read-record-boundaries.
  */
 object Run
-  extends check.Run[Option[Flags], PosResult] {
+  extends check.Run[Option[Flags], PosResult, Result]
+    with UncompressedStreamRun[Option[Flags], PosResult, Result] {
 
   override def makeChecker: (SeekableUncompressedBytes, ContigLengths) ⇒ Checker =
     Checker.apply
@@ -32,8 +33,8 @@ object Run
                           results: RDD[(Pos, PosResult)],
                           numFalseCalls: Long,
                           falseCalls: RDD[(Pos, False)],
-                          numReadStarts: Long,
-                          readStarts: RDD[Pos]): Result = {
+                          numCalledReadStarts: Long,
+                          calledReadStarts: RDD[Pos])(implicit sampleSize: SampleSize): Result = {
     /**
      * How many times each flag correctly rules out a [[Pos]], grouped by how many total flags ruled out that [[Pos]].
      *
@@ -59,15 +60,15 @@ object Run
      */
     val trueNegativesByNumNonzeroFieldsCumulative: Array[(Int, Counts)] =
       trueNegativesByNumNonzeroFields
-      .scanLeft(
-        0 → zero[Counts]
-      ) {
-        (soFar, next) ⇒
-          val (_, countSoFar) = soFar
-          val (numNonZeroFields, count) = next
-          numNonZeroFields → (countSoFar |+| count)
-      }
-      .drop(1)  // Discard the dummy/initial "0" entry added above to conform to [[scanLeft]] API
+        .scanLeft(
+          0 → zero[Counts]
+        ) {
+          (soFar, next) ⇒
+            val (_, countSoFar) = soFar
+            val (numNonZeroFields, count) = next
+            numNonZeroFields → (countSoFar |+| count)
+        }
+        .drop(1)  // Discard the dummy/initial "0" entry added above to conform to [[scanLeft]] API
 
     /**
      * Zip [[trueNegativesByNumNonzeroFields]] and [[trueNegativesByNumNonzeroFieldsCumulative]]: PDF and CDF, keyed by
@@ -99,8 +100,8 @@ object Run
       results,
       numFalseCalls,
       falseCalls,
-      numReadStarts,
-      readStarts,
+      numCalledReadStarts,
+      calledReadStarts,
       criticalErrorCounts,
       totalErrorCounts,
       SortedMap(countsByNonZeroFields: _*)
@@ -108,50 +109,5 @@ object Run
   }
 
   override def makePosResult: check.MakePosResult[Option[Flags], PosResult] = MakePosResult
-
-  /**
-   * Print a few statistics beyond the generic ones output by [[check.Run]].
-   */
-  override def apply(sc: SparkContext, args: Args): check.Result[PosResult] = {
-    val result = super.apply(sc, args)
-
-    val Result(
-      _,
-      _,
-      _,
-      _,
-      _,
-      _,
-      criticalErrorCounts,
-      totalErrorCounts,
-      countsByNonZeroFields
-    ) =
-      result
-
-    if (!args.eager) {
-      println("Critical error counts (true negatives where only one check failed):")
-      println(criticalErrorCounts.pp(includeZeros = false))
-      println("")
-
-      countsByNonZeroFields
-        .get(2)
-        .foreach {
-          counts ⇒
-            println("True negatives where exactly two checks failed:")
-            println(
-              counts
-                ._1
-                .pp(includeZeros = false)
-            )
-            println("")
-        }
-
-      println("Total error counts:")
-      println(totalErrorCounts.pp())
-      println("")
-    }
-
-    result
-  }
 }
 

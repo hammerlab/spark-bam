@@ -5,6 +5,7 @@ import java.io.IOException
 import org.hammerlab.bam.check.Checker.allowedReadNameChars
 import org.hammerlab.bam.check.full.error.{ CigarOpsError, EmptyReadName, Flags, InvalidCigarOp, NoReadName, NonASCIIReadName, NonNullTerminatedReadName, ReadNameError, RefPosError, TooFewBytesForCigarOps, TooFewBytesForReadName }
 import org.hammerlab.bam.check
+import org.hammerlab.bam.check.CheckerBase
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 
@@ -13,7 +14,7 @@ import org.hammerlab.bgzf.block.SeekableUncompressedBytes
  */
 case class Checker(uncompressedStream: SeekableUncompressedBytes,
                    contigLengths: ContigLengths)
-  extends check.Checker[Option[Flags]] {
+  extends CheckerBase[Option[Flags]] {
 
   override def apply(remainingBytes: Int): Option[Flags] = {
 
@@ -47,7 +48,7 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
           case _ ⇒
             readNameBuffer.position(0)
             readNameBuffer.limit(readNameLength)
-            ch.read(readNameBuffer)
+            uncompressedBytes.read(readNameBuffer)
 
             // Drop trailing '\0'
             val readNameBytes =
@@ -75,7 +76,7 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
             (0 until numCigarOps)
             .exists {
               _ ⇒
-                (ch.getInt & 0xf) > 8
+                (uncompressedBytes.getInt & 0xf) > 8
             }
           )
             Some(InvalidCigarOp)

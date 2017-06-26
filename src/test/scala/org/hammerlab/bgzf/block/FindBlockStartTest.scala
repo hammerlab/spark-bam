@@ -10,7 +10,7 @@ class FindBlockStartTest
   extends SparkSuite {
   test("1000") {
     val path = Path(File("5k.bam").uri)
-    val in = SeekableHadoopByteChannel(path, hadoopConf)
+    val in = SeekableHadoopByteChannel(path)
 
     val start =
       time {

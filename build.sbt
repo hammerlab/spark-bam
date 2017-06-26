@@ -3,14 +3,14 @@ import sbtassembly.PathList
 name := "spark-bam"
 version := "1.1.0-SNAPSHOT"
 deps ++= Seq(
-  libs.value('hadoop_bam),
   libs.value('iterators),
   libs.value('slf4j),
   "com.github.alexarchambault" %% "case-app" % "1.2.0-M3",
-  libs.value('magic_rdds),
+  "org.hammerlab" %% "magic-rdds" % "1.4.4-SNAPSHOT",
   libs.value('paths),
   libs.value('reference),
-  "org.hammerlab" %% "spark-util" % "1.1.3"
+  "org.hammerlab" %% "spark-util" % "1.1.3",
+  "org.hammerlab" % "hadoop-bam" % "7.8.1-SNAPSHOT" exclude("org.apache.hadoop", "hadoop-client")
 )
 
 compileAndTestDeps += libs.value('loci)
