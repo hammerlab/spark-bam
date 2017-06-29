@@ -1,6 +1,6 @@
 package org.hammerlab.bgzf.block
 
-import java.io.{ Closeable, IOException }
+import java.io.{ Closeable, EOFException, IOException }
 
 import org.hammerlab.bgzf.block.Block.FOOTER_SIZE
 import org.hammerlab.bgzf.block.Header.EXPECTED_HEADER_SIZE
@@ -30,7 +30,7 @@ case class MetadataStream(ch: ByteChannel,
       try {
         Header(ch)
       } catch {
-        case e: IOException ⇒
+        case e: EOFException ⇒
           return None
       }
 

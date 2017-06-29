@@ -17,7 +17,7 @@ case class Header(contigLengths: ContigLengths,
 object Header {
 
   def apply(path: Path)(implicit conf: Configuration): Header = {
-    val uncompressedBytes = UncompressedBytes(path.open)
+    val uncompressedBytes = UncompressedBytes(path.inputStream)
     val header = apply(uncompressedBytes)
     uncompressedBytes.close()
     header

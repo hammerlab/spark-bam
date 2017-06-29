@@ -70,7 +70,7 @@ object SeekableByteChannel {
       implicit conf: Configuration
   ): SeekableHadoopByteChannel =
     SeekableHadoopByteChannel(
-      path.open,
+      path.inputStream,
       path.length
     )
 }

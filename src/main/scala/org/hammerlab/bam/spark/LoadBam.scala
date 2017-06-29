@@ -158,7 +158,7 @@ object LoadBam
       val intervalsBroadcast = sc.broadcast(intervals)
 
       if (path.toString.endsWith(".sam")) {
-        logger.warn(s"Attempting to load SAM file $path with intervals filter")
+        warn(s"Attempting to load SAM file $path with intervals filter")
         return loadSam(path)
                .filter {
                  record ⇒

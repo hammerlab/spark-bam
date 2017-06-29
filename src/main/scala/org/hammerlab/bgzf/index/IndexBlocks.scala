@@ -45,7 +45,7 @@ object IndexBlocks
         includeEmptyFinalBlock = args.includeEmptyFinalBlock
       )
 
-    val outPath =
+    val outPath: Path =
       args
         .outFile
         .map(Path(_))
@@ -53,13 +53,13 @@ object IndexBlocks
           path.suffix(".blocks")
         )
 
-    val out = new PrintWriter(path.filesystem.create(path))
+    val out = new PrintWriter(outPath.outputStream)
 
     var idx = 0
 
     heartbeat(
       () ⇒
-        logger.info(
+        info(
           s"$idx blocks processed, ${ch.position()} bytes"
         ),
       try {
@@ -71,11 +71,11 @@ object IndexBlocks
         }
       } catch {
         case e: IOException ⇒
-          logger.error(e)
+          error(e)
       }
     )
 
-    logger.info("Traversal done")
+    info("Traversal done")
     out.flush()
     out.close()
   }

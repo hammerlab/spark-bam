@@ -48,11 +48,11 @@ object IndexRecords
         case (true, true) ⇒
           SeekableRecordStream(path).map(_._1)
         case (true, false) ⇒
-          RecordStream(path.open).map(_._1)
+          RecordStream(path.inputStream).map(_._1)
         case (false, true) ⇒
           SeekablePosStream(path)
         case (false, false) ⇒
-          PosStream(path.open)
+          PosStream(path.inputStream)
       }
 
     var idx = 0
@@ -66,8 +66,7 @@ object IndexRecords
           path.suffix(".records")
         )
 
-    val fs = outPath.filesystem
-    val out = new PrintWriter(fs.create(outPath))
+    val out = new PrintWriter(outPath.outputStream)
 
     def traverse(): Unit = {
       for {
@@ -81,7 +80,7 @@ object IndexRecords
 
     heartbeat(
       () ⇒
-        logger.info(
+        info(
           s"$idx records processed, pos: $lastPos"
         ),
       if (args.throwOnTruncation) {
@@ -91,20 +90,20 @@ object IndexRecords
           traverse()
         } catch {
           case e: IOException ⇒
-            logger.error(e)
+            error(e)
 
           // Non-record-parsing mode hits this in the case of a truncated file
           case e: RuntimeEOFException ⇒
-            logger.error(e)
+            error(e)
 
           // Record-parsing can hit this in the presence of incomplete records in a truncated file
           case e: RuntimeIOException ⇒
-            logger.error(e)
+            error(e)
         }
       }
     )
 
-    logger.info("Traversal done")
+    info("Traversal done")
     out.flush()
     out.close()
   }

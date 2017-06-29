@@ -239,7 +239,7 @@ spark-shell --jars $SPARK_BAM_JAR
 …
 
 import org.hammerlab.bam.spark._
-import import org.hammerlab.hadoop.Path
+import org.hammerlab.hadoop.Path
 
 val reads = sc.loadBam(Path("src/test/resources/5k.bam"))  // Default: use [4x the available cores] threads on the driver to compute splits
 reads.count

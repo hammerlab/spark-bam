@@ -30,7 +30,7 @@ class PosStreamTest
   val path = Path(File("5k.bam"))
 
   test("PosStream") {
-    implicit val stream = PosStream(path.open)
+    implicit val stream = PosStream(path.inputStream)
 
     checkFirstPositions
   }
