@@ -10,6 +10,7 @@ trait Threads {
 
 trait Spark {
   self: SparkSuite ⇒
+  import LoadBam.defaultPartitioningStrategy
   lazy val parallelConfig: parallel.Config = spark.Config()
 }
 

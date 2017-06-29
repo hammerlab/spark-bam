@@ -2,15 +2,13 @@ package org.hammerlab.bam.spark
 
 import caseapp.{ CaseApp, RemainingArgs, ExtraName ⇒ O }
 import grizzled.slf4j.Logging
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.Path
+import org.hammerlab.hadoop.{ Configuration, MaxSplitSize, Path }
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.{ SPLIT_MAXSIZE, setInputPaths }
 import org.apache.hadoop.mapreduce.task.JobContextImpl
 import org.apache.hadoop.mapreduce.{ Job, JobID }
 import org.apache.spark.SparkContext
 import org.hammerlab.bam.spark.LoadBam._
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.hadoop.MaxSplitSize
 import org.hammerlab.io.{ Printer, SampleSize, Size }
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.GroupWithIterator._
@@ -23,16 +21,34 @@ import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 
 import scala.collection.JavaConverters._
 
-case class Args(@O("n") numWorkers: Option[Int],
+case class Args(@O("n") numThreads: Option[Int],
                 @O("d") seqdoopOnly: Boolean = false,
                 @O("c") compareSplits: Boolean = false,
                 @O("r") printReadPartitionStats: Boolean = false,
-                @O("g") gsBuffer: Option[Int] = None,
+                @O("g") gsBufferStr: Option[String] = None,
                 @O("l") splitsPrintLimit: Option[Int] = None,
-                @O("m") maxSplitSize: Option[String] = None,
+                @O("m") maxSplitSizeStr: Option[String] = None,
                 @O("p") propertiesFiles: String = "",
                 @O("s") sampleSize: Option[Int],
-                @O("o") outFile: Option[String] = None)
+                @O("o") outFile: Option[String] = None) {
+  def maxSplitSize(implicit conf: Configuration) =
+    MaxSplitSize(
+      maxSplitSizeStr
+        .map(
+          Size(_).bytes
+        )
+    )
+
+  def parallelizer(implicit sc: SparkContext) =
+    numThreads match {
+      case Some(numWorkers) ⇒
+        threads.Config(numWorkers)
+      case _ ⇒
+        spark.Config()
+    }
+
+  def gsBuffer: Option[Size]= gsBufferStr.map(Size(_))
+}
 
 object Main
   extends CaseApp[Args]
@@ -44,18 +60,10 @@ object Main
       conf: Configuration
   ): BAMRecordRDD = {
 
-    val parallelizer =
-      args.numWorkers match {
-        case Some(numWorkers) ⇒
-          threads.Config(numWorkers)
-        case _ ⇒
-          spark.Config()
-      }
-
     implicit val config =
       Config(
-        parallelizer = parallelizer,
-        maxSplitSize = MaxSplitSize(args.maxSplitSize.map(Size(_).bytes))
+        parallelizer = args.parallelizer,
+        maxSplitSize = args.maxSplitSize
       )
 
     time("get splits") {
@@ -91,30 +99,25 @@ object Main
       )
     }
 
-    val path = new Path(remainingArgs.remainingArgs.head)
+    val path = Path(remainingArgs.remainingArgs.head)
 
     val sparkConf = Conf(args.propertiesFiles)
     implicit val sc = new SparkContext(sparkConf)
-    implicit val conf = sc.hadoopConfiguration
+    implicit val conf: Configuration = sc
 
     args
       .gsBuffer
       .foreach(
-        conf.setInt(
+        conf.setLong(
           "fs.gs.io.buffersize",
           _
         )
       )
 
-    args
-      .maxSplitSize
-      .map(Size(_))
-      .foreach(
-        conf.setLong(
-          SPLIT_MAXSIZE,
-          _
-        )
-      )
+    conf.setLong(
+      SPLIT_MAXSIZE,
+      args.maxSplitSize
+    )
 
     implicit val printer = Printer(args.outFile)
     implicit val sampleSize = SampleSize(args.sampleSize)

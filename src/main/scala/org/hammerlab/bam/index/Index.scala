@@ -2,7 +2,7 @@ package org.hammerlab.bam.index
 
 import java.io.IOException
 
-import org.apache.hadoop.conf.Configuration
+import org.hammerlab.hadoop.Configuration
 import org.apache.hadoop.fs.Path
 import org.hammerlab.bam.index.Index.{ Bin, Chunk, Reference }
 import org.hammerlab.bam.index.Read._
@@ -69,7 +69,7 @@ object Index {
       )
   }
 
-  def apply(path: Path, conf: Configuration): Index =
+  def apply(path: Path)(implicit conf: Configuration): Index =
     Index(
       {
         implicit val ch: ByteChannel = path.getFileSystem(conf).open(path)

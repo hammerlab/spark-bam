@@ -3,7 +3,6 @@ package org.hammerlab.bam.spark
 import grizzled.slf4j.Logging
 import htsjdk.samtools.SamReaderFactory.Option._
 import htsjdk.samtools.{ BAMFileReader, QueryInterval, SAMLineParser, SAMRecord, SamReaderFactory }
-import org.apache.hadoop.conf.Configuration
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.header.ContigLengths
@@ -13,19 +12,19 @@ import org.hammerlab.bgzf.block.{ FindBlockStart, SeekableUncompressedBytes }
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
-import org.hammerlab.hadoop.SerializableConfiguration._
-import org.hammerlab.hadoop.{ FileSplits, MaxSplitSize, Path }
-import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
+import org.hammerlab.hadoop.{ Configuration, FileSplits, MaxSplitSize, Path }
+import org.hammerlab.io.CachingChannel._
+import org.hammerlab.io.SeekableByteChannel
 import org.hammerlab.iterator.CappedCostGroupsIterator.ElementTooCostlyStrategy.EmitAlone
 import org.hammerlab.iterator.CappedCostGroupsIterator._
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.iterator.SimpleBufferedIterator
-import org.hammerlab.iterator.Sliding2Iterator._
+import org.hammerlab.iterator.sliding.Sliding2Iterator._
 import org.hammerlab.math.ceil
 import org.hammerlab.parallel._
+import org.hammerlab.parallel.spark.ElemsPerPartition
 import org.hammerlab.{ bgzf, parallel, paths }
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFrom
-import org.hammerlab.io.CachingChannel._
 
 import scala.collection.JavaConverters._
 
@@ -49,17 +48,53 @@ object LoadBam
   case class Config(bgzfBlockHeadersToCheck: Int = 5,
                     maxReadSize: Int = 1000000,
                     maxSplitSize: MaxSplitSize,
-                    @transient parallelizer: parallel.Config = threads.Config(8),
+                    @transient parallelizer: parallel.Config = implicitly[threads.Config],
                     estimatedBamCompressionRatio: EstimatedCompressionRatio = 3.0)
     extends bgzf.hadoop.Config
+
+  object Config {
+    implicit def makeConfigFromParallelizerWithContext(parallelizer: parallel.Config)(
+        implicit sc: SparkContext
+    ): Config =
+      Config(
+        parallelizer = parallelizer,
+        maxSplitSize = MaxSplitSize()(sc)
+      )
+
+    implicit def makeConfigFromParallelizerWithConfiguration(parallelizer: parallel.Config)(
+        implicit conf: Configuration
+    ): Config =
+      Config(
+        parallelizer = parallelizer,
+        maxSplitSize = MaxSplitSize()
+      )
+
+    implicit def makeConfigFromParallelizerWithMaxSplitSize(parallelizer: parallel.Config)(
+        implicit maxSplitSize: MaxSplitSize
+    ): Config =
+      Config(
+        parallelizer = parallelizer,
+        maxSplitSize = maxSplitSize
+      )
+
+    implicit def defaultConfig(implicit
+                               sc: SparkContext,
+                               parallelizer: parallel.Config = implicitly[threads.Config]
+                              ): Config =
+      Config(
+        maxSplitSize = MaxSplitSize()(sc),
+        parallelizer = parallelizer
+      )
+  }
+
+  // When computing splits using a Spark job, default to one split per task
+  implicit val defaultPartitioningStrategy = ElemsPerPartition(1)
 
   def getIntevalChunks(path: Path,
                        intervals: LociSet)(
       implicit
       conf: Configuration
   ): Seq[Chunk] = {
-    val fs = path.getFileSystem(conf)
-    val in = fs.open(path)
 
     val readerFactory =
       SamReaderFactory
@@ -72,11 +107,11 @@ object LoadBam
       readerFactory
         .open(
           paths.Path(
-            fs.makeQualified(path).toUri
+            path.filesystem.makeQualified(path).toUri
           )
         )
 
-    val header = readSAMHeaderFrom(in, conf)
+    val header = readSAMHeaderFrom(path, conf)
     val dict = header.getSequenceDictionary
     val idx = samReader.indexing.getIndex
     val queryIntervals =
@@ -108,10 +143,12 @@ object LoadBam
     )
 
 
-  implicit class LoadBamContext(val sc: SparkContext)
-    extends AnyVal {
+  trait CanLoadBam
+    extends Any {
 
-    implicit def conf = sc.hadoopConfiguration
+    def sc: SparkContext
+
+    implicit def conf: Configuration = sc.hadoopConfiguration
 
     def loadBamIntervals(path: Path,
                          intervals: LociSet)(
@@ -149,7 +186,7 @@ object LoadBam
           .map(_.toVector)
           .toVector
 
-      val confBroadcast = sc.broadcast(conf.serializable)
+      val confBroadcast = sc.broadcast(conf)
 
       sc
         .parallelize(
@@ -160,7 +197,7 @@ object LoadBam
         .mapPartitions {
           chunks ⇒
 
-            val compressedChannel = SeekableHadoopByteChannel(path)(confBroadcast).cache
+            val compressedChannel = SeekableByteChannel(path)(confBroadcast).cache
 
             val uncompressedBytes = SeekableUncompressedBytes(compressedChannel)
 
@@ -199,13 +236,12 @@ object LoadBam
 
     def loadSam(path: Path)(implicit config: Config): RDD[SAMRecord] = {
       val header = sc.broadcast(readSAMHeaderFrom(path, conf))
-      val len = path.getFileSystem(conf).getFileStatus(path).getLen
       sc
         .textFile(
           path.toString,
           minPartitions =
             ceil[Long](
-              len,
+              path.length,
               config.maxSplitSize
             )
             .toInt
@@ -224,7 +260,7 @@ object LoadBam
 
       val fileSplitStarts = FileSplits(path, conf).map(_.start)
 
-      val confBroadcast = sc.broadcast(conf.serializable)
+      val confBroadcast = sc.broadcast(conf)
 
       val fs = path.getFileSystem(conf)
       val len = fs.getFileStatus(path).getLen
@@ -240,7 +276,7 @@ object LoadBam
               fileSplitStart ⇒
 
                 val compressedChannel =
-                  SeekableHadoopByteChannel(path)(confBroadcast).cache
+                  SeekableByteChannel(path)(confBroadcast).cache
 
                 val bgzfBlockStart =
                   FindBlockStart(
@@ -286,7 +322,7 @@ object LoadBam
 
               val uncompressedBytes =
                 SeekableUncompressedBytes(
-                  SeekableHadoopByteChannel(path)(confBroadcast).cache
+                  SeekableByteChannel(path)(confBroadcast).cache
                 )
 
               val recordStream = SeekableRecordStream(uncompressedBytes)

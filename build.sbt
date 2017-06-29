@@ -3,10 +3,10 @@ import sbtassembly.PathList
 name := "spark-bam"
 version := "1.1.0-SNAPSHOT"
 deps ++= Seq(
-  libs.value('iterators),
+  libs.value('iterators).copy(revision = "1.3.0-SNAPSHOT"),
   libs.value('slf4j),
   "com.github.alexarchambault" %% "case-app" % "1.2.0-M3",
-  "org.hammerlab" %% "magic-rdds" % "1.4.4-SNAPSHOT",
+  "org.hammerlab" %% "magic-rdds" % "1.5.0-SNAPSHOT",
   libs.value('paths),
   libs.value('reference),
   "org.hammerlab" %% "spark-util" % "1.1.3",

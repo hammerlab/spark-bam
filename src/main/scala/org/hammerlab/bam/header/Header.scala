@@ -1,11 +1,10 @@
 package org.hammerlab.bam.header
 
 import htsjdk.samtools.{ SAMFileHeader, SAMSequenceDictionary, SAMSequenceRecord }
-import org.apache.hadoop.conf.Configuration
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ UncompressedBytes, UncompressedBytesI }
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
-import org.hammerlab.hadoop.Path
+import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.io.ByteChannel
 
 import scala.collection.JavaConverters._
@@ -17,8 +16,8 @@ case class Header(contigLengths: ContigLengths,
 
 object Header {
 
-  def apply(path: Path, conf: Configuration): Header = {
-    val uncompressedBytes = UncompressedBytes(path.getFileSystem(conf).open(path))
+  def apply(path: Path)(implicit conf: Configuration): Header = {
+    val uncompressedBytes = UncompressedBytes(path.open)
     val header = apply(uncompressedBytes)
     uncompressedBytes.close()
     header
@@ -27,8 +26,7 @@ object Header {
   def apply(byteStream: UncompressedBytesI[_]): Header = {
     val uncompressedByteChannel: ByteChannel = byteStream
     require(
-      uncompressedByteChannel.readString(4, includesNull = false) ==
-        "BAM\1"
+      uncompressedByteChannel.readString(4, includesNull = false) == "BAM\1"
     )
 
     val headerLength = uncompressedByteChannel.getInt
@@ -68,7 +66,7 @@ object Header {
           (name, length) ← header.contigLengths.values.toList
         } yield
           new SAMSequenceRecord(name.name, length.toInt)
-          )
+        )
         .asJava
       )
     )

@@ -1,11 +1,12 @@
 package org.hammerlab.io
 
 import java.io.{ IOException, InputStream }
+import java.nio.channels.FileChannel
 import java.nio.{ ByteBuffer, channels }
 
-import org.apache.hadoop.conf.Configuration
+import org.hammerlab.paths
 import org.apache.hadoop.fs.Seekable
-import org.hammerlab.hadoop.Path
+import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.io.ByteChannel.InputStreamByteChannel
 
 trait SeekableByteChannel
@@ -50,6 +51,13 @@ object SeekableByteChannel {
   implicit def makeChannelByteChannel(ch: channels.SeekableByteChannel): ChannelByteChannel =
     ChannelByteChannel(ch)
 
+  implicit def makeChannelByteChannel(path: paths.Path): ChannelByteChannel =
+    ChannelByteChannel(
+      FileChannel.open(
+        path
+      )
+    )
+
   case class SeekableHadoopByteChannel(is: InputStream with Seekable,
                                        size: Long)
     extends InputStreamByteChannel(is)
@@ -58,13 +66,11 @@ object SeekableByteChannel {
       is.seek(newPos)
   }
 
-  object SeekableHadoopByteChannel {
-    def apply(path: Path)(
-        implicit conf: Configuration
-    ): SeekableHadoopByteChannel = {
-      val fs = path.filesystem
-      val len = fs.getFileStatus(path).getLen
-      SeekableHadoopByteChannel(fs.open(path), len)
-    }
-  }
+  implicit def apply(path: Path)(
+      implicit conf: Configuration
+  ): SeekableHadoopByteChannel =
+    SeekableHadoopByteChannel(
+      path.open,
+      path.length
+    )
 }

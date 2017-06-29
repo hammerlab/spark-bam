@@ -1,15 +1,12 @@
 package org.hammerlab.bgzf.index
 
 import java.io.{ IOException, PrintWriter }
-import java.net.URI
-import java.nio.channels.FileChannel
 
 import caseapp.{ ExtraName ⇒ O, _ }
 import grizzled.slf4j.Logging
-import org.apache.hadoop.conf.Configuration
 import org.hammerlab.bgzf.block.{ Metadata, MetadataStream }
+import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
-import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat
 
 /**
@@ -19,15 +16,10 @@ import org.hammerlab.timing.Interval.heartbeat
  *
  * <position>,<compressed block size>,<uncompressed block size>
  *
- * @param inFile input bgzf-compressed file
  * @param outFile path to write bgzf-block-positions to
- * @param useChannel open [[inFile]] using [[FileChannel]] interface, as opposed to the default
- *                   [[java.nio.file.Files.newInputStream]]
  * @param includeEmptyFinalBlock whether to emit a record for the final, empty bgzf-block
  */
-case class Args(@O("b") inFile: String,
-                @O("o") outFile: Option[String] = None,
-                @O("c") useChannel: Boolean = false,
+case class Args(@O("o") outFile: Option[String] = None,
                 @O("i") includeEmptyFinalBlock: Boolean = false)
 
 object IndexBlocks
@@ -35,13 +27,17 @@ object IndexBlocks
     with Logging {
 
   override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
-    val conf = new Configuration
-    val path = Path(new URI(args.inFile))
-    val ch: ByteChannel =
-      if (args.useChannel)
-        FileChannel.open(path): SeekableByteChannel
-      else
-        path.inputStream
+    implicit val conf = Configuration()
+
+    if (remainingArgs.remainingArgs.size != 1) {
+      throw new IllegalArgumentException(
+        s"Exactly one argument (a BAM file path) is required"
+      )
+    }
+
+    val path = Path(remainingArgs.remainingArgs.head)
+
+    val ch: ByteChannel = SeekableByteChannel(path)
 
     val stream =
       MetadataStream(
@@ -50,17 +46,14 @@ object IndexBlocks
       )
 
     val outPath =
-      Path(
-        new URI(
-          args
-            .outFile
-            .getOrElse(
-              args.inFile + ".blocks"
-            )
+      args
+        .outFile
+        .map(Path(_))
+        .getOrElse(
+          path.suffix(".blocks")
         )
-      )
 
-    val out = new PrintWriter(outPath.outputStream)
+    val out = new PrintWriter(path.filesystem.create(path))
 
     var idx = 0
 

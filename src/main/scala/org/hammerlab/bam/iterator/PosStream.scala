@@ -3,7 +3,8 @@ package org.hammerlab.bam.iterator
 import java.nio.channels.FileChannel
 
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.{ UncompressedBytes, UncompressedBytesI, SeekableUncompressedBytes }
+import org.hammerlab.bgzf.block.{ SeekableUncompressedBytes, UncompressedBytes, UncompressedBytesI }
+import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
 import org.hammerlab.paths.Path
 
 /**
@@ -29,10 +30,10 @@ case class PosStream(uncompressedBytes: UncompressedBytes)
   extends PosStreamI[UncompressedBytes]
 
 object PosStream {
-  def apply(path: Path): PosStream =
+  def apply(ch: ByteChannel): PosStream =
     PosStream(
       UncompressedBytes(
-        path.inputStream
+        ch
       )
     )
 }
@@ -45,10 +46,10 @@ case class SeekablePosStream(uncompressedBytes: SeekableUncompressedBytes)
     with SeekableRecordIterator[Pos]
 
 object SeekablePosStream {
-  def apply(path: Path): SeekablePosStream =
+  def apply(ch: SeekableByteChannel): SeekablePosStream =
     SeekablePosStream(
       SeekableUncompressedBytes(
-        FileChannel.open(path)
+        ch
       )
     )
 }

@@ -1,22 +1,20 @@
 package org.hammerlab.bam.index
 
 import java.io.{ IOException, PrintWriter }
-import java.net.URI
 
 import caseapp.{ ExtraName ⇒ O, _ }
 import grizzled.slf4j.Logging
 import htsjdk.samtools.util.{ RuntimeEOFException, RuntimeIOException }
-import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ Path ⇒ HPath }
-import org.hammerlab.timing.Interval.heartbeat
 import org.hammerlab.bam.iterator.{ PosStream, RecordStream, SeekablePosStream, SeekableRecordStream }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.paths.Path
+import org.hammerlab.hadoop.{ Configuration, Path }
+import org.hammerlab.io.SeekableByteChannel
+import org.hammerlab.timing.Interval.heartbeat
 
 /**
- * Traverse a BAM file and output the BGZP "virtual" positions ([[Pos]]) of all record-starts.
+ * Traverse a BAM file (the sole argument) and output the BGZP "virtual" positions ([[Pos]]) of all record-starts.
  *
- * @param bamFile      BAM file to "index"
  * @param outFile      File to write read-boundary [[Pos]]s to
  * @param parseRecords If true, parse [[htsjdk.samtools.SAMRecord]]s into memory while traversing, for minimal
  *                     sanity-checking
@@ -25,8 +23,7 @@ import org.hammerlab.paths.Path
  * @param throwOnTruncation If true, throw an [[IOException]] in case of an unexpected EOF; default: stop traversing,
  *                          output only through end of last complete record, exit 0.
  */
-case class Args(@O("b") bamFile: String,
-                @O("o") outFile: Option[String] = None,
+case class Args(@O("o") outFile: Option[String] = None,
                 @O("r") parseRecords: Boolean = false,
                 @O("c") useChannel: Boolean = false,
                 @O("t") throwOnTruncation: Boolean = false)
@@ -36,34 +33,40 @@ object IndexRecords
     with Logging {
 
   override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
-    val conf = new Configuration
-    val inPath = Path(new URI(args.bamFile))
+    implicit val conf = Configuration()
+
+    if (remainingArgs.remainingArgs.size != 1) {
+      throw new IllegalArgumentException(
+        s"Exactly one argument (a BAM file path) is required"
+      )
+    }
+
+    val path = Path(remainingArgs.remainingArgs.head)
 
     val stream =
       (args.parseRecords, args.useChannel) match {
         case (true, true) ⇒
-          SeekableRecordStream(inPath).map(_._1)
+          SeekableRecordStream(path).map(_._1)
         case (true, false) ⇒
-          RecordStream(inPath).map(_._1)
+          RecordStream(path.open).map(_._1)
         case (false, true) ⇒
-          SeekablePosStream(inPath)
+          SeekablePosStream(path)
         case (false, false) ⇒
-          PosStream(inPath)
+          PosStream(path.open)
       }
 
     var idx = 0
     var lastPos = Pos(0, 0)
 
-    val outPath =
-      new HPath(
-        args
-          .outFile
-          .getOrElse(
-            args.bamFile + ".records"
-          )
-      )
+    val outPath: Path =
+      args
+        .outFile
+        .map(Path(_))
+        .getOrElse(
+          path.suffix(".records")
+        )
 
-    val fs = outPath.getFileSystem(conf)
+    val fs = outPath.filesystem
     val out = new PrintWriter(fs.create(outPath))
 
     def traverse(): Unit = {

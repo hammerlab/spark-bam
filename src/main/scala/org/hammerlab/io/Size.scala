@@ -1,5 +1,8 @@
 package org.hammerlab.io
 
+/**
+ * Wrapper for representation of a size in bytes
+ */
 sealed abstract class Size(scale: Long) {
   def bytes: Long = value * scale
   def value: Int
@@ -8,7 +11,7 @@ sealed abstract class Size(scale: Long) {
     s"$value${getClass.getSimpleName}"
 }
 
-case class  B(value: Int) extends Size(1L << 0)
+case class  B(value: Int) extends Size(1L <<  0)
 case class KB(value: Int) extends Size(1L << 10)
 case class MB(value: Int) extends Size(1L << 20)
 case class GB(value: Int) extends Size(1L << 30)
@@ -17,7 +20,9 @@ case class PB(value: Int) extends Size(1L << 50)
 case class EB(value: Int) extends Size(1L << 60)
 
 object Size {
+
   val re = """^(\d+)([KMGTPE]?)B?$""".r
+
   def apply(bytesStr: String): Size = {
     re.findFirstMatchIn(bytesStr.toUpperCase) match {
       case Some(m) ⇒

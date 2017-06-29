@@ -2,10 +2,8 @@ package org.hammerlab.io
 
 import java.io.{ EOFException, IOException, InputStream }
 
-import org.apache.hadoop.conf.Configuration
-import org.hammerlab.hadoop.Path
+import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.io.CachingChannel._
-import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -56,11 +54,11 @@ class ByteChannelTest
 
   test("CachingChannel") {
     val path = Path(File("5k.bam").uri)
-    implicit val conf = new Configuration
+    implicit val conf = Configuration()
 
-    val ch = SeekableHadoopByteChannel(path)
+    val ch = SeekableByteChannel(path)
 
-    val cc = SeekableHadoopByteChannel(path).cache
+    val cc = SeekableByteChannel(path).cache
 
     for {
       i ← 0 until 100
@@ -76,7 +74,7 @@ class ByteChannelTest
       cc.seek(i)
 
       withClue(s"idx: $i: ") {
-        cc.read should be(ch.read)
+        cc.read() should be(ch.read())
       }
     }
   }

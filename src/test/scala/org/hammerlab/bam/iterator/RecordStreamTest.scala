@@ -1,9 +1,9 @@
 package org.hammerlab.bam.iterator
 
 import htsjdk.samtools.SAMRecord
-import org.apache.hadoop.conf.Configuration
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.io.SeekableByteChannel.ChannelByteChannel
+import org.hammerlab.paths.Path
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -69,16 +69,16 @@ class RecordStreamTest
     )
   }
 
+  val path = Path(File("5k.bam"))
+
   test("RecordStream") {
-    val conf = new Configuration
-    implicit val rs = SeekableRecordStream(File("5k.bam"))
+    implicit val rs = RecordStream(path.inputStream)
 
     checkFirstRecords
   }
 
   test("SeekableRecordStream") {
-    val conf = new Configuration
-    implicit val rs = SeekableRecordStream(File("5k.bam"))
+    implicit val rs = SeekableRecordStream(path)
 
     checkFirstRecords
 

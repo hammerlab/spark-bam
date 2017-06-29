@@ -2,10 +2,17 @@ package org.hammerlab.spark
 
 import org.apache.spark.rdd.RDD
 import org.hammerlab.io.SampleSize
+import org.hammerlab.magic.rdd.size._
 
 import scala.reflect.ClassTag
 
 object SampleRDD {
+
+  def sample[T: ClassTag](rdd: RDD[T])(
+      implicit sampleSize: SampleSize
+  ): Array[T] =
+    sample(rdd, rdd.size)
+
   def sample[T: ClassTag](rdd: RDD[T],
                           size: Long)(
       implicit sampleSize: SampleSize

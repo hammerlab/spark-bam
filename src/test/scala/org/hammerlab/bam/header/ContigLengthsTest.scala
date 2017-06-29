@@ -1,8 +1,7 @@
 package org.hammerlab.bam.header
 
-import org.apache.hadoop.conf.Configuration
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
-import org.hammerlab.hadoop.Path
+import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -104,7 +103,7 @@ class ContigLengthsTest
       .map(_.swap)
     )
 
-  implicit val conf = new Configuration
+  implicit val conf = Configuration()
 
   test("bam") {
     ContigLengths(Path(File("5k.bam").uri)) should be(expected)

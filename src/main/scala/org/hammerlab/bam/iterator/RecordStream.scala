@@ -4,7 +4,8 @@ import java.nio.channels.FileChannel
 
 import htsjdk.samtools.{ BAMRecordCodec, DefaultSAMRecordFactory, SAMRecord }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.{ UncompressedBytes, UncompressedBytesI, SeekableUncompressedBytes }
+import org.hammerlab.bgzf.block.{ SeekableUncompressedBytes, UncompressedBytes, UncompressedBytesI }
+import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
 import org.hammerlab.paths.Path
 
 /**
@@ -35,10 +36,10 @@ case class RecordStream[Stream <: UncompressedBytesI[_]](uncompressedBytes: Stre
   extends RecordStreamI[Stream]
 
 object RecordStream {
-  def apply(path: Path): RecordStream[UncompressedBytes] =
+  implicit def apply(ch: ByteChannel): RecordStream[UncompressedBytes] =
     RecordStream(
       UncompressedBytes(
-        path.inputStream
+        ch
       )
     )
 }
@@ -51,10 +52,8 @@ case class SeekableRecordStream(uncompressedBytes: SeekableUncompressedBytes)
     with SeekableRecordIterator[(Pos, SAMRecord)]
 
 object SeekableRecordStream {
-  def apply(path: Path): SeekableRecordStream =
+  def apply(ch: SeekableByteChannel): SeekableRecordStream =
     SeekableRecordStream(
-      SeekableUncompressedBytes(
-        FileChannel.open(path)
-      )
+      SeekableUncompressedBytes(ch)
     )
 }

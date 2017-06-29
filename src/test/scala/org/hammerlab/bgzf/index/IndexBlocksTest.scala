@@ -12,10 +12,12 @@ class IndexBlocksTest
     val outPath = tmpPath()
     IndexBlocks.run(
       Args(
-        File("5k.bam").uri.toString,
         outFile = Some(outPath.uri.toString)
       ),
-      RemainingArgs(Nil, Nil)
+      RemainingArgs(
+        Seq(File("5k.bam")),
+        Nil
+      )
     )
 
     outPath should fileMatch("5k.bam.blocks")

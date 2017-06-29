@@ -2,16 +2,15 @@ package org.hammerlab.bam.check
 
 import java.net.URI
 
-import org.apache.hadoop.conf.Configuration
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{ Partitioner, SparkContext }
 import org.hammerlab.bam.check
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, SeekableUncompressedBytes }
-import org.hammerlab.hadoop.{ Path, SerializableConfiguration }
+import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.io.CachingChannel._
-import org.hammerlab.io.SampleSize
+import org.hammerlab.io.{ SampleSize, SeekableByteChannel }
 import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.partitions.OrderedRepartitionRDD._
@@ -52,12 +51,11 @@ abstract class Run[
   /**
    * Main CLI entry point: build a [[Result]] and print some statistics about it.
    */
-  def getCalls(sc: SparkContext, args: Args): (RDD[(Pos, Call)], Option[Set[Long]]) = {
-    val conf = sc.hadoopConfiguration
-    val confBroadcast = sc.broadcast(new SerializableConfiguration(conf))
-    val path = Path(new URI(args.bamFile))
+  def getCalls(args: Args)(implicit sc: SparkContext, path: Path): (RDD[(Pos, Call)], Option[Set[Long]]) = {
+    implicit val conf: Configuration = sc.hadoopConfiguration
+    val confBroadcast = sc.broadcast(conf)
 
-    val Header(contigLengths, _, _) = Header(path, sc.hadoopConfiguration)
+    val Header(contigLengths, _, _) = Header(path)
 
     val blocksPath =
       args
@@ -157,7 +155,7 @@ abstract class Run[
                 path,
                 contigLengths
               )(
-                confBroadcast
+                confBroadcast.value.value
               )
 
             blocks
@@ -175,21 +173,22 @@ abstract class Run[
     calls → filteredBlockSet
   }
 
-  def apply(sc: SparkContext, args: Args): Res = {
-    val (calls, filteredBlockSet) = getCalls(sc, args)
+  def apply(args: Args)(implicit sc: SparkContext, path: Path): Res = {
+    val (calls, filteredBlockSet) = getCalls(args)
 
     /** File with true read-record-boundary positions as output by [[org.hammerlab.bam.index.IndexRecords]]. */
     val recordsFile =
       args
         .recordsFile
+        .map(Path(_))
         .getOrElse(
-          args.bamFile + ".records"
+          path.suffix(".records")
         )
 
     /** Parse the true read-record-boundary positions from [[recordsFile]] */
     val recordPosRDD: RDD[Pos] =
       sc
-        .textFile(recordsFile)
+        .textFile(recordsFile.toString)
         .map(
           line ⇒
             line.split(",") match {
@@ -368,7 +367,7 @@ trait UncompressedStreamRun[
                            contigLengths: ContigLengths)(
       implicit conf: Configuration
   ): Checker[Call] = {
-    val channel = SeekableHadoopByteChannel(path).cache
+    val channel = SeekableByteChannel(path).cache
     val stream = SeekableUncompressedBytes(channel)
     makeChecker(stream, contigLengths)
   }

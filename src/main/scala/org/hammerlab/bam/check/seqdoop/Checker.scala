@@ -5,12 +5,13 @@ import java.io.Closeable
 import htsjdk.samtools.SAMFormatException
 import htsjdk.samtools.seekablestream.SeekableStream
 import htsjdk.samtools.util.RuntimeIOException
-import org.apache.hadoop.conf.Configuration
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.bam.check
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.hadoop.Path
 import org.hammerlab.io.CachingChannel._
+import org.hammerlab.io.SeekableByteChannel
 import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.seqdoop.hadoop_bam.BAMPosGuesser
 import org.seqdoop.hadoop_bam.BAMSplitGuesser.MAX_BYTES_READ
@@ -24,7 +25,7 @@ case class Checker(path: Path,
   extends check.Checker[Boolean]
     with Closeable {
 
-  val cachingChannel = SeekableHadoopByteChannel(path).cache
+  val cachingChannel = SeekableByteChannel(path).cache
 
   /** Wrap block-caching input stream in an HTSJDK [[SeekableStream]] for consumption by [[BAMPosGuesser]] */
   val ss = TruncatableSeekableStream(cachingChannel, path)

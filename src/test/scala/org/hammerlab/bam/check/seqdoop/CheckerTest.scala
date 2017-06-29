@@ -1,9 +1,8 @@
 package org.hammerlab.bam.check.seqdoop
 
-import org.apache.hadoop.conf.Configuration
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.hadoop.Path
+import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -11,7 +10,7 @@ class CheckerTest
   extends Suite {
 
   val path = Path(File("1.2205029-2209029.bam").uri)
-  implicit val conf = new Configuration
+  implicit val conf = Configuration()
   val contigLengths = ContigLengths(path)
   val checker = Checker(path, contigLengths)
 

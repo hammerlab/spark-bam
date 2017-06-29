@@ -11,10 +11,12 @@ class IndexRecordsTest
     val outFile = tmpPath()
     IndexRecords.run(
       Args(
-        File("5k.bam").uri.toString,
         outFile = Some(outFile.uri.toString)
       ),
-      RemainingArgs(Nil, Nil)
+      RemainingArgs(
+        Seq(File("5k.bam")),
+        Nil
+      )
     )
 
     outFile should fileMatch("5k.bam.records")

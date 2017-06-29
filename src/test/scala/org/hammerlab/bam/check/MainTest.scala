@@ -18,13 +18,15 @@ class MainTest
 
     Main.run(
       Args(
-        bamFile = File("1.2205029-2209029.bam"),
         blocksPerPartition = 5,
         eagerChecker = true,
         seqdoopChecker = true,
         outputPath = Some(outputPath.path.toString)
       ),
-      RemainingArgs(Nil, Nil)
+      RemainingArgs(
+        Seq(File("1.2205029-2209029.bam")),
+        Nil
+      )
     )
 
     outputPath.read should be(

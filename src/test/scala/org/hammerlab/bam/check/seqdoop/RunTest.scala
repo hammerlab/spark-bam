@@ -1,13 +1,14 @@
 package org.hammerlab.bam.check.seqdoop
 
-import org.hammerlab.bam.check.simple.{ Result, FalsePositive }
+import org.hammerlab.bam.check.simple.{ FalsePositive, Result }
 import org.hammerlab.bam.check.{ Args, simple }
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.hadoop.Path
 
 class RunTest
   extends simple.RunTest {
-  override def run(args: Args): Result =
-    Run(sc, args)
+  override def run(args: Args)(implicit path: Path): Result =
+    Run(args)
 
   override def bamTest1FalseCalls =
     Seq(

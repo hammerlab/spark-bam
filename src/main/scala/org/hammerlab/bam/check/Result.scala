@@ -35,11 +35,11 @@ abstract class Result[PosResult](implicit sampleSize: SampleSize) {
     numFalseCalls match {
       case 0 ⇒
         print(
-          s"$numPositions calls ($numCalledReadStarts reads), no errors!"
+          s"$numPositions positions checked ($numCalledReadStarts reads), no errors!"
         )
       case _ ⇒
         print(
-          s"$numPositions calls ($numCalledReadStarts reads), $numFalseCalls errors"
+          s"$numPositions positions checked ($numCalledReadStarts reads), $numFalseCalls errors"
         )
 
         printSamples(
