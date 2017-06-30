@@ -142,7 +142,6 @@ object LoadBam
           )
     )
 
-
   trait CanLoadBam
     extends Any {
 
@@ -356,4 +355,8 @@ object LoadBam
       else
         throw new IllegalArgumentException(s"Can't load reads from path: $path")
   }
+
+  implicit class LoadBamContext(val sc: SparkContext)
+    extends AnyVal
+      with CanLoadBam
 }

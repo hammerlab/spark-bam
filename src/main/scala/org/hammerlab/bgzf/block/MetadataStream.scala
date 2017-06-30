@@ -1,6 +1,6 @@
 package org.hammerlab.bgzf.block
 
-import java.io.{ Closeable, EOFException, IOException }
+import java.io.{ Closeable, EOFException }
 
 import org.hammerlab.bgzf.block.Block.FOOTER_SIZE
 import org.hammerlab.bgzf.block.Header.EXPECTED_HEADER_SIZE
@@ -11,10 +11,8 @@ import org.hammerlab.iterator.SimpleBufferedIterator
  * Iterator over bgzf-block [[Metadata]]; useful when loading/decompressing [[Block]] payloads is unnecessary.
  *
  * @param ch input stream/channel containing compressed bgzf data
- * @param includeEmptyFinalBlock if true, include the final, empty bgzf-block in this stream
  */
-case class MetadataStream(ch: ByteChannel,
-                          includeEmptyFinalBlock: Boolean = false)
+case class MetadataStream(ch: ByteChannel)
   extends SimpleBufferedIterator[Metadata]
     with Closeable {
 
@@ -41,7 +39,7 @@ case class MetadataStream(ch: ByteChannel,
 
     val dataLength = remainingBytes - FOOTER_SIZE
 
-    if (dataLength == 2 && !includeEmptyFinalBlock) {
+    if (dataLength == 2) {
       // Skip empty block at end of file
       None
     } else

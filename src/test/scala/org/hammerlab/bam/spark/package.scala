@@ -2,7 +2,7 @@ package org.hammerlab.bam
 
 import org.hammerlab.parallel
 import org.hammerlab.parallel.spark.Config
-import org.hammerlab.parallel.{ spark, threads }
+import org.hammerlab.parallel.threads
 import org.hammerlab.spark.test.suite.SparkSuite
 
 package object spark {

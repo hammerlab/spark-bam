@@ -13,15 +13,6 @@ class MetadataStreamTest
   test("metadata") {
     val ch = FileChannel.open(Paths.get(File("5k.bam")))
 
-    MetadataStream(
-      ch,
-      includeEmptyFinalBlock = true
-    )
-    .size should be(
-      51
-    )
-
-    ch.position(0)
     MetadataStream(ch)
       .take(10)
       .toList should be(
@@ -40,15 +31,9 @@ class MetadataStreamTest
     )
 
     ch.position(0)
-    val stream =
-      MetadataStream(
-        ch,
-        includeEmptyFinalBlock = false
-      )
+    val stream = MetadataStream(ch)
 
-    stream.size should be(
-      50
-    )
+    stream.size should be(50)
 
     ch.isOpen should be(true)
     stream.close()

@@ -27,14 +27,14 @@ trait LoadBAMChecks
   def check(maxSplitSize: MaxSplitSize, sizes: Int*): Unit = {
     val records =
       sc
-      .loadReads(
-          path
-        )(
-          Config(
-            parallelizer = parallelConfig,
-            maxSplitSize = maxSplitSize
+        .loadReads(
+            path
+          )(
+            Config(
+              parallelizer = parallelConfig,
+              maxSplitSize = maxSplitSize
+            )
           )
-        )
 
     records.partitionSizes should be(sizes)
     records.count should be(4910)

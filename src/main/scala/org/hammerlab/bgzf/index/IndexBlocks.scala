@@ -1,6 +1,6 @@
 package org.hammerlab.bgzf.index
 
-import java.io.{ IOException, PrintWriter }
+import java.io.PrintWriter
 
 import caseapp.{ ExtraName ⇒ O, _ }
 import grizzled.slf4j.Logging
@@ -17,10 +17,8 @@ import org.hammerlab.timing.Interval.heartbeat
  * <position>,<compressed block size>,<uncompressed block size>
  *
  * @param outFile path to write bgzf-block-positions to
- * @param includeEmptyFinalBlock whether to emit a record for the final, empty bgzf-block
  */
-case class Args(@O("o") outFile: Option[String] = None,
-                @O("i") includeEmptyFinalBlock: Boolean = false)
+case class Args(@O("o") outFile: Option[String] = None)
 
 object IndexBlocks
   extends CaseApp[Args]
@@ -39,11 +37,7 @@ object IndexBlocks
 
     val ch: ByteChannel = SeekableByteChannel(path)
 
-    val stream =
-      MetadataStream(
-        ch,
-        includeEmptyFinalBlock = args.includeEmptyFinalBlock
-      )
+    val stream = MetadataStream(ch)
 
     val outPath: Path =
       args
@@ -62,17 +56,12 @@ object IndexBlocks
         info(
           s"$idx blocks processed, ${ch.position()} bytes"
         ),
-      try {
         for {
           Metadata(start, compressedSize, uncompressedSize) ← stream
         } {
           out.println(s"$start,$compressedSize,$uncompressedSize")
           idx += 1
         }
-      } catch {
-        case e: IOException ⇒
-          error(e)
-      }
     )
 
     info("Traversal done")
