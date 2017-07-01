@@ -3,6 +3,7 @@ package org.hammerlab.bam.check
 import java.lang.System.setProperty
 
 import caseapp.RemainingArgs
+import org.hammerlab.hadoop.Path
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -21,12 +22,9 @@ class MainTest
         blocksPerPartition = 5,
         eagerChecker = true,
         seqdoopChecker = true,
-        outputPath = Some(outputPath.path.toString)
+        outputPath = Some(Path(outputPath.uri)(Main.sc))
       ),
-      RemainingArgs(
-        Seq(File("1.2205029-2209029.bam")),
-        Nil
-      )
+      Seq(File("1.2205029-2209029.bam"))
     )
 
     outputPath.read should be(

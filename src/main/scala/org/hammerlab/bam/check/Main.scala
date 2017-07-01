@@ -1,15 +1,13 @@
 package org.hammerlab.bam.check
 
-import caseapp.{ ExtraName ⇒ O, _ }
+import caseapp.{ ExtraName ⇒ O }
 import grizzled.slf4j.Logging
-import org.apache.spark.SparkContext
-import org.hammerlab.bam.check.full.error.Registrar
+import org.hammerlab.SparkApp
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.hadoop.Path
 import org.hammerlab.io.Printer._
 import org.hammerlab.io.{ Printer, SampleSize }
-import org.hammerlab.spark.Conf
-import org.hammerlab.spark.SampleRDD.sample
+import org.hammerlab.magic.rdd.SampleRDD.sample
 
 /**
  * CLI for [[Main]]: check every (bgzf-decompressed) byte-position in a BAM file with a [[Checker]] and compare the
@@ -32,46 +30,31 @@ import org.hammerlab.spark.SampleRDD.sample
 case class Args(@O("e") eagerChecker: Boolean = false,
                 @O("f") fullChecker: Boolean = false,
                 @O("i") blocksPerPartition: Int = 20,
-                @O("k") blocksFile: Option[String] = None,
-                @O("m") samplesToPrint: Option[Int] = None,
+                @O("k") blocksFile: Option[Path] = None,
+                @O("m") samplesToPrint: SampleSize = SampleSize(None),
                 @O("n") numBlocks: Option[Int] = None,
-                @O("o") outputPath: Option[String] = None,
-                @O("p") propertiesFiles: String = "",
+                @O("o") outputPath: Option[Path] = None,
                 @O("q") resultPositionsPerPartition: Int = 1000000,
-                @O("r") recordsFile: Option[String] = None,
+                @O("r") recordsFile: Option[Path] = None,
                 @O("s") seqdoopChecker: Boolean = false,
                 @O("w") blocksWhitelist: Option[String] = None)
 
 object Main
-  extends CaseApp[Args]
+  extends SparkApp[Args]
     with Logging {
 
   /**
    * Entry-point delegated to by [[caseapp]]'s [[main]]; delegates to a [[Run]] implementation indicated by
    * [[Args.eagerChecker]].
    */
-  override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
-    if (remainingArgs.remainingArgs.size != 1) {
+  override def run(args: Args, remainingArgs: Seq[String]): Unit = {
+    if (remainingArgs.size != 1) {
       throw new IllegalArgumentException(
         s"Exactly one argument (a BAM file path) is required"
       )
     }
 
-    implicit val path = Path(remainingArgs.remainingArgs.head)
-
-    val sparkConf = Conf(args.propertiesFiles)
-
-    sparkConf.setIfMissing(
-      "spark.kryo.registrator",
-      classOf[Registrar].getName
-    )
-
-    sparkConf.setIfMissing(
-      "spark.kryo.registrationRequired",
-      "true"
-    )
-
-    implicit val sc = new SparkContext(sparkConf)
+    implicit val path = Path(remainingArgs.head)
 
     val runs: List[Run[_, _, _ <: Result[_]]] =
       (
@@ -83,7 +66,7 @@ object Main
       .flatten
 
     implicit val printer = Printer(args.outputPath)
-    implicit val sampleSize = SampleSize(args.samplesToPrint)
+    implicit val sampleSize = args.samplesToPrint
 
     runs match {
       case Nil ⇒

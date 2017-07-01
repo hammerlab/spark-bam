@@ -12,7 +12,8 @@ import org.hammerlab.bgzf.block.{ FindBlockStart, SeekableUncompressedBytes }
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
-import org.hammerlab.hadoop.{ Configuration, FileSplits, MaxSplitSize, Path }
+import org.hammerlab.hadoop.splits.{ FileSplits, MaxSplitSize }
+import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.io.CachingChannel._
 import org.hammerlab.io.SeekableByteChannel
 import org.hammerlab.iterator.CappedCostGroupsIterator.ElementTooCostlyStrategy.EmitAlone
@@ -23,6 +24,7 @@ import org.hammerlab.iterator.sliding.Sliding2Iterator._
 import org.hammerlab.math.ceil
 import org.hammerlab.parallel._
 import org.hammerlab.parallel.spark.ElemsPerPartition
+import org.hammerlab.spark.Context
 import org.hammerlab.{ bgzf, parallel, paths }
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFrom
 
@@ -53,14 +55,6 @@ object LoadBam
     extends bgzf.hadoop.Config
 
   object Config {
-    implicit def makeConfigFromParallelizerWithContext(parallelizer: parallel.Config)(
-        implicit sc: SparkContext
-    ): Config =
-      Config(
-        parallelizer = parallelizer,
-        maxSplitSize = MaxSplitSize()(sc)
-      )
-
     implicit def makeConfigFromParallelizerWithConfiguration(parallelizer: parallel.Config)(
         implicit conf: Configuration
     ): Config =
@@ -78,7 +72,7 @@ object LoadBam
       )
 
     implicit def defaultConfig(implicit
-                               sc: SparkContext,
+                               sc: Context,
                                parallelizer: parallel.Config = implicitly[threads.Config]
                               ): Config =
       Config(
@@ -107,7 +101,7 @@ object LoadBam
       readerFactory
         .open(
           paths.Path(
-            path.filesystem.makeQualified(path).toUri
+            path.fullyQualifiedURI
           )
         )
 
@@ -145,7 +139,7 @@ object LoadBam
   trait CanLoadBam
     extends Any {
 
-    def sc: SparkContext
+    implicit def sc: Context
 
     implicit def conf: Configuration = sc.hadoopConfiguration
 
@@ -257,7 +251,7 @@ object LoadBam
 
     def loadBam(path: Path)(implicit config: Config): BAMRecordRDD = {
 
-      val fileSplitStarts = FileSplits(path, conf).map(_.start)
+      val fileSplitStarts = FileSplits(path).map(_.start)
 
       val confBroadcast = sc.broadcast(conf)
 
@@ -356,7 +350,10 @@ object LoadBam
         throw new IllegalArgumentException(s"Can't load reads from path: $path")
   }
 
-  implicit class LoadBamContext(val sc: SparkContext)
+  implicit def makeLoadBAM(sc: SparkContext): LoadBamContext =
+    LoadBamContext(sc)
+
+  implicit class LoadBamContext(val sc: Context)
     extends AnyVal
       with CanLoadBam
 }

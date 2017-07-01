@@ -1,21 +1,22 @@
-import sbtassembly.PathList
-
 name := "spark-bam"
 version := "1.1.0-SNAPSHOT"
 deps ++= Seq(
   libs.value('iterators).copy(revision = "1.3.0-SNAPSHOT"),
   libs.value('slf4j),
-  "com.github.alexarchambault" %% "case-app" % "1.2.0-M3",
+  "com.github.alexarchambault" %% "case-app" % "1.2.0-SNAPSHOT",
   "org.hammerlab" %% "magic-rdds" % "1.5.0-SNAPSHOT",
   libs.value('paths),
   libs.value('reference),
-  "org.hammerlab" %% "spark-util" % "1.1.3",
+  "org.hammerlab" %% "spark-util" % "1.2.0-SNAPSHOT",
   "org.hammerlab" % "hadoop-bam" % "7.8.1-SNAPSHOT" exclude("org.apache.hadoop", "hadoop-client")
 )
 
 compileAndTestDeps += libs.value('loci)
 
 addSparkDeps
+
+testUtilsVersion := "1.2.4-SNAPSHOT"
+sparkTestsVersion := "2.1.0-SNAPSHOT"
 
 shadedDeps += "com.chuusai" %% "shapeless" % "2.3.2"
 

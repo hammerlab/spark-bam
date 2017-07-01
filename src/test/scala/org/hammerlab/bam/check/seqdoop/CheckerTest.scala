@@ -9,8 +9,8 @@ import org.hammerlab.test.resources.File
 class CheckerTest
   extends Suite {
 
-  val path = Path(File("1.2205029-2209029.bam").uri)
   implicit val conf = Configuration()
+  val path = Path(File("1.2205029-2209029.bam").uri)
   val contigLengths = ContigLengths(path)
   val checker = Checker(path, contigLengths)
 

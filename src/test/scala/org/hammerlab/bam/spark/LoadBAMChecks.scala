@@ -2,7 +2,8 @@ package org.hammerlab.bam.spark
 
 import org.hammerlab.bam.spark.LoadBam._
 import org.hammerlab.genomics.loci.set.test.LociSetUtil
-import org.hammerlab.hadoop.{ Configuration, MaxSplitSize, Path }
+import org.hammerlab.hadoop.splits.MaxSplitSize
+import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.parallel
 import org.hammerlab.spark.test.suite.SparkSuite
@@ -15,7 +16,6 @@ trait LoadBAMChecks
   def file: String
   def parallelConfig: parallel.Config
 
-  implicit val conf = Configuration()
   def path = Path(File(file).uri)
 
   implicit lazy val config =

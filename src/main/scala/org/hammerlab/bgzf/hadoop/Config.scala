@@ -1,6 +1,6 @@
 package org.hammerlab.bgzf.hadoop
 
-import org.hammerlab.hadoop.{ FileSplits, MaxSplitSize }
+import org.hammerlab.hadoop.splits.{ FileSplits, MaxSplitSize }
 import org.hammerlab.parallel
 
 trait Config

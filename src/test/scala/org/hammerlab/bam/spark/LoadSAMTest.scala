@@ -2,7 +2,7 @@ package org.hammerlab.bam.spark
 
 import org.hammerlab.bam.spark.LoadBam._
 import org.hammerlab.genomics.loci.set.LociSet
-import org.hammerlab.hadoop.MaxSplitSize
+import org.hammerlab.hadoop.splits.MaxSplitSize
 
 trait LoadSAMTest
   extends LoadBAMChecks {

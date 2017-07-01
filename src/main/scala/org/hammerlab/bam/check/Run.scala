@@ -1,7 +1,5 @@
 package org.hammerlab.bam.check
 
-import java.net.URI
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{ Partitioner, SparkContext }
 import org.hammerlab.bam.check
@@ -11,12 +9,12 @@ import org.hammerlab.bgzf.block.{ Metadata, SeekableUncompressedBytes }
 import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.io.CachingChannel._
 import org.hammerlab.io.{ SampleSize, SeekableByteChannel }
-import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.partitions.OrderedRepartitionRDD._
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
 import org.hammerlab.magic.rdd.size._
 import org.hammerlab.math.ceil
+import org.hammerlab.spark.Context
 
 import scala.math.min
 import scala.reflect.ClassTag
@@ -51,17 +49,18 @@ abstract class Run[
   /**
    * Main CLI entry point: build a [[Result]] and print some statistics about it.
    */
-  def getCalls(args: Args)(implicit sc: SparkContext, path: Path): (RDD[(Pos, Call)], Option[Set[Long]]) = {
+  def getCalls(args: Args)(implicit sc: Context, path: Path): (RDD[(Pos, Call)], Option[Set[Long]]) = {
     implicit val conf: Configuration = sc.hadoopConfiguration
     val confBroadcast = sc.broadcast(conf)
 
     val Header(contigLengths, _, _) = Header(path)
 
-    val blocksPath =
+    val blocksPath: Path =
       args
         .blocksFile
-        .map(str ⇒ Path(new URI(str)))
-        .getOrElse(path.suffix(".blocks"): Path)
+        .getOrElse(
+          path.suffix(".blocks")
+        )
 
     /** Parse BGZF-block [[Metadata]] emitted by [[org.hammerlab.bgzf.index.IndexBlocks]] */
     val allBlocks =
@@ -173,14 +172,13 @@ abstract class Run[
     calls → filteredBlockSet
   }
 
-  def apply(args: Args)(implicit sc: SparkContext, path: Path): Res = {
+  def apply(args: Args)(implicit sc: Context, path: Path): Res = {
     val (calls, filteredBlockSet) = getCalls(args)
 
     /** File with true read-record-boundary positions as output by [[org.hammerlab.bam.index.IndexRecords]]. */
-    val recordsFile =
+    val recordsFile: Path =
       args
         .recordsFile
-        .map(Path(_))
         .getOrElse(
           path.suffix(".records")
         )
@@ -303,15 +301,6 @@ abstract class Run[
           )
         )
 
-    val falsePositives =
-      falseCalls
-        .flatMap {
-          case (pos, fp: FalsePositive) ⇒
-            Some(pos → fp)
-          case _ ⇒
-            None
-        }
-
     val calledReadStarts =
       results
         .flatMap {
@@ -331,7 +320,7 @@ abstract class Run[
           )
         )
 
-    implicit val sampleSize = SampleSize(args.samplesToPrint)
+    implicit val sampleSize = args.samplesToPrint
 
     makeResult(
       numCalls,

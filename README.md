@@ -247,22 +247,9 @@ reads.count
 
 #### On Google Cloud
 
-On [Google Cloud Dataproc][] nodes, [spark-bam][] should read BAMs from GCS automatically, thanks to [Google's HDFS↔GCS bridge][bigdata-interop].
-
-##### [google-cloud-nio][]
-Some [spark-bam][] functions use Java NIO filesystem APIs, and should be provided with a [google-cloud-nio][] shaded JAR in order to read from `gs://` URLs:
-
-```bash
-GOOGLE_CLOUD_NIO_JAR=google-cloud-nio-0.20.0-alpha-shaded.jar
-wget https://oss.sonatype.org/content/repositories/releases/com/google/cloud/google-cloud-nio/0.20.0-alpha/$GOOGLE_CLOUD_NIO_JAR
-```
-
-Then run `spark-shell` like before, including the `google-cloud-nio` JAR:
+On [Google Cloud Dataproc][] nodes, [spark-bam][] should read from GCS automatically, thanks to Google's [HDFS↔GCS bridge][bigdata-interop] which is installed automatically:
 
 ```scala
-spark-shell --jars $SPARK_BAM_JAR,$GOOGLE_CLOUD_NIO_JAR
-…
-
 import org.hammerlab.spark.bam._
 import org.hammerlab.hadoop.Path
 

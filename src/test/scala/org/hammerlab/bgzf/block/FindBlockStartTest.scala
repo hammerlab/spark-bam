@@ -8,7 +8,6 @@ import org.hammerlab.timing.Timer.time
 
 class FindBlockStartTest
   extends SparkSuite {
-  implicit lazy val conf: Configuration = sc
   test("1000") {
     val path = Path(File("5k.bam").uri)
     val in = SeekableByteChannel(path)
