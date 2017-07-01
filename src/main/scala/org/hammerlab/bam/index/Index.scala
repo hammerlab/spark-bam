@@ -2,12 +2,11 @@ package org.hammerlab.bam.index
 
 import java.io.IOException
 
-import org.hammerlab.hadoop.Configuration
-import org.apache.hadoop.fs.Path
 import org.hammerlab.bam.index.Index.{ Bin, Chunk, Reference }
 import org.hammerlab.bam.index.Read._
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.io.ByteChannel
+import org.hammerlab.paths.Path
 
 case class Index(references: Seq[Reference]) {
   @transient lazy val offsets = references.flatMap(_.offsets)
@@ -69,10 +68,10 @@ object Index {
       )
   }
 
-  def apply(path: Path)(implicit conf: Configuration): Index =
+  def apply(path: Path): Index =
     Index(
       {
-        implicit val ch: ByteChannel = path.getFileSystem(conf).open(path)
+        implicit val ch: ByteChannel = path.inputStream
 
         if (ch.readString(4, includesNull = false) != "BAI\1")
           throw new IOException(s"Bad BAI magic in $path")

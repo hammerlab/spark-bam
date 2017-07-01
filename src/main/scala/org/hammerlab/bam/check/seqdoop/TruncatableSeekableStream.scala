@@ -1,7 +1,7 @@
 package org.hammerlab.bam.check.seqdoop
 
 import htsjdk.samtools.seekablestream.SeekableStream
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 import org.hammerlab.io.SeekableByteChannel
 
 import scala.math.min

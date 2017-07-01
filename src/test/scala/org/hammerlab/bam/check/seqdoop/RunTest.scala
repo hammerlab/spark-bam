@@ -3,7 +3,7 @@ package org.hammerlab.bam.check.seqdoop
 import org.hammerlab.bam.check.simple.{ FalsePositive, Result }
 import org.hammerlab.bam.check.{ Args, simple }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 
 class RunTest
   extends simple.RunTest {

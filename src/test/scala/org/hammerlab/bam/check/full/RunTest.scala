@@ -2,7 +2,7 @@ package org.hammerlab.bam.check.full
 
 import org.hammerlab.bam.check.Args
 import org.hammerlab.bam.check.full.error.Counts
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.SparkSuite
 import org.hammerlab.test.resources.File
 
@@ -36,7 +36,7 @@ class RunTest
   }
 
   {
-    implicit val path = Path(File("5k.bam"))
+    implicit val path = File("5k.bam").path
 
     test("5k.bam header block") {
       check(

@@ -1,12 +1,12 @@
 package org.hammerlab.bam.check
 
+import org.apache.spark.Partitioner
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{ Partitioner, SparkContext }
 import org.hammerlab.bam.check
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, SeekableUncompressedBytes }
-import org.hammerlab.hadoop.{ Configuration, Path }
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.io.CachingChannel._
 import org.hammerlab.io.{ SampleSize, SeekableByteChannel }
 import org.hammerlab.iterator.FinishingIterator._
@@ -14,6 +14,7 @@ import org.hammerlab.magic.rdd.partitions.OrderedRepartitionRDD._
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
 import org.hammerlab.magic.rdd.size._
 import org.hammerlab.math.ceil
+import org.hammerlab.paths.Path
 import org.hammerlab.spark.Context
 
 import scala.math.min
@@ -59,7 +60,7 @@ abstract class Run[
       args
         .blocksFile
         .getOrElse(
-          path.suffix(".blocks")
+          path + ".blocks"
         )
 
     /** Parse BGZF-block [[Metadata]] emitted by [[org.hammerlab.bgzf.index.IndexBlocks]] */
@@ -154,7 +155,7 @@ abstract class Run[
                 path,
                 contigLengths
               )(
-                confBroadcast.value.value
+                confBroadcast.value
               )
 
             blocks
@@ -180,7 +181,7 @@ abstract class Run[
       args
         .recordsFile
         .getOrElse(
-          path.suffix(".records")
+          path + ".records"
         )
 
     /** Parse the true read-record-boundary positions from [[recordsFile]] */

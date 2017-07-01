@@ -12,7 +12,6 @@ package object hammerlab {
   abstract class ContextApp[Ctx, Args](implicit
                                        ct: ClassTag[Args],
                                        contextParser: ContextParser[Ctx, Args]) {
-
     implicit val sc: Ctx
 
     def run(args: Args,
@@ -60,19 +59,15 @@ package object hammerlab {
                                 ct: ClassTag[Args],
                                 contextParser: ContextParser[Context, Args])
     extends ContextApp[Context, Args] {
-
     implicit val sparkConf = Conf()
     override implicit val sc: Context = Context()
-
   }
 
   abstract class HadoopApp[Args](implicit
                                  ct: ClassTag[Args],
                                  contextParser: ContextParser[Configuration, Args])
     extends ContextApp[Configuration, Args] {
-
     override implicit val sc: Configuration = Configuration()
-
   }
 
 }

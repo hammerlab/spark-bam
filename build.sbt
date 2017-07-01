@@ -5,7 +5,7 @@ deps ++= Seq(
   libs.value('slf4j),
   "com.github.alexarchambault" %% "case-app" % "1.2.0-SNAPSHOT",
   "org.hammerlab" %% "magic-rdds" % "1.5.0-SNAPSHOT",
-  libs.value('paths),
+  libs.value('paths).copy(revision = "1.1.1-SNAPSHOT"),
   libs.value('reference),
   "org.hammerlab" %% "spark-util" % "1.2.0-SNAPSHOT",
   "org.hammerlab" % "hadoop-bam" % "7.8.1-SNAPSHOT" exclude("org.apache.hadoop", "hadoop-client")
@@ -26,4 +26,4 @@ shadeRenames ++= Seq(
   "shapeless.**" → "org.hammerlab.shapeless.@1"
 )
 
-main := "org.hammerlab.hadoop_bam.Main"
+main := "org.hammerlab.bam.spark.Main"

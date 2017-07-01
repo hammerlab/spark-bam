@@ -5,14 +5,13 @@ import java.io.Closeable
 import htsjdk.samtools.SAMFormatException
 import htsjdk.samtools.seekablestream.SeekableStream
 import htsjdk.samtools.util.RuntimeIOException
-import org.hammerlab.hadoop.Configuration
 import org.hammerlab.bam.check
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.hadoop.Path
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.io.CachingChannel._
 import org.hammerlab.io.SeekableByteChannel
-import org.hammerlab.io.SeekableByteChannel.SeekableHadoopByteChannel
+import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.BAMPosGuesser
 import org.seqdoop.hadoop_bam.BAMSplitGuesser.MAX_BYTES_READ
 

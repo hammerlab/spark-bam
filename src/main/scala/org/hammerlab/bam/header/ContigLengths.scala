@@ -3,11 +3,11 @@ package org.hammerlab.bam.header
 import com.esotericsoftware.kryo.io.{ Input, Output }
 import com.esotericsoftware.kryo.{ Kryo, Serializer }
 import htsjdk.samtools.{ SAMFileHeader, SAMSequenceDictionary, SAMSequenceRecord }
-import org.hammerlab.hadoop.Configuration
 import org.hammerlab.bam.header.ContigLengths.ContigLengthsT
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
-import org.hammerlab.hadoop.Path
-import org.seqdoop.hadoop_bam.util.SAMHeaderReader
+import org.hammerlab.hadoop.Configuration
+import org.hammerlab.paths.Path
+import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFromStream
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.SortedMap
@@ -28,7 +28,7 @@ object ContigLengths {
   type ContigLengthsT = SortedMap[Int, (ContigName, NumLoci)]
 
   def apply(path: Path)(implicit conf: Configuration): ContigLengths =
-    SAMHeaderReader.readSAMHeaderFrom(path, conf)
+    readSAMHeaderFromStream(path.inputStream, conf)
 
   def apply(sequences: Seq[(Int, (ContigName, NumLoci))]): ContigLengths =
     ContigLengths(

@@ -1,13 +1,15 @@
 package org.hammerlab.bam.check
 
+import caseapp.core.ContextArgParser
 import caseapp.{ ExtraName ⇒ O }
 import grizzled.slf4j.Logging
 import org.hammerlab.SparkApp
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.hadoop.Path
 import org.hammerlab.io.Printer._
 import org.hammerlab.io.{ Printer, SampleSize }
 import org.hammerlab.magic.rdd.SampleRDD.sample
+import org.hammerlab.paths.Path
+import org.hammerlab.spark.Context
 
 /**
  * CLI for [[Main]]: check every (bgzf-decompressed) byte-position in a BAM file with a [[Checker]] and compare the
@@ -38,6 +40,11 @@ case class Args(@O("e") eagerChecker: Boolean = false,
                 @O("r") recordsFile: Option[Path] = None,
                 @O("s") seqdoopChecker: Boolean = false,
                 @O("w") blocksWhitelist: Option[String] = None)
+
+object Args {
+  implicitly[ContextArgParser[Context, Path]]
+  implicitly[ContextArgParser[Context, SampleSize]]
+}
 
 object Main
   extends SparkApp[Args]

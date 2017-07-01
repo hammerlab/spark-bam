@@ -2,12 +2,11 @@ package org.hammerlab.bgzf.index
 
 import java.io.PrintWriter
 
-import caseapp.{ ExtraName ⇒ O, _ }
+import caseapp.{ CaseApp, RemainingArgs, ExtraName ⇒ O }
 import grizzled.slf4j.Logging
-import org.hammerlab.HadoopApp
 import org.hammerlab.bgzf.block.{ Metadata, MetadataStream }
-import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
+import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat
 
 /**
@@ -22,20 +21,20 @@ import org.hammerlab.timing.Interval.heartbeat
 case class Args(@O("o") outFile: Option[Path] = None)
 
 object IndexBlocks
-  extends HadoopApp[Args]
+  extends CaseApp[Args]
     with Logging {
 
-  override def run(args: Args, remainingArgs: Seq[String]): Unit = {
+  override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
 
-    if (remainingArgs.size != 1) {
+    if (remainingArgs.remainingArgs.size != 1) {
       throw new IllegalArgumentException(
         s"Exactly one argument (a BAM file path) is required"
       )
     }
 
-    val path = Path(remainingArgs.head)
+    val path = Path(remainingArgs.remainingArgs.head)
 
-    val ch: ByteChannel = SeekableByteChannel(path)
+    val ch: ByteChannel = (path: SeekableByteChannel)
 
     val stream = MetadataStream(ch)
 
@@ -43,7 +42,7 @@ object IndexBlocks
       args
         .outFile
         .getOrElse(
-          path.suffix(".blocks")
+          path + ".blocks"
         )
 
     val out = new PrintWriter(outPath.outputStream)

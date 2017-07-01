@@ -3,7 +3,7 @@ package org.hammerlab.bam.check.seqdoop
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.bam.check.simple
 import org.hammerlab.bam.header.ContigLengths
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 
 object Run
   extends simple.Run {

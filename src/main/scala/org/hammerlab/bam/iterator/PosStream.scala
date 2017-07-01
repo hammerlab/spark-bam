@@ -1,11 +1,8 @@
 package org.hammerlab.bam.iterator
 
-import java.nio.channels.FileChannel
-
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ SeekableUncompressedBytes, UncompressedBytes, UncompressedBytesI }
 import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
-import org.hammerlab.paths.Path
 
 /**
  * Interface for iterating over record-start [[Pos]]s in a BAM file

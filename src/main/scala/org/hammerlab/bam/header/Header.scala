@@ -4,8 +4,9 @@ import htsjdk.samtools.{ SAMFileHeader, SAMSequenceDictionary, SAMSequenceRecord
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ UncompressedBytes, UncompressedBytesI }
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
-import org.hammerlab.hadoop.{ Configuration, Path }
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.io.ByteChannel
+import org.hammerlab.paths.Path
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.SortedMap

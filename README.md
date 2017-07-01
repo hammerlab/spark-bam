@@ -7,7 +7,7 @@ Load [BAM files](http://samtools.github.io/hts-specs/SAMv1.pdf) using [Apache Sp
 
 ```scala
 import org.hammerlab.spark.bam._
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 
 // Make SparkContext implicitly available
 implicit val sparkContext = sc
@@ -239,7 +239,7 @@ spark-shell --jars $SPARK_BAM_JAR
 …
 
 import org.hammerlab.bam.spark._
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 
 val reads = sc.loadBam(Path("src/test/resources/5k.bam"))  // Default: use [4x the available cores] threads on the driver to compute splits
 reads.count
@@ -251,7 +251,7 @@ On [Google Cloud Dataproc][] nodes, [spark-bam][] should read from GCS automatic
 
 ```scala
 import org.hammerlab.spark.bam._
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 
 val reads = sc.loadBam(Path("gs://bucket/my.bam"))
 ```

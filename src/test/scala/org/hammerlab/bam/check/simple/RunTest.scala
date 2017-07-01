@@ -2,7 +2,7 @@ package org.hammerlab.bam.check.simple
 
 import org.hammerlab.bam.check.{ Args, False }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.SparkSuite
 import org.hammerlab.test.resources.File
 import org.hammerlab.test.matchers.seqs.SeqMatcher.seqMatch
@@ -37,7 +37,7 @@ trait RunTest
   }
 
   {
-    implicit val path: Path = Path(File("5k.bam"))
+    implicit val path: Path = File("5k.bam").path
 
     test("5k.bam header block") {
       check(
@@ -84,7 +84,7 @@ trait RunTest
       4000,
       bamTest1FalseCalls
     )(
-      Path(File("1.2205029-2209029.bam"))
+      File("1.2205029-2209029.bam").path
     )
   }
 

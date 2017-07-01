@@ -2,27 +2,31 @@ package org.hammerlab.bam.check
 
 import java.lang.System.setProperty
 
-import caseapp.RemainingArgs
-import org.hammerlab.hadoop.Path
+import org.hammerlab.spark.test.suite.SparkConfBase
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
 class MainTest
-  extends Suite {
+  extends Suite
+    with SparkConfBase {
+
+  setProperty("spark.driver.allowMultipleContexts", "true")
+
+  setSparkProps()
+
   test("compare mode") {
     val outputPath = tmpPath()
 
-    setProperty("spark.master", "local[4]")
-    setProperty("spark.app.name", getClass.getCanonicalName)
-    setProperty("spark.driver.allowMultipleContexts", "true")
-    setProperty("spark.ui.enabled", "false")
+//    setProperty("spark.master", "local[4]")
+//    setProperty("spark.app.name", getClass.getCanonicalName)
+//    setProperty("spark.ui.enabled", "false")
 
     Main.run(
       Args(
         blocksPerPartition = 5,
         eagerChecker = true,
         seqdoopChecker = true,
-        outputPath = Some(Path(outputPath.uri)(Main.sc))
+        outputPath = Some(outputPath)
       ),
       Seq(File("1.2205029-2209029.bam"))
     )

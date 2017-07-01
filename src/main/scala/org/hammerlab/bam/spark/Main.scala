@@ -1,29 +1,29 @@
 package org.hammerlab.bam.spark
 
-import caseapp.core.{ ArgParser, ContextArgParser, ContextParser }
-import caseapp.{ CaseApp, RemainingArgs, ExtraName ⇒ O }
+import caseapp.core.{ ContextArgParser, ContextParser }
+import caseapp.{ ExtraName ⇒ O }
 import grizzled.slf4j.Logging
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.{ SPLIT_MAXSIZE, setInputPaths }
 import org.apache.hadoop.mapreduce.task.JobContextImpl
 import org.apache.hadoop.mapreduce.{ Job, JobID }
-import org.apache.spark.SparkContext
-import org.hammerlab.SparkApp
 import org.hammerlab.bam.spark.LoadBam._
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
-import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.io.Printer._
 import org.hammerlab.io.{ Printer, SampleSize, Size }
 import org.hammerlab.iterator.GroupWithIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
+import org.hammerlab.parallel.spark.PartitioningStrategy
 import org.hammerlab.parallel.{ spark, threads }
-import org.hammerlab.spark.{ Conf, Context }
+import org.hammerlab.paths.Path
+import org.hammerlab.spark.Context
 import org.hammerlab.stats.Stats
 import org.hammerlab.timing.Timer.time
+import org.hammerlab.{ SparkApp, hadoop }
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 
 import scala.collection.JavaConverters._
-import org.hammerlab.parallel.spark.PartitioningStrategy
 
 case class Args(@O("n") numThreads: Option[Int],
                 @O("d") seqdoopOnly: Boolean = false,
@@ -50,7 +50,6 @@ object Args {
   ContextArgParser.apply[Configuration, Boolean]
   ContextArgParser.apply[Configuration, Size]
   ContextArgParser.apply[Configuration, MaxSplitSize]
-  ContextArgParser.apply[Configuration, Path]
 
   ContextArgParser.apply[Configuration, Option[Int]]
   ContextArgParser.apply[Configuration, Option[Size]]
@@ -89,7 +88,7 @@ object Main
     val jobID = new JobID("get-splits", 1)
     val jc = new JobContextImpl(jobConf, jobID)
 
-    setInputPaths(job, path)
+    setInputPaths(job, hadoop.Path(path.uri))
 
     time("get splits") {
       ifmt

@@ -2,13 +2,13 @@ package org.hammerlab.bam.index
 
 import java.io.{ IOException, PrintWriter }
 
-import caseapp.{ ExtraName ⇒ O, _ }
+import caseapp.core.ArgParser
+import caseapp.{ CaseApp, RemainingArgs, ExtraName ⇒ O }
 import grizzled.slf4j.Logging
 import htsjdk.samtools.util.{ RuntimeEOFException, RuntimeIOException }
-import org.hammerlab.HadoopApp
 import org.hammerlab.bam.iterator.{ PosStream, RecordStream, SeekablePosStream, SeekableRecordStream }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat
 
 /**
@@ -27,19 +27,24 @@ case class Args(@O("o") outPath: Option[Path] = None,
                 @O("c") useChannel: Boolean = false,
                 @O("t") throwOnTruncation: Boolean = false)
 
+object Args {
+  import Path.parser
+  implicitly[ArgParser[Path]]
+}
+
 object IndexRecords
-  extends HadoopApp[Args]
+  extends CaseApp[Args]
     with Logging {
 
-  override def run(args: Args, remainingArgs: Seq[String]): Unit = {
+  override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
 
-    if (remainingArgs.size != 1) {
+    if (remainingArgs.remainingArgs.size != 1) {
       throw new IllegalArgumentException(
         s"Exactly one argument (a BAM file path) is required"
       )
     }
 
-    val path = Path(remainingArgs.head)
+    val path = Path(remainingArgs.remainingArgs.head)
 
     val stream =
       (args.parseRecords, args.useChannel) match {
@@ -60,7 +65,7 @@ object IndexRecords
       args
       .outPath
         .getOrElse(
-          path.suffix(".records")
+          path + ".records"
         )
 
     val out = new PrintWriter(outPath.outputStream)

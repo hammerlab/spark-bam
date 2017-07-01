@@ -1,7 +1,6 @@
 package org.hammerlab.bam.iterator
 
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.hadoop.{ Configuration, Path }
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -26,8 +25,7 @@ class PosStreamTest
     )
   }
 
-  implicit val conf = Configuration()
-  val path = Path(File("5k.bam"))
+  val path = File("5k.bam").path
 
   test("PosStream") {
     implicit val stream = PosStream(path.inputStream)

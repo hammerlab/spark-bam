@@ -2,7 +2,7 @@ package org.hammerlab.bgzf.hadoop
 
 import java.io.IOException
 
-import org.hammerlab.hadoop.Path
+import org.hammerlab.paths.Path
 
 case class HeaderSearchFailedException(path: Path,
                                        start: Long,
