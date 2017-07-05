@@ -5,19 +5,47 @@ import java.util
 import com.esotericsoftware.kryo.Kryo
 import htsjdk.samtools.{ SAMFileHeader, SAMProgramRecord, SAMReadGroupRecord, SAMSequenceDictionary, SAMSequenceRecord }
 import org.apache.spark.serializer.KryoRegistrator
+import org.hammerlab.bam.check
+import org.hammerlab.bam.check.full.error.{ Counts, Flags }
+import org.hammerlab.bam.check.{ PosResult, full, simple }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bam.header.ContigLengths.ContigLengthsSerializer
 import org.hammerlab.bam.index.Index.Chunk
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.hadoop
 
 import scala.collection.mutable
 
-object Registrar extends KryoRegistrator {
+class Registrar extends KryoRegistrator {
   override def registerClasses(kryo: Kryo): Unit = {
     hadoop.Registrar.registerClasses(kryo)
 
-    /** [[org.hammerlab.bam.hadoop.LoadBam.LoadBamContext]] parallelizes a [[Vector]] of [[Vector]]s of [[Chunk]]s */
+    kryo.register(Class.forName("scala.reflect.ClassTag$$anon$1"))
+    kryo.register(classOf[java.lang.Class[_]])
+
+    kryo.register(check.TruePositive.getClass)
+    kryo.register(check.TrueNegative.getClass)
+    kryo.register(check.FalsePositive.getClass)
+    kryo.register(check.FalseNegative.getClass)
+
+    kryo.register(simple.TruePositive.getClass)
+    kryo.register(simple.TrueNegative.getClass)
+    kryo.register(simple.FalsePositive.getClass)
+    kryo.register(simple.FalseNegative.getClass)
+
+    kryo.register(full.TruePositive.getClass)
+    kryo.register(classOf[full.TrueNegative])
+    kryo.register(full.FalsePositive.getClass)
+    kryo.register(classOf[full.FalseNegative])
+
+    kryo.register(classOf[Flags])
+    kryo.register(classOf[Counts])
+
+    /**
+     * [[org.hammerlab.bam.spark.LoadBamContext.loadBamIntervals()]] parallelizes a [[Vector]] of [[Vector]]s of
+     * [[Chunk]]s
+     */
     kryo.register(classOf[mutable.WrappedArray.ofRef[_]])
     kryo.register(classOf[Chunk])
     kryo.register(classOf[Pos])
@@ -35,5 +63,11 @@ object Registrar extends KryoRegistrator {
 
     /** Backs [[org.hammerlab.bam.header.ContigLengths]] */
     kryo.register(classOf[ContigLengths], ContigLengthsSerializer)
+
+    kryo.register(classOf[Metadata])
+    kryo.register(classOf[Array[Metadata]])
+
+    kryo.register(classOf[Pos])
+    kryo.register(classOf[Array[Pos]])
   }
 }
