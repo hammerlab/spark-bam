@@ -1,7 +1,6 @@
 package org.hammerlab.bgzf.block
 
 import org.hammerlab.bgzf.block.Block.MAX_BLOCK_SIZE
-import org.hammerlab.bgzf.hadoop.HeaderSearchFailedException
 import org.hammerlab.io.SeekableByteChannel
 import org.hammerlab.paths.Path
 

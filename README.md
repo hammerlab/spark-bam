@@ -3,23 +3,32 @@
 [![Coverage Status](https://coveralls.io/repos/github/hammerlab/spark-bam/badge.svg?branch=master)](https://coveralls.io/github/hammerlab/spark-bam?branch=master)
 [![Maven Central](https://img.shields.io/maven-central/v/org.hammerlab/spark-bam_2.11.svg?maxAge=600)](http://search.maven.org/#search%7Cga%7C1%7Cspark-bam)
 
-Load [BAM files](http://samtools.github.io/hts-specs/SAMv1.pdf) using [Apache Spark](https://spark.apache.org/) and [HTSJDK](https://github.com/samtools/htsjdk):
+Load [BAM files][SAM spec] using [Apache Spark][] and [HTSJDK][]; inspired by [HadoopGenomics/hadoop-bam][hadoop-bam].
 
 ```scala
-import org.hammerlab.spark.bam._
+import org.hammerlab.bam.spark._
 import org.hammerlab.paths.Path
-
-// Make SparkContext implicitly available
-implicit val sparkContext = sc
 
 val path = Path("src/test/resources/5k.bam")
 
-val reads = sc.loadBam(path)  // Default: use [4x the available cores] threads on the driver to compute splits
+// Load an RDD[SAMRecord] from `path`
+sc.loadBam(path)               // compute splits with [4x cores] threads on driver
+sc.loadBam(path, Threads(32))  // configure number of threads
 
-reads.count  // res1: Long = 4910
+// Compute splits with Spark
+sc.loadBam(path, Spark())                // one Spark partition for each split
+sc.loadBam(path, ElemsPerPartition(10))  // 10 splits per Spark partition
+sc.loadBam(path, NumPartitions(100))     // fixed number of Spark partitions
+
+import org.hammerlab.bytes._
+
+// Configure split size
+sc.loadBam(path, splitSize = 16.MB)
+sc.loadBam(path, splitSize = 1 << 24)  // same as above: 16MB
+
+// Load a `.sam` or `.bam` file:
+sc.loadReads(path)
 ```
-
-Inspired by [HadoopGenomics/hadoop-bam][hadoop-bam].
 
 ## Features
 
@@ -48,14 +57,13 @@ TODO: scaling figure
 ##### Example usage:
 
 ```scala
-implicit val parallelizer = org.hammerlab.parallel.Threads(32)
-
-sc.loadBam(path)
+sc.loadBam(path)               // compute splits with [4x cores] threads on driver
+sc.loadBam(path, Threads(32))  // configure number of threads
 ```
 
 #### Parallelization strategy #2: Spark job
 
-For especially largs BAMs, parallelizing across many machines can be worthwhile: 
+For especially largs BAMs, parallelize across many machines using Spark: 
 
 ![Depiction of using a Spark job to compute split starts](https://cl.ly/2k0B3p3o3H3L/Screen%20Shot%202017-06-28%20at%2011.15.03%20AM.png)
 
@@ -65,35 +73,16 @@ TOGO: scaling figure
 
 ##### Example usage:
 
-By default, one file-split is processed by each Spark partition:
-
 ```scala
-import org.hammerlab.parallel.Spark
-
-implicit val parallelizer = Spark
-
-sc.loadBam(path)  
-```
-
-Alternately, set the number of splits to compute in each Spark task:
-
-```scala
-// Contains Spark-partitioning configurations
-import org.hammerlab.parallel.spark._
-
-sc.loadBam(path)(Spark(ElemsPerPartition(10)))
-```
-
-Or, fix the number of partitions:
-
-```scala
-sc.loadBam(path)(Spark(NumPartitions(100)))
+sc.loadBam(path, Spark())                // one Spark partition for each split
+sc.loadBam(path, ElemsPerPartition(10))  // 10 splits per Spark partition
+sc.loadBam(path, NumPartitions(100))     // fixed number of Spark partitions
 ```
 
 ### Correctness
 An important impetus for the creation of [spark-bam][] was the discovery of two TCGA lung-cancer BAMs for which [hadoop-bam][] produces invalid splits: [64-1681-01A-11D-2063-08.1.bam](https://portal.gdc.cancer.gov/cases/c583fdd1-8cd2-4c15-a23e-0644261f65da?bioId=3813c301-9622-4567-bc72-d17acbeb236f) and [85-A512-01A-11D-A26M-08.6.bam](https://portal.gdc.cancer.gov/cases/bcb6447f-3e4c-44fe-afc3-100d5dbe9ba2?bioId=f62f6ba1-59a7-4b16-b69f-15fa3dabfbc1).
 
-HTSJDK threw an error downstream when trying to parse reads from essentially random data:
+HTSJDK threw an error when trying to parse reads from essentially random data fed to it by [hadoop-bam][]:
 
 ```
 MRNM should not be set for unpaired read
@@ -103,7 +92,7 @@ These BAMs were rendered unusable, and questions remained around whether such in
  
 #### Improved record-boundary-detection robustness
 
-[spark-bam][] fixes these record-boundary-detection "false-positives" by adding additional checks to the heuristic:
+[spark-bam][] fixes these record-boundary-detection "false-positives" by adding additional checks:
   
 | Validation check | spark-bam | hadoop-bam |
 | --- | --- | --- |
@@ -120,20 +109,20 @@ These BAMs were rendered unusable, and questions remained around whether such in
 | valid subsequent reads | 🚫 | ✅ |
 | cigar consistent w/ seq len | 🚫 | 🚫 |
 
-#### [`Checker`][] interface
+#### Checking correctness
 
 [spark-bam][] detects BAM-record boundaries using the pluggable [`Checker`][] interface.
 
 Three implementations are provided:
 
-##### [Eager][`eager`]
+##### [`eager`][]
 
 Default/Production-worthy record-boundary-detection algorithm:
 
 - includes [all the checks listed above][checks table]
 - rules out a position as soon as any check fails
 
-##### [Full][`full`]
+##### [`full`][]
 
 Debugging-oriented [`Checker`][]:
 
@@ -180,7 +169,7 @@ Debugging-oriented [`Checker`][]:
              tooFewBytesForCigarOps:             16
         ```
 
-##### [Seqdoop][`seqdoop`]
+##### [`seqdoop`][]
 
 [`Checker`][] that mimicks [hadoop-bam][]'s [`BAMSplitGuesser`][] as closely as possible.
 
@@ -189,9 +178,7 @@ Debugging-oriented [`Checker`][]:
  
 ### Algorithm/API clarity
 
-Analyzing [hadoop-bam][]'s correctness ([as discussed above](#seqdoop)) proved quite difficult due to subtleties in [hadoop-bam][]'s implementation.
-
-Its record-boundary-detection is sensitive, in terms of both output and runtime, to:
+Analyzing [hadoop-bam][]'s correctness ([as discussed above](#seqdoop)) proved quite difficult due to subtleties in its implementation: its record-boundary-detection is sensitive, in terms of both output and runtime, to:
 
 - position within a BGZF block
 - arbitrary (256KB) buffer size
@@ -201,22 +188,22 @@ Its record-boundary-detection is sensitive, in terms of both output and runtime,
 
 - buffer sizes are irrelevant
 - OOMs are neither expected nor depended on for correctness
-- file-positions are evaluated basically hermetically
+- file-positions are evaluated hermetically
 
 This allows for greater confidence in the correctness of computed splits and downstream analyses.
   
 #### Case study: counting on OOMs
 
-An unsettling behavior discovered while evaluating [hadoop-bam][]'s correctness was the existence of positions in BAMs that [`BAMSplitGuesser`][] would correctly deem as invalid *iff the JVM heap size was below a certain threshold*.
+While evaluating [hadoop-bam][]'s correctness, BAM positions were discovered that [`BAMSplitGuesser`][] would correctly deem as invalid *iff the JVM heap size was **below** a certain threshold*; larger heaps would avoid an OOM and mark an invalid position as valid.
 
-While evaluating such a position:
+An overview of this failure mode:
 
 - [the initial check of the validity of a potential record starting at that position](https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMSplitGuesser.java#L168) would pass
 - a check of that and subsequent records, primarily focused on validity of cigar operators and proceeding until at least 3 distinct BGZF block positions had been visited, [would commence](https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMSplitGuesser.java#L183)
 - the first record, already validated to some degree, would pass the cigar-operator-validity check, and [the `decodedAny` flag would be set to `true`](https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMSplitGuesser.java#L190)
 - [HTSJDK's `BAMRecordCodec is asked to decode](https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMSplitGuesser.java#L185) the next "record" (in actuality just gibberish data from somewhere in the middle of a true record)
 - records always begin with a 4-byte integer indicating how many bytes long they are
-- in these cases, we get a large integer, say ≈1e9, implying the next record is ≈1GB long
+- in these cases, we get a large integer, say ≈1e9, implying the next "record" is ≈1GB long
 - [`BAMRecordCodec` attempts to allocate a byte-array of that size](https://github.com/samtools/htsjdk/blob/2.9.1/src/main/java/htsjdk/samtools/BAMRecordCodec.java#L198) and read the "record" into it
 	- if the allocation succeeds:
 		- a `RuntimeEOFException` is thrown while attempting to read ≈1GB of data from a buffer that is [only ≈256KB in size](https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMSplitGuesser.java#L126-L144)
@@ -224,7 +211,7 @@ While evaluating such a position:
 		- the position is not actually valid! 💥🚫😱
 	- if the allocation fails, [an OOM is caught and taken to signal that this is not a valid record position](https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMSplitGuesser.java#L212) (which is true!)
 
-This resulted in positions that hadoop-bam correctly ruled out in sufficiently-memory-constrained test-contexts, but false-positived on in more-generously-provisioned settings, which is obviously a very undesirable relationship to correctness.  
+This resulted in positions that hadoop-bam correctly ruled out in sufficiently-memory-constrained test-contexts, but false-positived on in more-generously-provisioned settings, which is obviously an undesirable relationship to correctness.
 
 ## Using [spark-bam][]
 
@@ -237,30 +224,38 @@ After [getting an assembly JAR][]:
 ```scala
 spark-shell --jars $SPARK_BAM_JAR
 …
-
 import org.hammerlab.bam.spark._
 import org.hammerlab.paths.Path
-
-val reads = sc.loadBam(Path("src/test/resources/5k.bam"))  // Default: use [4x the available cores] threads on the driver to compute splits
-reads.count
+val reads = sc.loadBam(Path("src/test/resources/5k.bam")) // RDD[SAMRecord]
+reads.count  // Long: 4910
 ```
 
 #### On Google Cloud
 
-On [Google Cloud Dataproc][] nodes, [spark-bam][] should read from GCS automatically, thanks to Google's [HDFS↔GCS bridge][bigdata-interop] which is installed automatically:
+[spark-bam][] uses Java NIO APIs to read files, and needs the [google-cloud-nio][] connector in order to read from Google Cloud Storage (GCS).
 
-```scala
-import org.hammerlab.spark.bam._
+Download a shaded [google-cloud-nio][] JAR:
+
+```bash
+GOOGLE_CLOUD_NIO_JAR=google-cloud-nio-0.20.0-alpha-shaded.jar
+wget https://oss.sonatype.org/content/repositories/releases/com/google/cloud/google-cloud-nio/0.20.0-alpha/$GOOGLE_CLOUD_NIO_JAR
+```
+
+Then include it in your `--jars` list when running `spark-shell` or `spark-submit`:
+
+```bash
+spark-shell --jars $SPARK_BAM_JAR,$GOOGLE_CLOUD_NIO_JAR
+…
+import org.hammerlab.bam.spark._
 import org.hammerlab.paths.Path
-
 val reads = sc.loadBam(Path("gs://bucket/my.bam"))
 ```
 
-### Standalone apps
+### Bundled applocations
 
-[spark-bam][] bundles several standalone apps:
+[spark-bam][] includes several standalone apps:
 
-#### [spark/Main][]: compute splits
+#### [spark/Main][]: compute/compare splits
 
 This app allows testing and timing split computation with various configurations:
  
@@ -274,7 +269,7 @@ spark-submit \
 ```
 
 `<options>` can include:
-- `-d`: compute splits using [hadoop-bam][] (default uses [spark-bam][])
+- `-d`: compute splits using [hadoop-bam][] (otherwise [spark-bam][])
 - `-c`: compare splits computed by [hadoop-bam][] and [spark-bam][]
 - `-m`: maximum split size (e.g. `32m`; default: HDFS block size or `64m`)
 - `-n`: when computing splits with [spark-bam][], use ["threads mode"][] (default: ["spark mode"][])
@@ -412,3 +407,6 @@ export SPARK_BAM_JAR=target/scala-2.11/spark-bam-assembly-1.1.0-SNAPSHOT.jar
 [bigdata-interop]: https://github.com/GoogleCloudPlatform/bigdata-interop/
 ["threads mode"]: #parallelization-strategy-1-threads-on-the-driver
 ["spark mode"]: #parallelization-strategy-2-spark-job
+[SAM spec]: http://samtools.github.io/hts-specs/SAMv1.pdf
+[Apache Spark]: https://spark.apache.org/
+[HTSJDK]: https://github.com/samtools/htsjdk

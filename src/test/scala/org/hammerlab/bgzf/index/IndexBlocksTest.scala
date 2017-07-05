@@ -12,7 +12,7 @@ class IndexBlocksTest
     val outPath = tmpPath()
     IndexBlocks.run(
       Args(
-        outFile = Some(outPath)
+        out = Some(outPath)
       ),
       RemainingArgs(
         Seq(File("5k.bam")),

@@ -1,10 +1,9 @@
 package org.hammerlab.bgzf.index
 
-import java.io.PrintWriter
-
-import caseapp.{ CaseApp, RemainingArgs, ExtraName ⇒ O }
-import grizzled.slf4j.Logging
+import caseapp.{ ExtraName ⇒ O }
+import org.hammerlab.app.{ IndexingApp, OutPathArgs }
 import org.hammerlab.bgzf.block.{ Metadata, MetadataStream }
+import org.hammerlab.io.Printer._
 import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
 import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat
@@ -16,36 +15,19 @@ import org.hammerlab.timing.Interval.heartbeat
  *
  * <position>,<compressed block size>,<uncompressed block size>
  *
- * @param outFile path to write bgzf-block-positions to
+ * @param out path to write bgzf-block-positions to
  */
-case class Args(@O("o") outFile: Option[Path] = None)
+case class Args(@O("o") out: Option[Path] = None)
+  extends OutPathArgs
 
 object IndexBlocks
-  extends CaseApp[Args]
-    with Logging {
+  extends IndexingApp[Args](".blocks") {
 
-  override def run(args: Args, remainingArgs: RemainingArgs): Unit = {
-
-    if (remainingArgs.remainingArgs.size != 1) {
-      throw new IllegalArgumentException(
-        s"Exactly one argument (a BAM file path) is required"
-      )
-    }
-
-    val path = Path(remainingArgs.remainingArgs.head)
+  override def run(args: Args): Unit = {
 
     val ch: ByteChannel = (path: SeekableByteChannel)
 
     val stream = MetadataStream(ch)
-
-    val outPath: Path =
-      args
-        .outFile
-        .getOrElse(
-          path + ".blocks"
-        )
-
-    val out = new PrintWriter(outPath.outputStream)
 
     var idx = 0
 
@@ -57,13 +39,11 @@ object IndexBlocks
         for {
           Metadata(start, compressedSize, uncompressedSize) ← stream
         } {
-          out.println(s"$start,$compressedSize,$uncompressedSize")
+          echo(s"$start,$compressedSize,$uncompressedSize")
           idx += 1
         }
     )
 
     info("Traversal done")
-    out.flush()
-    out.close()
   }
 }

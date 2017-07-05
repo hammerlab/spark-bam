@@ -1,4 +1,4 @@
-package org.hammerlab.bgzf.hadoop
+package org.hammerlab.bgzf.block
 
 import java.io.IOException
 

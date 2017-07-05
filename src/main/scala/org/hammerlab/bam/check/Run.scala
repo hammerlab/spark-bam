@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check
 
-import org.apache.spark.Partitioner
+import org.apache.spark.{ Partitioner, SparkContext }
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check
 import org.hammerlab.bam.header.{ ContigLengths, Header }
@@ -58,7 +58,7 @@ abstract class Run[
 
     val blocksPath: Path =
       args
-        .blocksFile
+      .blocks
         .getOrElse(
           path + ".blocks"
         )
@@ -179,7 +179,7 @@ abstract class Run[
     /** File with true read-record-boundary positions as output by [[org.hammerlab.bam.index.IndexRecords]]. */
     val recordsFile: Path =
       args
-        .recordsFile
+      .records
         .getOrElse(
           path + ".records"
         )
@@ -296,7 +296,7 @@ abstract class Run[
             results.getNumPartitions,
             ceil(
               numFalseCalls,
-              args.resultPositionsPerPartition
+              args.resultsPerPartition
             )
             .toInt
           )
@@ -315,13 +315,13 @@ abstract class Run[
             results.getNumPartitions,
             ceil(
               numCalledReadStarts,
-              args.resultPositionsPerPartition
+              args.resultsPerPartition
             )
             .toInt
           )
         )
 
-    implicit val sampleSize = args.samplesToPrint
+    implicit val sampleSize = args.printLimit
 
     makeResult(
       numCalls,

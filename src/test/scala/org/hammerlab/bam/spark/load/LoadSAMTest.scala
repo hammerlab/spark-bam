@@ -1,13 +1,22 @@
-package org.hammerlab.bam.spark
+package org.hammerlab.bam.spark.load
 
-import org.hammerlab.bam.spark.LoadBam._
+import htsjdk.samtools.SAMRecord
+import org.apache.spark.rdd.RDD
+import org.hammerlab.bam.spark._
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.hadoop.splits.MaxSplitSize
 
-trait LoadSAMTest
+class LoadSAMTest
   extends LoadBAMChecks {
 
-  val file = "5k.sam"
+  override val file = "5k.sam"
+
+  override def load(maxSplitSize: MaxSplitSize): RDD[SAMRecord] =
+    sc
+      .loadSam(
+        path,
+        maxSplitSize
+      )
 
   test("1e6") {
     check(
@@ -37,7 +46,12 @@ trait LoadSAMTest
     }
 
     {
-      val records = sc.loadBamIntervals(path, intervals)(Config(maxSplitSize = MaxSplitSize(100000)))
+      val records =
+        sc.loadBamIntervals(
+          path,
+          intervals,
+          splitSize = MaxSplitSize(100000)
+        )
 
       records.getNumPartitions should be(36)
       records.count should be(129)

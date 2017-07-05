@@ -1,15 +1,12 @@
 package org.hammerlab.bam.check
 
-import caseapp.core.ContextArgParser
 import caseapp.{ ExtraName ⇒ O }
-import grizzled.slf4j.Logging
-import org.hammerlab.SparkApp
+import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.io.Printer._
-import org.hammerlab.io.{ Printer, SampleSize }
+import org.hammerlab.io.SampleSize
 import org.hammerlab.magic.rdd.SampleRDD.sample
 import org.hammerlab.paths.Path
-import org.hammerlab.spark.Context
 
 /**
  * CLI for [[Main]]: check every (bgzf-decompressed) byte-position in a BAM file with a [[Checker]] and compare the
@@ -19,61 +16,46 @@ import org.hammerlab.spark.Context
  * - Requires that BAM to have been indexed prior to running by [[org.hammerlab.bgzf.index.IndexBlocks]] and
  *   [[org.hammerlab.bam.index.IndexRecords]].
  *
- * @param blocksFile file with bgzf-block-start positions as output by [[org.hammerlab.bgzf.index.IndexBlocks]]
- * @param recordsFile file with BAM-record-start positions as output by [[org.hammerlab.bam.index.IndexRecords]]
+ * @param blocks file with bgzf-block-start positions as output by [[org.hammerlab.bgzf.index.IndexBlocks]]
+ * @param records file with BAM-record-start positions as output by [[org.hammerlab.bam.index.IndexRecords]]
  * @param numBlocks if set, only check the first [[numBlocks]] bgzf blocks of
  * @param blocksWhitelist if set, only process the bgzf blocks at these positions (comma-seperated)
  * @param blocksPerPartition process this many blocks in each partition
- * @param eagerChecker if set, run [[org.hammerlab.bam.check.eager.Run]], which marks a position as "negative" and
+ * @param eager if set, run [[org.hammerlab.bam.check.eager.Run]], which marks a position as "negative" and
  *                     returns as soon as any check fails. Default: [[org.hammerlab.bam.check.full.Run]], which performs
  *                     as many checks as possible and aggregates statistics about how many times each check participates
  *                     in ruling out a given position.
  */
-case class Args(@O("e") eagerChecker: Boolean = false,
-                @O("f") fullChecker: Boolean = false,
+case class Args(@O("e") eager: Boolean = false,
+                @O("f") full: Boolean = false,
                 @O("i") blocksPerPartition: Int = 20,
-                @O("k") blocksFile: Option[Path] = None,
-                @O("m") samplesToPrint: SampleSize = SampleSize(None),
+                @O("k") blocks: Option[Path] = None,
+                @O("l") printLimit: SampleSize = SampleSize(None),
                 @O("n") numBlocks: Option[Int] = None,
-                @O("o") outputPath: Option[Path] = None,
-                @O("q") resultPositionsPerPartition: Int = 1000000,
-                @O("r") recordsFile: Option[Path] = None,
-                @O("s") seqdoopChecker: Boolean = false,
+                @O("o") out: Option[Path] = None,
+                @O("q") resultsPerPartition: Int = 1000000,
+                @O("r") records: Option[Path] = None,
+                @O("s") seqdoop: Boolean = false,
                 @O("w") blocksWhitelist: Option[String] = None)
-
-object Args {
-  implicitly[ContextArgParser[Context, Path]]
-  implicitly[ContextArgParser[Context, SampleSize]]
-}
+  extends SparkPathAppArgs
 
 object Main
-  extends SparkApp[Args]
-    with Logging {
+  extends SparkPathApp[Args] {
 
   /**
    * Entry-point delegated to by [[caseapp]]'s [[main]]; delegates to a [[Run]] implementation indicated by
-   * [[Args.eagerChecker]].
+   * [[Args.eager]].
    */
-  override def run(args: Args, remainingArgs: Seq[String]): Unit = {
-    if (remainingArgs.size != 1) {
-      throw new IllegalArgumentException(
-        s"Exactly one argument (a BAM file path) is required"
-      )
-    }
-
-    implicit val path = Path(remainingArgs.head)
+  override def run(args: Args): Unit = {
 
     val runs: List[Run[_, _, _ <: Result[_]]] =
       (
-        (if (args.eagerChecker) Some(eager.Run) else None).toList ::
-          (if (args.fullChecker) Some(full.Run) else None).toList ::
-          (if (args.seqdoopChecker) Some(seqdoop.Run) else None).toList ::
+        (if (args.eager) Some(eager.Run) else None).toList ::
+          (if (args.full) Some(full.Run) else None).toList ::
+          (if (args.seqdoop) Some(seqdoop.Run) else None).toList ::
           Nil
       )
       .flatten
-
-    implicit val printer = Printer(args.outputPath)
-    implicit val sampleSize = args.samplesToPrint
 
     runs match {
       case Nil ⇒
@@ -117,7 +99,7 @@ object Main
                        truncatedHeader: Int ⇒ String): Unit = {
           val positions = differingCalls.filter(_._2 == filterTo).keys
           val sampledPositions = sample(positions, num).sorted
-          printSamples(
+          print(
             sampledPositions,
             num,
             header,
@@ -144,14 +126,14 @@ object Main
         (numEagerOnly > 0, numSeqdoopOnly > 0) match {
           case (true, true) ⇒
             printEagerOnly()
-            print("")
+            echo("")
             printSeqdoopOnly()
           case (true, false) ⇒
             printEagerOnly()
           case (false, true) ⇒
             printSeqdoopOnly()
           case (false, false) ⇒
-            print("All calls matched!")
+            echo("All calls matched!")
         }
 
       case _ ⇒

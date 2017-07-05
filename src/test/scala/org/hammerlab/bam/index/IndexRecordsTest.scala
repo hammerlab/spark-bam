@@ -12,7 +12,7 @@ class IndexRecordsTest
     val outPath = tmpPath()
     IndexRecords.run(
       Args(
-        outPath = Some(outPath)
+        out = Some(outPath)
       ),
       RemainingArgs(
         Seq(File("5k.bam")),

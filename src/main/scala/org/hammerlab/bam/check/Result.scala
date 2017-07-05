@@ -34,28 +34,28 @@ abstract class Result[PosResult](implicit sampleSize: SampleSize) {
   def prettyPrint(implicit printer: Printer): Unit =
     numFalseCalls match {
       case 0 ⇒
-        print(
+        echo(
           s"$numPositions positions checked ($numCalledReadStarts reads), no errors!"
         )
       case _ ⇒
-        print(
+        echo(
           s"$numPositions positions checked ($numCalledReadStarts reads), $numFalseCalls errors"
         )
 
-        printSamples(
+        print(
           falseCallsHistSample,
           falseCallsHistSize,
           "False-call histogram:",
           n ⇒ s"First $n false-call histogram entries:"
         )
-        print("")
+        echo("")
 
-        printSamples(
+        print(
           falseCallsSample,
           numFalseCalls,
           "False calls:",
           n ⇒ s"First $n false calls:"
         )
-        print("")
+        echo("")
     }
 }

@@ -22,7 +22,7 @@ trait RunTest
     val Result(
       numPositions,
       _,
-      numFalseCalls,
+      _,
       falseCalls,
       numReadStarts,
       _
@@ -77,14 +77,14 @@ trait RunTest
     }
   }
 
-  test("1.2205029-2209029.bam") {
+  test("1.2203053-2211029.bam") {
     check(
       Args(),
-      1317661,
-      4000,
+      2580596,
+      7976,
       bamTest1FalseCalls
     )(
-      File("1.2205029-2209029.bam").path
+      File("1.2203053-2211029.bam").path
     )
   }
 

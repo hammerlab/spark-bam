@@ -1,12 +1,9 @@
 package org.hammerlab.bam
 
-import org.hammerlab.bam.spark.LoadBam.CanLoadBam
-import org.hammerlab.spark.Context
+import org.apache.spark.SparkContext
+import org.hammerlab.bam.spark.load.CanLoadBam
 
 package object spark {
-  implicit class LoadBamContext(val sc: Context)
-    extends AnyVal
-      with CanLoadBam
-
-  implicit val defaultPartitioningStrategy = LoadBam.defaultPartitioningStrategy
+  implicit class LoadBamContext(val sc: SparkContext)
+    extends CanLoadBam
 }

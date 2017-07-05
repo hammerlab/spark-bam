@@ -10,19 +10,11 @@ class CheckerTest
   extends Suite {
 
   implicit val conf = Configuration()
-  val path = File("1.2205029-2209029.bam")
+  val path = File("1.2203053-2211029.bam")
   val contigLengths = ContigLengths(path)
   val checker = Checker(path, contigLengths)
 
-  test("0:0") {
-    checker(Pos(0, 0)) should be(false)
-  }
-
-  test("441192:37166") {
-    checker(Pos(441192, 37166)) should be(false)
-  }
-
-  test("225622:49212") {
-    checker(Pos(225622, 49212)) should be(true)
+  test("486847:6") {
+    checker(Pos(486847, 6)) should be(true)  // false positive
   }
 }

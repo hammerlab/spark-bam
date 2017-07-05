@@ -1,10 +1,11 @@
-package org.hammerlab.bam.spark
+package org.hammerlab.bam.spark.load
 
-import org.hammerlab.bam.spark.LoadBam._
+import htsjdk.samtools.SAMRecord
+import org.apache.spark.rdd.RDD
+import org.hammerlab.bam.spark._
 import org.hammerlab.genomics.loci.set.test.LociSetUtil
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
-import org.hammerlab.parallel
 import org.hammerlab.spark.test.suite.SparkSuite
 import org.hammerlab.test.resources.File
 
@@ -13,27 +14,13 @@ trait LoadBAMChecks
     with LociSetUtil {
 
   def file: String
-  def parallelConfig: parallel.Config
 
   def path = File(file).path
 
-  implicit lazy val config =
-    Config(
-      parallelizer = parallelConfig,
-      maxSplitSize = MaxSplitSize()
-    )
+  def load(maxSplitSize: MaxSplitSize): RDD[SAMRecord]
 
   def check(maxSplitSize: MaxSplitSize, sizes: Int*): Unit = {
-    val records =
-      sc
-        .loadReads(
-            path
-          )(
-            Config(
-              parallelizer = parallelConfig,
-              maxSplitSize = maxSplitSize
-            )
-          )
+    val records = load(maxSplitSize)
 
     records.partitionSizes should be(sizes)
     records.count should be(4910)
