@@ -200,9 +200,9 @@ abstract class Run[
             }
         )
         .filter {
-          pos ⇒
+          case Pos(blockPos, _) ⇒
             filteredBlockSet
-              .forall(_ (pos.blockPos))
+              .forall(_(blockPos))
         }
 
     /**
