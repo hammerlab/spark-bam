@@ -27,3 +27,13 @@ shadeRenames ++= Seq(
 )
 
 main := "org.hammerlab.bam.spark.Main"
+
+// It can be convenient to keep google-cloud-nio and gcs-connecter shaded JARs in lib/, though they're not checked into
+// git. However, we exclude them from the assembly JAR by default, on the assumption that they'll be provided otherwise
+// at runtime (by Dataproc in the case of gcs-connector, and by manually adding to the classpath in the case of
+// google-cloud-nio).
+assemblyExcludedJars in assembly := {
+  (fullClasspath in assembly).value.filter {
+    _.data.getParent.endsWith("/lib")
+  }
+}
