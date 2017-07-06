@@ -10,6 +10,5 @@ case class Result(numPositions: Long,
                   positionResults: RDD[(Pos, PosResult)],
                   numFalseCalls: Long,
                   falseCalls: RDD[(Pos, False)],
-                  numCalledReadStarts: Long,
-                  calledReadStarts: RDD[Pos])(implicit sampleSize: SampleSize)
+                  numCalledReadStarts: Long)(implicit sampleSize: SampleSize)
   extends check.Result[PosResult]

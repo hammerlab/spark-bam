@@ -16,7 +16,6 @@ abstract class Result[PosResult](implicit sampleSize: SampleSize) {
   def falseCalls: RDD[(Pos, False)]
 
   def numCalledReadStarts: Long
-  def calledReadStarts: RDD[Pos]
 
   lazy val falseCallsSample = sample(falseCalls, numFalseCalls)
 

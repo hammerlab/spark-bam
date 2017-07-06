@@ -31,7 +31,6 @@ case class Result(numPositions: Long,
                   numFalseCalls: Long,
                   falseCalls: RDD[(Pos, False)],
                   numCalledReadStarts: Long,
-                  calledReadStarts: RDD[Pos],
                   criticalErrorCounts: Counts,
                   totalErrorCounts: Counts,
                   countsByNonZeroFields: SortedMap[Int, (Counts, Counts)])(implicit sampleSize: SampleSize)

@@ -15,15 +15,13 @@ trait Run
                           results: RDD[(Pos, PosResult)],
                           numFalseCalls: Long,
                           falseCalls: RDD[(Pos, False)],
-                          numCalledReadStarts: Long,
-                          calledReadStarts: RDD[Pos])(implicit sampleSize: SampleSize): Result =
+                          numCalledReadStarts: Long)(implicit sampleSize: SampleSize): Result =
     Result(
       numCalls,
       results,
       numFalseCalls,
       falseCalls,
-      numCalledReadStarts,
-      calledReadStarts
+      numCalledReadStarts
     )
 }
 

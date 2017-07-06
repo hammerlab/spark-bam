@@ -33,8 +33,7 @@ object Run
                           results: RDD[(Pos, PosResult)],
                           numFalseCalls: Long,
                           falseCalls: RDD[(Pos, False)],
-                          numCalledReadStarts: Long,
-                          calledReadStarts: RDD[Pos])(implicit sampleSize: SampleSize): Result = {
+                          numCalledReadStarts: Long)(implicit sampleSize: SampleSize): Result = {
     /**
      * How many times each flag correctly rules out a [[Pos]], grouped by how many total flags ruled out that [[Pos]].
      *
@@ -101,7 +100,6 @@ object Run
       numFalseCalls,
       falseCalls,
       numCalledReadStarts,
-      calledReadStarts,
       criticalErrorCounts,
       totalErrorCounts,
       SortedMap(countsByNonZeroFields: _*)

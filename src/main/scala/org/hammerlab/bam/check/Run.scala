@@ -302,25 +302,6 @@ abstract class Run[
           )
         )
 
-    val calledReadStarts =
-      results
-        .flatMap {
-          case (pos, _: Positive) ⇒
-            Some(pos)
-          case _ ⇒
-            None
-        }
-        .orderedRepartition(
-          min(
-            results.getNumPartitions,
-            ceil(
-              numCalledReadStarts,
-              args.resultsPerPartition
-            )
-            .toInt
-          )
-        )
-
     implicit val sampleSize = args.printLimit
 
     makeResult(
@@ -328,8 +309,7 @@ abstract class Run[
       results,
       numFalseCalls,
       falseCalls,
-      numCalledReadStarts,
-      calledReadStarts
+      numCalledReadStarts
     )
   }
 
@@ -340,8 +320,7 @@ abstract class Run[
                  results: RDD[(Pos, PosResult)],
                  numFalseCalls: Long,
                  falseCalls: RDD[(Pos, False)],
-                 numCalledReadStarts: Long,
-                 calledReadStarts: RDD[Pos])(implicit sampleSize: SampleSize): Res
+                 numCalledReadStarts: Long)(implicit sampleSize: SampleSize): Res
 }
 
 trait UncompressedStreamRun[
