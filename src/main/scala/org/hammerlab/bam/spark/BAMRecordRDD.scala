@@ -4,9 +4,9 @@ import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
 
 case class BAMRecordRDD(splits: Vector[Split],
-                        rdd: RDD[SAMRecord])
+                        reads: RDD[SAMRecord])
 
 object BAMRecordRDD {
   implicit def SAMRecordRDDToRDD(samRecordRDD: BAMRecordRDD): RDD[SAMRecord] =
-    samRecordRDD.rdd
+    samRecordRDD.reads
 }

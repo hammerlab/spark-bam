@@ -22,7 +22,6 @@ class RunTest
       falseCalls,
       numReadStarts,
       _,
-      _,
       totalErrorCounts,
       _
     ) =

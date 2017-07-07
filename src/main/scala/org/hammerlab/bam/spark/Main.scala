@@ -1,24 +1,23 @@
 package org.hammerlab.bam.spark
 
 import caseapp.{ ExtraName ⇒ O }
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.{ SPLIT_MAXSIZE, setInputPaths }
-import org.apache.hadoop.mapreduce.task.JobContextImpl
-import org.apache.hadoop.mapreduce.{ Job, JobID }
+import org.apache.hadoop.io.LongWritable
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
+import org.apache.spark.rdd.HadoopPartition
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
-import org.hammerlab.hadoop
+import org.hammerlab.collection.canBuildVector
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.io.Printer._
 import org.hammerlab.io.SampleSize
-import org.hammerlab.iterator.GroupWithIterator._
+import org.hammerlab.iterator.sorted.OrZipIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.paths.Path
 import org.hammerlab.stats.Stats
 import org.hammerlab.timing.Timer.time
-import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
-
-import scala.collection.JavaConverters._
+import org.hammerlab.types._
+import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
 case class Args(@O("c") compare: Boolean = false,
                 @O("g") gsBuffer: Option[Bytes] = None,
@@ -27,16 +26,14 @@ case class Args(@O("c") compare: Boolean = false,
                 @O("o") out: Option[Path] = None,
                 @O("p") printReadPartitionStats: Boolean = false,
                 @O("s") seqdoop: Boolean = false,
-                @O("t") threads: Option[Int]
+                @O("t") threads: Int = 0
                )
   extends SparkPathAppArgs {
   def parallelizer =
-    threads match {
-      case Some(numWorkers) ⇒
-        Threads(numWorkers)
-      case _ ⇒
-        Spark()
-    }
+    if (threads == 0)
+      Spark()
+    else
+      Threads(threads)
 }
 
 object Main
@@ -52,25 +49,35 @@ object Main
       )
     }
 
-  def getSeqdoopSplits(args: Args, path: Path): Seq[Split] = {
-    val ifmt = new BAMInputFormat
+  def getSeqdoopSplits(args: Args, path: Path): BAMRecordRDD = {
 
-    val job = Job.getInstance(ctx)
-    val jobConf = job.getConfiguration
-
-    val jobID = new JobID("get-splits", 1)
-    val jc = new JobContextImpl(jobConf, jobID)
-
-    setInputPaths(job, hadoop.Path(path.uri))
-
-    time("get splits") {
-      ifmt
-        .getSplits(jc)
-        .asScala
-        .map(
-          _.asInstanceOf[FileVirtualSplit]: Split
+    val rdd =
+      time("get splits") {
+        sc.newAPIHadoopFile(
+          path.toString(),
+          classOf[BAMInputFormat],
+          classOf[LongWritable],
+          classOf[SAMRecordWritable]
         )
-    }
+      }
+
+    val reads =
+      rdd
+        .values
+        .map(_.get())
+
+    val partitions =
+      rdd
+        .partitions
+        .map(HadoopPartition(_))
+        .map[Split, Vector[Split]](
+          _
+            .serializableHadoopSplit
+            .value
+            .asInstanceOf[FileVirtualSplit]: Split
+        )
+
+    BAMRecordRDD(partitions, reads)
   }
 
   override def run(args: Args): Unit = {
@@ -101,53 +108,74 @@ object Main
       )
       print(
         splits,
-        s"${splits.length} org.seqdoop.hadoop_bam splits:",
-        n ⇒ s"First $n org.seqdoop.hadoop_bam splits:"
+        s"${splits.length} splits:",
+        n ⇒ s"First $n of ${splits.length} splits:"
       )
     }
 
     (args.seqdoop, args.compare) match {
       case (false, true) ⇒
-        val BAMRecordRDD(ourSplits, _) = getReads(args, path)
-        val theirSplits = getSeqdoopSplits(args, path)
+        info("Computing spark-bam splits")
+        val our = getReads(args, path)
+
+        info("Computing hadoop-bam splits")
+        val their = getSeqdoopSplits(args, path)
 
         implicit def toStart(split: Split): Pos = split.start
 
         val diffs =
-          ourSplits
-            .iterator
-            .groupWith[Split, Pos](
-              theirSplits.iterator
-            )
-            .map {
-              case (ourSplit, theirSplits) ⇒
-                ourSplit → theirSplits.toVector
+          our
+            .splits
+            .sortedOrZip[Split, Pos](their.splits)
+            .flatMap {
+              case Both(_, _) ⇒ None
+              case LO(ours) ⇒ Some(Left(ours))
+              case RO(theirs) ⇒ Some(Right(theirs))
             }
-            .filter(_._2.length != 1)
             .toVector
 
         if (diffs.nonEmpty) {
-          echo("Differing splits:")
-          for {
-            (ourSplit, theirSplits) ← diffs
-          } {
-            if (theirSplits.isEmpty)
-              echo(s"$ourSplit: ∅")
-            else
-              echo(
-                s"$ourSplit:",
-                theirSplits.mkString("\t\t", "\n\t\t", "")
-              )
+          print(
+            diffs
+              .map {
+              case Left(ours) ⇒
+                ours.toString
+              case Right(theirs) ⇒
+                s"\t$theirs"
+            },
+            s"${diffs.length} splits differ (totals: ${our.splits.size}, ${their.splits.length}):",
+            n ⇒ s"First $n of ${diffs.length} splits that differ (totals: ${our.splits.size}, ${their.splits.length}):"
+          )
+        } else {
+          echo(
+            "All splits matched!",
+            ""
+          )
+          printSplits(our.splits)
+          if (args.printReadPartitionStats) {
+            val partitionSizes = our.reads.partitionSizes
+            val partitionSizeStats = Stats(partitionSizes)
+            echo(
+              "Partition count stats:",
+              partitionSizeStats
+            )
           }
-        } else
-          echo("All splits matched!")
+        }
 
       case (true, false) ⇒
-        val theirSplits = getSeqdoopSplits(args, path)
-        printSplits(theirSplits)
+        val BAMRecordRDD(splits, reads) = getSeqdoopSplits(args, path)
+        printSplits(splits)
+        if (args.printReadPartitionStats) {
+          val partitionSizes = reads.partitionSizes
+          val partitionSizeStats = Stats(partitionSizes)
+          echo(
+            "Partition count stats:",
+            partitionSizeStats
+          )
+        }
       case (false, false) ⇒
-        val BAMRecordRDD(ourSplits, reads) = getReads(args, path)
-        printSplits(ourSplits)
+        val BAMRecordRDD(splits, reads) = getReads(args, path)
+        printSplits(splits)
         if (args.printReadPartitionStats) {
           val partitionSizes = reads.partitionSizes
           val partitionSizeStats = Stats(partitionSizes)

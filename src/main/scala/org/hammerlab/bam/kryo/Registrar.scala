@@ -13,6 +13,7 @@ import org.hammerlab.bam.header.ContigLengths.ContigLengthsSerializer
 import org.hammerlab.bam.index.Index.Chunk
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
+import org.hammerlab.genomics.reference
 import org.hammerlab.hadoop
 
 import scala.collection.mutable
@@ -63,6 +64,8 @@ class Registrar extends KryoRegistrator {
 
     /** Backs [[org.hammerlab.bam.header.ContigLengths]] */
     kryo.register(classOf[ContigLengths], ContigLengthsSerializer)
+
+    new reference.Registrar().registerClasses(kryo)
 
     kryo.register(classOf[Metadata])
     kryo.register(classOf[Array[Metadata]])

@@ -20,13 +20,10 @@ sc.loadBam(path, Spark())                // one Spark partition for each split
 sc.loadBam(path, ElemsPerPartition(10))  // 10 splits per Spark partition
 sc.loadBam(path, NumPartitions(100))     // fixed number of Spark partitions
 
-import org.hammerlab.bytes._
-
 // Configure split size
-sc.loadBam(path, splitSize = 16.MB)
-sc.loadBam(path, splitSize = 1 << 24)  // same as above: 16MB
+sc.loadBam(path, splitSize = 1 << 24)  // 16MB splits
 
-// Load a `.sam` or `.bam` file:
+// Load a `.sam` or `.bam` file; accepts all the above arguments
 sc.loadReads(path)
 ```
 

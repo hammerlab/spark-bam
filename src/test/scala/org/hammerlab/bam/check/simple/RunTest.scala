@@ -24,8 +24,7 @@ trait RunTest
       _,
       _,
       falseCalls,
-      numReadStarts,
-      _
+      numReadStarts
     ) =
       result
 
