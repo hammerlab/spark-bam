@@ -3,7 +3,7 @@ package org.hammerlab.bam.spark
 import caseapp.{ ExtraName ⇒ O }
 import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
-import org.apache.spark.rdd.HadoopPartition
+import org.apache.spark.rdd.AsHadoopPartition
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
@@ -69,7 +69,7 @@ object Main
     val partitions =
       rdd
         .partitions
-        .map(HadoopPartition(_))
+        .map(AsHadoopPartition(_))
         .map[Split, Vector[Split]](
           _
             .serializableHadoopSplit
