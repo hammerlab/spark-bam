@@ -41,6 +41,8 @@ class MainTest
     compare(
       File("1.2203053-2211029.bam"),
       """Seqdoop-only calls:
+        |	39374:30965
+        |	366151:51533
         |	391261:35390
         |	463275:65228
         |	486847:6
@@ -65,11 +67,13 @@ class MainTest
     )
 
     outputPath.read should be(
-      """2580596 positions checked (7976 reads), 7 errors
+      """2580596 positions checked (7976 reads), 9 errors
         |False-call histogram:
-        |	(7,FalsePositive)
+        |	(9,FalsePositive)
         |
         |False calls:
+        |	(39374:30965,FalsePositive)
+        |	(366151:51533,FalsePositive)
         |	(391261:35390,FalsePositive)
         |	(463275:65228,FalsePositive)
         |	(486847:6,FalsePositive)

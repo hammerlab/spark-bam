@@ -7,13 +7,14 @@ import htsjdk.samtools.{ SAMFileHeader, SAMProgramRecord, SAMReadGroupRecord, SA
 import org.apache.spark.serializer.KryoRegistrator
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
-import org.hammerlab.bam.check.{ PosResult, full, simple }
+import org.hammerlab.bam.check.{ full, simple }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bam.header.ContigLengths.ContigLengthsSerializer
 import org.hammerlab.bam.index.Index.Chunk
+import org.hammerlab.bam.spark.Split
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
-import org.hammerlab.genomics.reference
+import org.hammerlab.genomics.{ loci, reference }
 import org.hammerlab.hadoop
 
 import scala.collection.mutable
@@ -52,6 +53,15 @@ class Registrar extends KryoRegistrator {
     kryo.register(classOf[Pos])
     kryo.register(classOf[Array[Vector[_]]])
 
+    /**
+     * [[org.hammerlab.bam.spark.LoadBamContext.loadBam]] parallelizes an [[Array[Long]]] of file-split start-positions.
+     */
+    kryo.register(classOf[mutable.WrappedArray.ofLong])
+
+    /** It also collects an [[Array[Split]]] in [[org.hammerlab.bam.spark.Spark]] mode */
+    kryo.register(classOf[Array[Split]])
+    kryo.register(classOf[Split])
+
     /** [[SAMFileHeader]] */
     kryo.register(classOf[SAMFileHeader])
     kryo.register(classOf[util.LinkedHashMap[_, _]])
@@ -66,6 +76,12 @@ class Registrar extends KryoRegistrator {
     kryo.register(classOf[ContigLengths], ContigLengthsSerializer)
 
     new reference.Registrar().registerClasses(kryo)
+
+    /**
+     * [[org.hammerlab.bam.spark.load.CanLoadBam.loadBamIntervals]] broadcasts a
+     * [[org.hammerlab.genomics.loci.set.LociSet]]
+     */
+    new loci.set.Registrar().registerClasses(kryo)
 
     kryo.register(classOf[Metadata])
     kryo.register(classOf[Array[Metadata]])
