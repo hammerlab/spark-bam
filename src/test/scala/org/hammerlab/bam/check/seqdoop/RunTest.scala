@@ -12,6 +12,8 @@ class RunTest
 
   override def bamTest1FalseCalls =
     Seq(
+      Pos( 39374, 30965) → FalsePositive,
+      Pos(366151, 51533) → FalsePositive,
       Pos(391261, 35390) → FalsePositive,
       Pos(463275, 65228) → FalsePositive,
       Pos(486847,     6) → FalsePositive,
