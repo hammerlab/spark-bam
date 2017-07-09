@@ -1,12 +1,8 @@
 package org.hammerlab.app
 
-import caseapp.{ CaseApp, Parser, RemainingArgs }
 import caseapp.core.Messages
+import caseapp.{ CaseApp, Parser, RemainingArgs }
 import grizzled.slf4j.Logging
-import org.apache.spark.SparkContext
-import org.hammerlab.io.{ Printer, SampleSize }
-import org.hammerlab.paths.Path
-import org.hammerlab.spark.{ Conf, Context }
 
 abstract class App[Args: Parser: Messages]
   extends CaseApp[Args]

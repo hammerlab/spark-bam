@@ -28,17 +28,13 @@ class MainTest
 
   def check(args: Args, expected: String): Unit = {
     val outPath = tmpPath()
-    Main.run(
-      args.copy(
-        out = Some(outPath),
-        threads = 8
-      ),
-      Seq[String](
+    Main.main(
+      Array[String](
+        "-m", "470k",
+        "-o", outPath.toString(),
         File("1.2203053-2211029.bam")
-        //        "gs://hammerlab-tcga/for-msk-bms-lung/legacy_downloads/19155553-8199-4c4d-a35d-9a2f94dd2e7d/C509.TCGA-64-1681-01A-11D-2063-08.1.bam"
       )
     )
-
     outPath.read should be(expected.stripMargin)
   }
 

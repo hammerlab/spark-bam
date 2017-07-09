@@ -18,9 +18,7 @@ import org.seqdoop.hadoop_bam.BAMSplitGuesser.MAX_BYTES_READ
 import scala.math.min
 
 case class Checker(path: Path,
-                   contigLengths: ContigLengths)(
-    implicit conf: Configuration
-)
+                   contigLengths: ContigLengths)
   extends check.Checker[Boolean]
     with Closeable {
 

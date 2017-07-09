@@ -39,9 +39,7 @@ abstract class Run[
    * Given a bgzf-decompressed byte stream and map from reference indices to lengths, build a [[Checker]]
    */
   def makeChecker(path: Path,
-                  contigLengths: ContigLengths)(
-      implicit conf: Configuration
-  ): Checker[Call]
+                  contigLengths: ContigLengths): Checker[Call]
 
 
   // Configurable logic for building a [[PosResult]] from a [[Call]]
@@ -52,7 +50,6 @@ abstract class Run[
    */
   def getCalls(args: Args)(implicit sc: Context, path: Path): (RDD[(Pos, Call)], Option[Set[Long]]) = {
     implicit val conf: Configuration = sc.hadoopConfiguration
-    val confBroadcast = sc.broadcast(conf)
 
     val Header(contigLengths, _, _) = Header(path)
 
@@ -154,8 +151,6 @@ abstract class Run[
               makeChecker(
                 path,
                 contigLengths
-              )(
-                confBroadcast.value
               )
 
             blocks
@@ -333,9 +328,7 @@ trait UncompressedStreamRun[
   def makeChecker: (SeekableUncompressedBytes, ContigLengths) ⇒ Checker[Call]
 
   override def makeChecker(path: Path,
-                           contigLengths: ContigLengths)(
-      implicit conf: Configuration
-  ): Checker[Call] = {
+                           contigLengths: ContigLengths): Checker[Call] = {
     val channel = SeekableByteChannel(path).cache
     val stream = SeekableUncompressedBytes(channel)
     makeChecker(stream, contigLengths)

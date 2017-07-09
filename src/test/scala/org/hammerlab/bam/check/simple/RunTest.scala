@@ -5,7 +5,7 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.SparkSuite
 import org.hammerlab.test.resources.File
-import org.hammerlab.test.matchers.seqs.SeqMatcher.seqMatch
+import org.hammerlab.test.matchers.seqs.ArrMatcher.arrMatch
 
 trait RunTest
   extends SparkSuite {
@@ -30,7 +30,7 @@ trait RunTest
 
     numPositions should be(expectedNumPositions)
 
-    falseCalls.collect().toSeq should seqMatch(expectedFalseCalls)
+    falseCalls.collect() should arrMatch(expectedFalseCalls)
 
     numReadStarts should be(expectedReadStarts)
   }

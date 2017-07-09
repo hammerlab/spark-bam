@@ -21,8 +21,6 @@ import scala.collection.mutable
 
 class Registrar extends KryoRegistrator {
   override def registerClasses(kryo: Kryo): Unit = {
-    hadoop.Registrar.registerClasses(kryo)
-
     kryo.register(Class.forName("scala.reflect.ClassTag$$anon$1"))
     kryo.register(classOf[java.lang.Class[_]])
 

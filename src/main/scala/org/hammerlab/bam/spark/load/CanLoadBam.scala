@@ -24,9 +24,9 @@ import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.iterator.sliding.Sliding2Iterator._
 import org.hammerlab.math.ceil
+import org.hammerlab.parallel
 import org.hammerlab.parallel._
 import org.hammerlab.paths.Path
-import org.hammerlab.{ hadoop, parallel }
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFromStream
 
 import scala.collection.JavaConverters._
@@ -209,7 +209,7 @@ trait CanLoadBam
 
     val fileSplitStarts =
       FileSplits(
-        hadoop.Path(path.uri),
+        path,
         splitSize
       )
       .map(_.start)
