@@ -1,24 +1,24 @@
 name := "spark-bam"
 version := "1.1.0-SNAPSHOT"
 deps ++= Seq(
-  libs.value('iterators).copy(revision = "1.3.0-SNAPSHOT"),
-  libs.value('slf4j),
-  "com.github.alexarchambault" %% "case-app" % "1.2.0-SNAPSHOT",
-  "org.hammerlab" %% "magic-rdds" % "1.5.0-SNAPSHOT",
-  libs.value('paths).copy(revision = "1.1.1-SNAPSHOT"),
-  libs.value('reference),
-  "org.hammerlab" %% "spark-util" % "1.2.0-SNAPSHOT",
-  "org.hammerlab" % "hadoop-bam" % "7.8.1-SNAPSHOT" exclude("org.apache.hadoop", "hadoop-client")
+  case_app,
+  hadoop_bam % "7.8.1-SNAPSHOT",
+  iterators % "1.3.0-SNAPSHOT",
+  magic_rdds % "1.5.0-SNAPSHOT",
+  paths % "1.1.1-SNAPSHOT",
+  reference % "1.3.1-SNAPSHOT",
+  slf4j,
+  spark_util % "1.2.0-SNAPSHOT"
 )
 
-compileAndTestDeps += libs.value('loci)
+compileAndTestDeps += loci % "2.0.0-SNAPSHOT"
 
 addSparkDeps
 
 testUtilsVersion := "1.2.4-SNAPSHOT"
 sparkTestsVersion := "2.1.0-SNAPSHOT"
 
-shadedDeps += "com.chuusai" %% "shapeless" % "2.3.2"
+shadedDeps += shapeless
 
 // Spark 2.1.0 (spark-submit is an easy way to run this library's Main) puts shapeless 2.0.0 on the classpath, but we
 // need 2.3.2.
