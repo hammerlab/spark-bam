@@ -4,6 +4,7 @@ import grizzled.slf4j.Logging
 import htsjdk.samtools.BAMFileReader.getFileSpan
 import htsjdk.samtools.SamReaderFactory.Option._
 import htsjdk.samtools.{ QueryInterval, SAMLineParser, SAMRecord, SamReaderFactory }
+import org.apache.hadoop.io.LongWritable
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.header.ContigLengths
@@ -27,6 +28,7 @@ import org.hammerlab.math.ceil
 import org.hammerlab.parallel
 import org.hammerlab.parallel._
 import org.hammerlab.paths.Path
+import org.seqdoop.hadoop_bam.{ CRAMInputFormat, SAMRecordWritable }
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFromStream
 
 import scala.collection.JavaConverters._
@@ -331,6 +333,16 @@ trait CanLoadBam
           maxReadSize,
           splitSize
         )
+      case "cram" ⇒
+        sc
+          .newAPIHadoopFile(
+            path.toString,
+            classOf[CRAMInputFormat],
+            classOf[LongWritable],
+            classOf[SAMRecordWritable]
+          )
+          .values
+          .map(_.get)
       case _ ⇒
         throw new IllegalArgumentException(
           s"Can't load reads from path: $path"
