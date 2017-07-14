@@ -15,7 +15,7 @@ import org.hammerlab.iterator.sorted.OrZipIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.paths.Path
 import org.hammerlab.stats.Stats
-import org.hammerlab.timing.Timer.time
+import org.hammerlab.timing.Timer
 import org.hammerlab.types._
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
@@ -37,11 +37,12 @@ case class Args(@O("c") compare: Boolean = false,
 }
 
 object Main
-  extends SparkPathApp[Args] {
+  extends SparkPathApp[Args]
+    with Timer {
 
-  def getReads(args: Args,
-               path: Path): BAMRecordRDD =
-    time("get splits") {
+  def sparkBamLoad(args: Args,
+                   path: Path): BAMRecordRDD =
+    time("Get spark-bam splits") {
       sc.loadBam(
         path,
         parallelConfig = args.parallelizer,
@@ -49,36 +50,35 @@ object Main
       )
     }
 
-  def getSeqdoopSplits(args: Args, path: Path): BAMRecordRDD = {
+  def hadoopBamLoad(args: Args, path: Path): BAMRecordRDD =
+    time("Get hadoop-bam splits") {
 
-    val rdd =
-      time("get splits") {
+      val rdd =
         sc.newAPIHadoopFile(
           path.toString(),
           classOf[BAMInputFormat],
           classOf[LongWritable],
           classOf[SAMRecordWritable]
         )
-      }
 
-    val reads =
-      rdd
-        .values
-        .map(_.get())
+      val reads =
+        rdd
+          .values
+          .map(_.get())
 
-    val partitions =
-      rdd
-        .partitions
-        .map(AsHadoopPartition(_))
-        .map[Split, Vector[Split]](
-          _
-            .serializableHadoopSplit
-            .value
-            .asInstanceOf[FileVirtualSplit]: Split
-        )
+      val partitions =
+        rdd
+          .partitions
+          .map(AsHadoopPartition(_))
+          .map[Split, Vector[Split]](
+            _
+              .serializableHadoopSplit
+              .value
+              .asInstanceOf[FileVirtualSplit]: Split
+          )
 
-    BAMRecordRDD(partitions, reads)
-  }
+      BAMRecordRDD(partitions, reads)
+    }
 
   override def run(args: Args): Unit = {
     args
@@ -116,10 +116,10 @@ object Main
     (args.seqdoop, args.compare) match {
       case (false, true) ⇒
         info("Computing spark-bam splits")
-        val our = getReads(args, path)
+        val our = sparkBamLoad(args, path)
 
         info("Computing hadoop-bam splits")
-        val their = getSeqdoopSplits(args, path)
+        val their = hadoopBamLoad(args, path)
 
         implicit def toStart(split: Split): Pos = split.start
 
@@ -163,7 +163,7 @@ object Main
         }
 
       case (true, false) ⇒
-        val BAMRecordRDD(splits, reads) = getSeqdoopSplits(args, path)
+        val BAMRecordRDD(splits, reads) = hadoopBamLoad(args, path)
         printSplits(splits)
         if (args.printReadPartitionStats) {
           val partitionSizes = reads.partitionSizes
@@ -174,7 +174,7 @@ object Main
           )
         }
       case (false, false) ⇒
-        val BAMRecordRDD(splits, reads) = getReads(args, path)
+        val BAMRecordRDD(splits, reads) = sparkBamLoad(args, path)
         printSplits(splits)
         if (args.printReadPartitionStats) {
           val partitionSizes = reads.partitionSizes
