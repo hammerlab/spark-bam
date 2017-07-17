@@ -1,19 +1,25 @@
 package org.hammerlab.bam.spark.compare
 
 import caseapp.{ ExtraName ⇒ O }
+import com.esotericsoftware.kryo.Kryo
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.hammerlab.app.{ App, SparkApp }
 import org.hammerlab.bam.spark.{ CanCompareSplits, SplitsArgs }
 import org.hammerlab.bytes.Bytes
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
+import org.hammerlab.io.Printer._
 import org.hammerlab.io.{ Printer, SampleSize }
+import org.hammerlab.iterator.SliceIterator._
+import org.hammerlab.kryo.serializeAs
 import org.hammerlab.paths.Path
-import Printer._
 
 case class Opts(@O("f") bamsFile: Path,
                 @O("l") printLimit: SampleSize = SampleSize(None),
                 @O("m") splitSize: Option[Bytes] = None,
-                @O("o") outPath: Option[Path] = None
+                @O("n") filesLimit: Option[Int] = None,
+                @O("o") outPath: Option[Path] = None,
+                @O("s") startOffset: Option[Int] = None
                )
   extends SplitsArgs
 
@@ -33,6 +39,7 @@ object Main
         .lines
         .map(_.trim)
         .filter(_.nonEmpty)
+        .sliceOpt(opts.startOffset, opts.filesLimit)
         .toVector
 
     val numBams = lines.length
@@ -41,7 +48,8 @@ object Main
 
     ctx.setLong(SPLIT_MAXSIZE, splitSize)
 
-    val confBroadcast = sc.broadcast(ctx)
+    val conf: Configuration = sc.hadoopConfiguration
+    val confBroadcast = sc.broadcast(conf)
 
     val pathResults =
       sc
@@ -58,6 +66,7 @@ object Main
             bamPath →
               getPathResult(bamPath)(splitSize, conf)
         }
+        .cache
 
     import org.hammerlab.math.MonoidSyntax._
 
@@ -115,5 +124,20 @@ object Main
       }
       echo("")
     }
+  }
+
+  def register(kryo: Kryo): Unit = {
+    /** A [[Configuration]] gets broadcast */
+    Configuration.register(kryo)
+
+    /** BAM-files are distributed as [[Path]]s which serialize as [[String]]s */
+    kryo.register(
+      classOf[Path],
+      serializeAs[Path, String](_.toString, Path(_))
+    )
+    kryo.register(classOf[Array[String]])
+
+    /** [[Result]]s get [[org.apache.spark.rdd.RDD.collect collected]] */
+    kryo.register(classOf[Result])
   }
 }

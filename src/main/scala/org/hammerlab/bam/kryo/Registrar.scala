@@ -2,8 +2,7 @@ package org.hammerlab.bam.kryo
 
 import java.util
 
-import com.esotericsoftware.kryo.io.{ Input, Output }
-import com.esotericsoftware.kryo.{ Kryo, Serializer }
+import com.esotericsoftware.kryo.Kryo
 import htsjdk.samtools.{ SAMFileHeader, SAMProgramRecord, SAMReadGroupRecord, SAMSequenceDictionary, SAMSequenceRecord }
 import org.apache.spark.serializer.KryoRegistrator
 import org.hammerlab.bam.check
@@ -12,13 +11,10 @@ import org.hammerlab.bam.check.{ full, simple }
 import org.hammerlab.bam.header.ContigLengths.ContigLengthsSerializer
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.index.Index.Chunk
-import org.hammerlab.bam.spark.Split
-import org.hammerlab.bam.spark.compare.Result
+import org.hammerlab.bam.spark.{ Split, compare }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.genomics.{ loci, reference }
-import org.hammerlab.paths.Path
-import org.hammerlab.spark.Context
 
 import scala.collection.mutable
 
@@ -92,16 +88,6 @@ class Registrar extends KryoRegistrator {
 
     kryo.register(classOf[Header])
 
-    /** [[org.hammerlab.bam.spark.compare.Main]] serializes these */
-    kryo.register(classOf[Context])
-    kryo.register(classOf[Array[String]])
-    kryo.register(
-      classOf[Path],
-      new Serializer[Path] {
-        override def read(kryo: Kryo, input: Input, `type`: Class[Path]): Path = Path(input.readString())
-        override def write(kryo: Kryo, output: Output, path: Path): Unit = output.writeString(path.toString())
-      }
-    )
-    kryo.register(classOf[Result])
+    compare.Main.register(kryo)
   }
 }
