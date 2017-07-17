@@ -5,15 +5,14 @@ import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.io.SeekableByteChannel
-import org.hammerlab.paths.Path
+import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
-import org.hammerlab.test.resources.File
 
 class CheckerTest
   extends Suite {
 
   test("EoF") {
-    val path = Path(File("5k.bam"))
+    val path = bam5k.path
     val uncompressedBytes =
       SeekableUncompressedBytes(
         SeekableByteChannel(path)

@@ -1,14 +1,14 @@
 package org.hammerlab.bam.iterator
 
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
-import org.hammerlab.test.resources.File
 
 class PosStreamTest
   extends Suite {
 
   def checkFirstPositions(implicit stream: PosStreamI[_]): Unit = {
-    stream.headerEndPos should be(Pos(2454, 0))
+    stream.header.endPos should be(Pos(2454, 0))
     stream.take(10).toList should be(
       Seq(
         Pos(2454,    0),
@@ -25,7 +25,7 @@ class PosStreamTest
     )
   }
 
-  val path = File("5k.bam").path
+  val path = bam5k.path
 
   test("PosStream") {
     implicit val stream = PosStream(path.inputStream)

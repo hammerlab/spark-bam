@@ -20,12 +20,13 @@ object Header {
 
   def apply(ch: ByteChannel)(implicit buf: ByteBuffer): Header = {
     buf.limit(EXPECTED_HEADER_SIZE)
-    ch.read(buf)
+    ch.readFully(buf)
 
     implicit val arr = buf.array
     val header = make
     buf.clear()
     ch.skip(header.size - EXPECTED_HEADER_SIZE)
+    buf.position(header.size)
 
     header
   }

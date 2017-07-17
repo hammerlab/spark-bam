@@ -22,8 +22,7 @@ trait RecordIterator[T, UncompressedBytes <: UncompressedBytesI[_]]
   // Uncompressed byte-channel, for reading ints into a buffer
   val uncompressedByteChannel: ByteChannel = uncompressedBytes
 
-  val header = Header(uncompressedBytes)
-  val headerEndPos = header.endPos
+  def header: Header
 
   def curBlock: Option[Block] = uncompressedBytes.curBlock
   def curPos: Option[Pos] = uncompressedBytes.curPos

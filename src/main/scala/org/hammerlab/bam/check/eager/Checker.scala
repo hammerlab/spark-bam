@@ -48,7 +48,7 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
     try {
       readNameBuffer.position(0)
       readNameBuffer.limit(readNameLength)
-      uncompressedBytes.read(readNameBuffer)
+      uncompressedBytes.readFully(readNameBuffer)
       val readNameBytes = readNameBuffer.array().view.slice(0, readNameLength)
 
       if (readNameBytes.last != 0)

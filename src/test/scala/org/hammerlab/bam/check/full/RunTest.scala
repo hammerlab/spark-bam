@@ -3,8 +3,8 @@ package org.hammerlab.bam.check.full
 import org.hammerlab.bam.check.Args
 import org.hammerlab.bam.check.full.error.Counts
 import org.hammerlab.paths.Path
+import org.hammerlab.resources.bam5k
 import org.hammerlab.spark.test.suite.SparkSuite
-import org.hammerlab.test.resources.File
 
 class RunTest
   extends SparkSuite {
@@ -35,7 +35,7 @@ class RunTest
   }
 
   {
-    implicit val path = File("5k.bam").path
+    implicit val path = bam5k.path
 
     test("5k.bam header block") {
       check(

@@ -2,30 +2,15 @@ package org.hammerlab.bam.spark.load
 
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
-import org.hammerlab.bam.spark._
 import org.hammerlab.bam.index.Index.Chunk
+import org.hammerlab.bam.spark._
 import org.hammerlab.bam.spark.load.CanLoadBam.getIntevalChunks
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.hadoop.splits.MaxSplitSize
-import org.hammerlab.parallel.spark.ElemsPerPartition
 
-class LoadBAMThreads
-  extends LoadBAMTest {
-  override val parallelConfig: ParallelConfig =
-    Threads(4)
-}
-
-class LoadBAMSpark
-  extends LoadBAMTest {
-  lazy val parallelConfig: ParallelConfig =
-    Spark(ElemsPerPartition(1))
-}
-
-trait LoadBAMTest
+class LoadBAMTest
   extends LoadBAMChecks {
-
-  def parallelConfig: ParallelConfig
 
   override val file = "5k.bam"
 
@@ -33,7 +18,6 @@ trait LoadBAMTest
     sc
       .loadReads(
         path,
-        parallelConfig = parallelConfig,
         splitSize = maxSplitSize
       )
 
@@ -53,14 +37,15 @@ trait LoadBAMTest
     )
   }
 
-  test("1e4") {
+  test("2e4") {
     check(
-      MaxSplitSize(10000),
-      104, 101, 104, 100,  98, 101, 100, 105, 105, 104,
-      101, 102, 102, 104, 105, 105, 104,  97,  96,  96,
-       97,  99, 104, 105, 102, 101, 100, 104, 103, 105,
-       99, 103, 105, 105, 105, 105, 105, 105, 103, 104,
-      105, 101,  96,  99,  99,  98,  98,  98,  23
+      MaxSplitSize(20000),
+      104, 101, 104, 100,  98, 101, 100, 105,   0, 209,
+      101,   0, 102, 102, 104, 105, 105, 104,  97,  96,
+       96,  97,  99, 104, 105, 102, 101, 100, 104, 103,
+      105,  99, 103, 105, 105, 105, 105, 105, 105,   0,
+      103, 104, 105, 101,  96,  99,  99,  98,  98,  98,
+      23
     )
   }
 

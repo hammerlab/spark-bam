@@ -1,25 +1,11 @@
 package org.hammerlab.bam.check
 
-import java.lang.System.setProperty
-
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.spark.test.suite.SparkConfBase
-import org.hammerlab.test.Suite
-import org.hammerlab.test.resources.File
+import org.hammerlab.resources.tcgaBamExcerpt
+import org.hammerlab.spark.test.suite.MainSuite
 
 class MainTest
-  extends Suite
-    with SparkConfBase {
-
-  setProperty("spark.driver.allowMultipleContexts", "true")
-
-  // Register this class as its own KryoRegistrator
-  setProperty("spark.kryo.registrator", classOf[Registrar].getCanonicalName)
-  setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-  setProperty("spark.kryo.referenceTracking", "false")
-  setProperty("spark.kryo.registrationRequired", "true")
-
-  setSparkProps()
+  extends MainSuite(classOf[Registrar]) {
 
   def compare(path: String, expected: String): Unit = {
     val outputPath = tmpPath()
@@ -37,9 +23,9 @@ class MainTest
     outputPath.read should be(expected.stripMargin)
   }
 
-  test("1.2203053-2211029.bam compare") {
+  test("tcga compare") {
     compare(
-      File("1.2203053-2211029.bam"),
+      tcgaBamExcerpt,
       """Seqdoop-only calls:
         |	39374:30965
         |	366151:51533
@@ -54,7 +40,7 @@ class MainTest
     )
   }
 
-  test("1.2203053-2211029.bam seqdoop") {
+  test("tcga seqdoop") {
     val outputPath = tmpPath()
 
     Main.run(
@@ -63,7 +49,7 @@ class MainTest
         seqdoop = true,
         out = Some(outputPath)
       ),
-      Seq[String](File("1.2203053-2211029.bam"))
+      Seq[String](tcgaBamExcerpt)
     )
 
     outputPath.read should be(
@@ -87,7 +73,7 @@ class MainTest
     )
   }
 
-  test("1.2203053-2211029.bam eager") {
+  test("tcga eager") {
     val outputPath = tmpPath()
 
     Main.run(
@@ -96,7 +82,7 @@ class MainTest
         eager = true,
         out = Some(outputPath)
       ),
-      Seq[String](File("1.2203053-2211029.bam"))
+      Seq[String](tcgaBamExcerpt)
     )
 
     outputPath.read should be(
@@ -104,7 +90,7 @@ class MainTest
     )
   }
 
-  test("1.2203053-2211029.bam full") {
+  test("tcga full") {
     val outputPath = tmpPath()
 
     Main.run(
@@ -113,7 +99,7 @@ class MainTest
         full = true,
         out = Some(outputPath)
       ),
-      Seq[String](File("1.2203053-2211029.bam"))
+      Seq[String](tcgaBamExcerpt)
     )
 
     outputPath.read should be(

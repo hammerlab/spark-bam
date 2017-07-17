@@ -4,14 +4,14 @@ import java.nio.channels.FileChannel
 import java.nio.file.Paths
 
 import org.hammerlab.io.SeekableByteChannel._
+import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
-import org.hammerlab.test.resources.File
 
 class MetadataStreamTest
   extends Suite {
 
   test("metadata") {
-    val ch = FileChannel.open(Paths.get(File("5k.bam")))
+    val ch = FileChannel.open(Paths.get(bam5k))
 
     MetadataStream(ch)
       .take(10)

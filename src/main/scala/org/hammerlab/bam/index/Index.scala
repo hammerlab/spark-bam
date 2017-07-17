@@ -69,16 +69,25 @@ object Index {
   }
 
   def apply(path: Path): Index =
-    Index(
-      {
-        implicit val ch: ByteChannel = path.inputStream
+    path.extension match {
+      case "bam" ⇒
+        apply(path + ".bai")
+      case "bai" ⇒
+        Index(
+          {
+            implicit val ch: ByteChannel = path.inputStream
 
-        if (ch.readString(4, includesNull = false) != "BAI\1")
-          throw new IOException(s"Bad BAI magic in $path")
+            if (ch.readString(4, includesNull = false) != "BAI\1")
+              throw new IOException(s"Bad BAI magic in $path")
 
-        read[Seq[Reference]]
-      }
-    )
+            read[Seq[Reference]]
+          }
+        )
+      case _ ⇒
+        throw new IllegalArgumentException(
+          s"Unexpected BAM-index extension: $path"
+        )
+    }
 
   val METADATA_BIN_ID = 37450
 }

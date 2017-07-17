@@ -2,6 +2,7 @@ package org.hammerlab.bam.header
 
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
 import org.hammerlab.hadoop.Configuration
+import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
@@ -106,7 +107,7 @@ class ContigLengthsTest
   implicit val conf = Configuration()
 
   test("bam") {
-    ContigLengths(File("5k.bam")) should be(expected)
+    ContigLengths(bam5k) should be(expected)
   }
 
   test("sam") {

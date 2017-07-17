@@ -40,7 +40,8 @@ trait StreamI
 
       val dataLength = remainingBytes - FOOTER_SIZE
 
-      compressedBytes.read(encBuf, actualHeaderSize, remainingBytes)
+      encBuf.limit(compressedSize)
+      compressedBytes.readFully(encBuf)
 
       val uncompressedSize = encBuf.getInt(compressedSize - 4)
 

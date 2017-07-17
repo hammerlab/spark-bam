@@ -10,9 +10,9 @@ trait SeekableRecordIterator[T]
   extends RecordIterator[T, SeekableUncompressedBytes] {
 
   def seek(to: Pos): Unit = {
-    if (to < headerEndPos) {
+    if (to < header.endPos) {
       // Positions inside the header should fast-forward to the end of the header
-      seek(headerEndPos)
+      seek(header.endPos)
     } else {
       uncompressedBytes.seek(to)
 

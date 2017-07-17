@@ -1,9 +1,9 @@
 package org.hammerlab.bam.index
 
 import caseapp.RemainingArgs
+import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
 import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
-import org.hammerlab.test.resources.File
 
 class IndexRecordsTest
   extends Suite {
@@ -15,7 +15,7 @@ class IndexRecordsTest
         out = Some(outPath)
       ),
       RemainingArgs(
-        Seq(File("5k.bam")),
+        Seq(bam5k),
         Nil
       )
     )

@@ -3,6 +3,7 @@ package org.hammerlab.bam
 import caseapp.RemainingArgs
 import org.hammerlab.test.Suite
 import org.hammerlab.test.matchers.files.DirMatcher.dirMatch
+import org.hammerlab.resources.bam5k
 import org.hammerlab.test.resources.File
 
 class HTSJDKRewriteTest
@@ -22,7 +23,7 @@ class HTSJDKRewriteTest
       ),
       RemainingArgs(
         Seq[String](
-          File("5k.bam"),
+          bam5k,
           s"$outDir/5k.100-3000.bam"
         ),
         Nil

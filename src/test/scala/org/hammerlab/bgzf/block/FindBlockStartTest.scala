@@ -1,13 +1,13 @@
 package org.hammerlab.bgzf.block
 
 import org.hammerlab.io.SeekableByteChannel
+import org.hammerlab.resources.bam5k
 import org.hammerlab.spark.test.suite.SparkSuite
-import org.hammerlab.test.resources.File
 
 class FindBlockStartTest
   extends SparkSuite {
   test("1000") {
-    val path = File("5k.bam").path
+    val path = bam5k.path
     val in = SeekableByteChannel(path)
 
     FindBlockStart(

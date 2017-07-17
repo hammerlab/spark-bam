@@ -42,7 +42,7 @@ trait CheckerBase[Call]
   def apply(): Call = {
     buf.position(0)
     try {
-      uncompressedBytes.read(buf)
+      uncompressedBytes.readFully(buf)
     } catch {
       case _: IOException ⇒
         return tooFewFixedBlockBytes

@@ -3,9 +3,8 @@ package org.hammerlab.bam.iterator
 import htsjdk.samtools.SAMRecord
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.io.SeekableByteChannel.ChannelByteChannel
-import org.hammerlab.paths.Path
+import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
-import org.hammerlab.test.resources.File
 
 class RecordStreamTest
   extends Suite {
@@ -42,7 +41,7 @@ class RecordStreamTest
   }
 
   def checkFirstRecords(implicit rs: RecordStreamI[_]): Unit = {
-    rs.headerEndPos should be(Pos(2454, 0))
+    rs.header.endPos should be(Pos(2454, 0))
     check(
       ( 2454 →     0, 10001, "HWI-ST807:461:C2P0JACXX:4:2115:8592:79724"),
       ( 2454 →   624, 10009, "HWI-ST807:461:C2P0JACXX:4:2115:8592:79724"),
@@ -69,7 +68,7 @@ class RecordStreamTest
     )
   }
 
-  val path = Path(File("5k.bam"))
+  val path = bam5k.path
 
   test("RecordStream") {
     implicit val rs = RecordStream(path.inputStream)

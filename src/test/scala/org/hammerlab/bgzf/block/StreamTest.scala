@@ -3,9 +3,9 @@ package org.hammerlab.bgzf.block
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
 
+import org.hammerlab.resources.bam5k
 import org.hammerlab.stats.Stats
 import org.hammerlab.test.Suite
-import org.hammerlab.test.resources.File
 
 class StreamTest
   extends Suite {
@@ -27,7 +27,7 @@ class StreamTest
 
   test("seekable") {
 
-    val ch = FileChannel.open(File("5k.bam").path)
+    val ch = FileChannel.open(bam5k.path)
     val stream = SeekableStream(ch)
 
     stream.next() should ===(Metadata(    0,  2454,  5650))
@@ -45,7 +45,7 @@ class StreamTest
   }
 
   test("5k.bam") {
-    val is = new FileInputStream(File("5k.bam"))
+    val is = new FileInputStream(bam5k)
     val bgzfStream = Stream(is)
     val blocks = bgzfStream.toList
     blocks.size should be(50)

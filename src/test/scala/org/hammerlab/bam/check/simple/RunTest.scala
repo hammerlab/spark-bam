@@ -3,8 +3,8 @@ package org.hammerlab.bam.check.simple
 import org.hammerlab.bam.check.{ Args, False }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.paths.Path
+import org.hammerlab.resources.{ bam5k, tcgaBamExcerpt }
 import org.hammerlab.spark.test.suite.SparkSuite
-import org.hammerlab.test.resources.File
 import org.hammerlab.test.matchers.seqs.ArrMatcher.arrMatch
 
 trait RunTest
@@ -36,7 +36,7 @@ trait RunTest
   }
 
   {
-    implicit val path: Path = File("5k.bam").path
+    implicit val path: Path = bam5k
 
     test("5k.bam header block") {
       check(
@@ -76,14 +76,14 @@ trait RunTest
     }
   }
 
-  test("1.2203053-2211029.bam") {
+  test("tcga bam") {
     check(
       Args(),
       2580596,
       7976,
       bamTest1FalseCalls
     )(
-      File("1.2203053-2211029.bam").path
+      tcgaBamExcerpt
     )
   }
 

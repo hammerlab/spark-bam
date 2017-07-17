@@ -5,6 +5,7 @@ import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.rdd.AsHadoopPartition
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.bam.spark.Main.time
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.collection.canBuildVector
@@ -14,10 +15,15 @@ import org.hammerlab.io.SampleSize
 import org.hammerlab.iterator.sorted.OrZipIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.paths.Path
+import org.hammerlab.spark.Context
 import org.hammerlab.stats.Stats
 import org.hammerlab.timing.Timer
 import org.hammerlab.types._
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWritable }
+
+trait SplitsArgs {
+  def splitSize: Option[Bytes]
+}
 
 case class Args(@O("c") compare: Boolean = false,
                 @O("g") gsBuffer: Option[Bytes] = None,
@@ -25,36 +31,40 @@ case class Args(@O("c") compare: Boolean = false,
                 @O("m") splitSize: Option[Bytes] = None,
                 @O("o") out: Option[Path] = None,
                 @O("p") printReadPartitionStats: Boolean = false,
-                @O("s") seqdoop: Boolean = false,
-                @O("t") threads: Int = 0
+                @O("s") seqdoop: Boolean = false
                )
-  extends SparkPathAppArgs {
-  def parallelizer =
-    if (threads == 0)
-      Spark()
-    else
-      Threads(threads)
+  extends SparkPathAppArgs
+    with SplitsArgs {
 }
 
-object Main
-  extends SparkPathApp[Args]
-    with Timer {
+trait CanCompareSplits {
+  implicit def ctx: Context
 
-  def sparkBamLoad(args: Args,
+  def sparkBamLoad(args: SplitsArgs,
                    path: Path): BAMRecordRDD =
     time("Get spark-bam splits") {
-      sc.loadBam(
+      ctx.loadSplitsAndReads(
         path,
-        parallelConfig = args.parallelizer,
         splitSize = MaxSplitSize(args.splitSize)
       )
     }
 
-  def hadoopBamLoad(args: Args, path: Path): BAMRecordRDD =
+  def hadoopBamLoad(args: SplitsArgs,
+                    path: Path): BAMRecordRDD =
     time("Get hadoop-bam splits") {
 
+      args
+        .splitSize
+        .foreach(
+          ctx
+            .setLong(
+              SPLIT_MAXSIZE,
+              _
+            )
+        )
+
       val rdd =
-        sc.newAPIHadoopFile(
+        ctx.newAPIHadoopFile(
           path.toString(),
           classOf[BAMInputFormat],
           classOf[LongWritable],
@@ -79,6 +89,12 @@ object Main
 
       BAMRecordRDD(partitions, reads)
     }
+}
+
+object Main
+  extends SparkPathApp[Args]
+    with Timer
+    with CanCompareSplits {
 
   override def run(args: Args): Unit = {
     args
@@ -89,15 +105,6 @@ object Main
           _
         )
       )
-
-    args
-      .splitSize
-        .foreach(
-          ctx.setLong(
-            SPLIT_MAXSIZE,
-            _
-          )
-        )
 
     def printSplits(splits: Seq[Split]): Unit = {
       val splitSizeStats = Stats(splits.map(_.length.toInt))

@@ -30,7 +30,7 @@ object Read {
 
     override def apply(implicit ch: ByteChannel): Long = {
       buf8.clear()
-      ch.read(buf8)
+      ch.readFully(buf8)
       buf8.position(0)
       buf8.getLong()
     }

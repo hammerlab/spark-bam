@@ -48,7 +48,7 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
           case _ ⇒
             readNameBuffer.position(0)
             readNameBuffer.limit(readNameLength)
-            uncompressedBytes.read(readNameBuffer)
+            uncompressedBytes.readFully(readNameBuffer)
 
             // Drop trailing '\0'
             val readNameBytes =

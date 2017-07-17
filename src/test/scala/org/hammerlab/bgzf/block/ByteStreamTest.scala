@@ -4,8 +4,8 @@ import java.nio.channels.FileChannel
 
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.io.ByteChannel
+import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
-import org.hammerlab.test.resources.File
 
 class ByteStreamTest
   extends Suite {
@@ -51,8 +51,7 @@ class ByteStreamTest
   test("ByteStream") {
     implicit val byteStream =
       UncompressedBytes(
-        File("5k.bam")
-          .inputStream
+        bam5k.inputStream
       )
 
     implicit val byteChannel: ByteChannel = byteStream
@@ -63,7 +62,7 @@ class ByteStreamTest
   test("SeekableByteStream") {
     implicit val byteStream =
       SeekableUncompressedBytes(
-        FileChannel.open(File("5k.bam").path)
+        FileChannel.open(bam5k.path)
       )
 
     implicit val byteChannel: ByteChannel = byteStream

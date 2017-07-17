@@ -19,7 +19,29 @@ trait UncompressedBytesI[BlockStream <: StreamI]
   def curBlock: Option[Block] = uncompressedBytes.cur
   def curPos: Option[Pos] = curBlock.map(_.pos)
 
-  override protected def _advance: Option[Byte] = uncompressedBytes.nextOption
+  private var _stopAt: Option[Pos] = None
+  def stopAt(pos: Pos): Unit = {
+    _stopAt = Some(pos)
+  }
+
+  def reset(): Unit = {
+    _stopAt = None
+  }
+
+  override protected def _advance: Option[Byte] =
+    if (
+      _stopAt
+        .exists(
+          stopAt ⇒
+            curPos
+              .exists(
+                stopAt <= _
+              )
+        )
+    )
+      None
+    else
+      uncompressedBytes.nextOption
 
   override def close(): Unit = {
     blockStream.close()

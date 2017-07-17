@@ -1,40 +1,21 @@
 package org.hammerlab.bam.spark
 
-import java.lang.System.setProperty
-
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.test.Suite
-import org.hammerlab.test.resources.File
 import org.hammerlab.bytes._
-import org.hammerlab.spark.test.suite.SparkConfBase
+import org.hammerlab.resources.tcgaBamExcerpt
+import org.hammerlab.spark.test.suite.MainSuite
 
 class MainTest
-  extends Suite
-    with SparkConfBase {
-
-  setProperty("spark.driver.allowMultipleContexts", "true")
-
-  // Register this class as its own KryoRegistrator
-  setProperty("spark.kryo.registrator", classOf[Registrar].getCanonicalName)
-  setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-  setProperty("spark.kryo.referenceTracking", "false")
-  setProperty("spark.kryo.registrationRequired", "true")
-
-  setProperty("spark.hadoop.fs.gs.project.id", "pici-1286")
-  setProperty("spark.hadoop.google.cloud.auth.service.account.enable", "true")
-  setProperty("spark.hadoop.google.cloud.auth.service.account.json.keyfile", "/Users/ryan/.credentials/PICI-ad317a11aff8.json")
-
-  setSparkProps()
+  extends MainSuite(classOf[Registrar]) {
 
   def check(args: Args, expected: String): Unit = {
     val outPath = tmpPath()
     Main.run(
       args.copy(
-        out = Some(outPath),
-        threads = 8
+        out = Some(outPath)
       ),
       Seq[String](
-        File("1.2203053-2211029.bam")
+        tcgaBamExcerpt
       )
     )
 

@@ -1,5 +1,6 @@
 package org.hammerlab.bam.iterator
 
+import org.hammerlab.bam.header.Header
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ SeekableUncompressedBytes, UncompressedBytes, UncompressedBytesI }
 import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
@@ -9,6 +10,7 @@ import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
  */
 trait PosStreamI[Stream <: UncompressedBytesI[_]]
   extends RecordIterator[Pos, Stream] {
+
   override protected def _advance: Option[Pos] = {
     for {
       pos ← curPos
@@ -23,30 +25,36 @@ trait PosStreamI[Stream <: UncompressedBytesI[_]]
 /**
  * Non-seekable [[PosStreamI]]
  */
-case class PosStream(uncompressedBytes: UncompressedBytes)
+case class PosStream(uncompressedBytes: UncompressedBytes,
+                     header: Header)
   extends PosStreamI[UncompressedBytes]
 
 object PosStream {
-  def apply(ch: ByteChannel): PosStream =
+  def apply(ch: ByteChannel): PosStream = {
+    val uncompressedBytes = UncompressedBytes(ch)
+    val header = Header(uncompressedBytes)
     PosStream(
-      UncompressedBytes(
-        ch
-      )
+      uncompressedBytes,
+      header
     )
+  }
 }
 
 /**
  * Seekable [[PosStreamI]]
  */
-case class SeekablePosStream(uncompressedBytes: SeekableUncompressedBytes)
+case class SeekablePosStream(uncompressedBytes: SeekableUncompressedBytes,
+                             header: Header)
   extends PosStreamI[SeekableUncompressedBytes]
     with SeekableRecordIterator[Pos]
 
 object SeekablePosStream {
-  def apply(ch: SeekableByteChannel): SeekablePosStream =
+  def apply(ch: SeekableByteChannel): SeekablePosStream = {
+    val uncompressedBytes = SeekableUncompressedBytes(ch)
+    val header = Header(uncompressedBytes)
     SeekablePosStream(
-      SeekableUncompressedBytes(
-        ch
-      )
+      uncompressedBytes,
+      header
     )
+  }
 }
