@@ -1,7 +1,6 @@
 package org.hammerlab.bam.check.eager
 
-import org.hammerlab.bam.check.simple.Result
-import org.hammerlab.bam.check.{ Args, simple }
+import org.hammerlab.bam.check.{ Args, Result, simple }
 import org.hammerlab.paths.Path
 
 class RunTest

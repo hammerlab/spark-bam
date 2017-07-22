@@ -14,8 +14,12 @@ trait SparkPathAppArgs
 trait SparkApp[Args] {
   self: App[Args] ⇒
   private val sparkConf = Conf()
-  implicit val sc: SparkContext = new SparkContext(sparkConf)
-  implicit val ctx: Context = sc
+  implicit lazy val sc: SparkContext = new SparkContext(sparkConf)
+  implicit lazy val ctx: Context = sc
+
+  override def done(): Unit = {
+    sc.stop()
+  }
 }
 
 /**

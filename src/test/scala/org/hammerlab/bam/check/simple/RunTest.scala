@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check.simple
 
-import org.hammerlab.bam.check.{ Args, False }
+import org.hammerlab.bam.check.{ Args, False, Result ⇒ Res }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.paths.Path
 import org.hammerlab.resources.{ bam5k, tcgaBamExcerpt }
@@ -10,7 +10,7 @@ import org.hammerlab.test.matchers.seqs.ArrMatcher.arrMatch
 trait RunTest
   extends SparkSuite {
 
-  def run(args: Args)(implicit path: Path): Result
+  def run(args: Args)(implicit path: Path): Res
 
   def check(args: Args,
             expectedNumPositions: Int,
@@ -19,9 +19,8 @@ trait RunTest
 
     val result = run(args)
 
-    val Result(
+    val Res(
       numPositions,
-      _,
       _,
       falseCalls,
       numReadStarts

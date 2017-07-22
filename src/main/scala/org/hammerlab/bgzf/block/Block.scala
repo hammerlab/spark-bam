@@ -30,7 +30,18 @@ case class Block(bytes: Array[Byte],
     ret
   }
 
-  override def toString(): String =
+  def positions: Iterator[Pos] =
+    new Iterator[Pos] {
+      var up = 0
+      override def hasNext: Boolean = up < uncompressedSize
+      override def next(): Pos = {
+        val pos = Pos(start, up)
+        up += 1
+        pos
+      }
+    }
+
+  override def toString: String =
     s"Block($startPos-$uncompressedSize;$compressedSize)"
 }
 

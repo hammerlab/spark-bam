@@ -13,7 +13,6 @@ import scala.collection.SortedMap
  * Statistics about a [[Checker]]'s performance identifying read-record-boundaries in a BAM file.
  *
  * @param numPositions          number of [[Pos]]s evaluated; this is the block-decompressed size of the input BAM file
- * @param positionResults       [[RDD]] of [[PosResult]]s, keyed by [[Pos]]
  * @param numFalseCalls         number of "false [[PosResult]]s": read-boundaries that were ruled out by [[Checker]]
  *                              ([[FalseNegative]]s) and read-boundaries predicted by [[Checker]] that aren't actually
  *                              read-record-boundaries in the input BAM ([[FalsePositive]]s)
@@ -27,14 +26,13 @@ import scala.collection.SortedMap
  *                              - the number of times it was set for [[Pos]]s with `≤ n` flags set
  */
 case class Result(numPositions: Long,
-                  positionResults: RDD[(Pos, PosResult)],
                   numFalseCalls: Long,
                   falseCalls: RDD[(Pos, False)],
-                  numCalledReadStarts: Long,
+                  numReads: Long,
                   criticalErrorCounts: Counts,
                   totalErrorCounts: Counts,
                   countsByNonZeroFields: SortedMap[Int, (Counts, Counts)])(implicit sampleSize: SampleSize)
-  extends check.Result[PosResult] {
+  extends check.Result {
   override def prettyPrint(implicit printer: Printer): Unit = {
     super.prettyPrint
 

@@ -7,15 +7,14 @@ import org.hammerlab.io.{ Printer, SampleSize }
 import org.hammerlab.magic.rdd.SampleRDD.sample
 import org.hammerlab.magic.rdd.size._
 
-abstract class Result[PosResult](implicit sampleSize: SampleSize) {
+abstract class Result(implicit sampleSize: SampleSize) {
 
   def numPositions: Long
-  def positionResults: RDD[(Pos, PosResult)]
 
   def numFalseCalls: Long
   def falseCalls: RDD[(Pos, False)]
 
-  def numCalledReadStarts: Long
+  def numReads: Long
 
   lazy val falseCallsSample = sample(falseCalls, numFalseCalls)
 
@@ -34,11 +33,11 @@ abstract class Result[PosResult](implicit sampleSize: SampleSize) {
     numFalseCalls match {
       case 0 ⇒
         echo(
-          s"$numPositions positions checked ($numCalledReadStarts reads), no errors!"
+          s"$numPositions positions checked ($numReads reads), no errors!"
         )
       case _ ⇒
         echo(
-          s"$numPositions positions checked ($numCalledReadStarts reads), $numFalseCalls errors"
+          s"$numPositions positions checked ($numReads reads), $numFalseCalls errors"
         )
 
         print(
@@ -57,4 +56,14 @@ abstract class Result[PosResult](implicit sampleSize: SampleSize) {
         )
         echo("")
     }
+}
+
+object Result {
+  def unapply(result: Result): Option[(Long, Long, RDD[(Pos, False)], Long)] =
+    Some(
+      result.numPositions,
+      result.numFalseCalls,
+      result.falseCalls,
+      result.numReads
+    )
 }

@@ -43,11 +43,11 @@ object Flags {
    */
   implicit def toCounts(error: Flags): Counts =
     Generic[Counts]
-    .from(
-      Generic[Flags]
-        .to(error)
-        .map(toLong)
-    )
+      .from(
+        Generic[Flags]
+          .to(error)
+          .map(toLong)
+      )
 
   /**
    * Construct an [[Flags]] from some convenient wrappers around subsets of the possible flags

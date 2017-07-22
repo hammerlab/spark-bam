@@ -7,8 +7,7 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.io.SampleSize
 
 case class Result(numPositions: Long,
-                  positionResults: RDD[(Pos, PosResult)],
                   numFalseCalls: Long,
                   falseCalls: RDD[(Pos, False)],
-                  numCalledReadStarts: Long)(implicit sampleSize: SampleSize)
-  extends check.Result[PosResult]
+                  numReads: Long)(implicit sampleSize: SampleSize)
+  extends check.Result

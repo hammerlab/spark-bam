@@ -48,7 +48,7 @@ object Main
    */
   override def run(args: Args): Unit = {
 
-    val runs: List[Run[_, _, _ <: Result[_]]] =
+    val runs: List[Run[_, _]] =
       (
         (if (args.eager) Some(eager.Run) else None).toList ::
           (if (args.full) Some(full.Run) else None).toList ::

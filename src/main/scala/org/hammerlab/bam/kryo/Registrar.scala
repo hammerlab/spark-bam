@@ -7,7 +7,7 @@ import htsjdk.samtools.{ SAMFileHeader, SAMProgramRecord, SAMReadGroupRecord, SA
 import org.apache.spark.serializer.KryoRegistrator
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
-import org.hammerlab.bam.check.{ full, simple }
+import org.hammerlab.bam.check.{ Blocks, full, simple }
 import org.hammerlab.bam.header.ContigLengths.ContigLengthsSerializer
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.index.Index.Chunk
@@ -20,6 +20,7 @@ import scala.collection.mutable
 
 class Registrar extends KryoRegistrator {
   override def registerClasses(kryo: Kryo): Unit = {
+    implicit val k = kryo
     kryo.register(Class.forName("scala.reflect.ClassTag$$anon$1"))
     kryo.register(classOf[java.lang.Class[_]])
 
@@ -89,5 +90,7 @@ class Registrar extends KryoRegistrator {
     kryo.register(classOf[Header])
 
     compare.Main.register(kryo)
+
+    Blocks.register
   }
 }

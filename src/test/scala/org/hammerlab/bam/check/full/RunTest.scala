@@ -17,7 +17,6 @@ class RunTest
   ): Unit = {
     val Result(
       numPositions,
-      _,
       numFalseCalls,
       falseCalls,
       numReadStarts,
