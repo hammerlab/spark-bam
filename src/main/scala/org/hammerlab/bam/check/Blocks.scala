@@ -1,7 +1,6 @@
 package org.hammerlab.bam.check
 
 import com.esotericsoftware.kryo.Kryo
-import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bgzf.block.Metadata

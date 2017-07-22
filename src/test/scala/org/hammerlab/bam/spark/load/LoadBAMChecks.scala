@@ -3,11 +3,10 @@ package org.hammerlab.bam.spark.load
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bam.spark._
 import org.hammerlab.genomics.loci.set.test.LociSetUtil
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
-import org.hammerlab.spark.test.suite.{ KryoSparkSuite, SparkSuite }
+import org.hammerlab.spark.test.suite.KryoSparkSuite
 import org.hammerlab.test.resources.File
 
 trait LoadBAMChecks

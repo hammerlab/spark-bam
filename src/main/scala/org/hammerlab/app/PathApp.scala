@@ -15,7 +15,7 @@ abstract class PathApp[Args : Parser : Messages]
   def init(options: Args): Unit = {}
   def close(): Unit = {}
 
-  final override def run(options: Args, args: Seq[String]): Unit = {
+  final protected override def _run(options: Args, args: Seq[String]): Unit = {
     if (args.size != 1) {
       throw new IllegalArgumentException(
         s"Exactly one argument (a BAM file path) is required"
@@ -29,5 +29,5 @@ abstract class PathApp[Args : Parser : Messages]
     close()
   }
 
-  def run(options: Args): Unit
+  protected def run(options: Args): Unit
 }

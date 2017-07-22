@@ -6,6 +6,7 @@ import org.hammerlab.spark.test.suite.MainSuite
 
 class MainTest
   extends MainSuite(classOf[Registrar]) {
+
   test("470KB, 2 bams") {
     val outPath = tmpPath()
     val bamsPath = tmpPath()

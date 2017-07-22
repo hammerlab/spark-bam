@@ -1,5 +1,7 @@
 package org.hammerlab.bam.check
 
+import java.lang.System.setProperty
+
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.resources.tcgaBamExcerpt
@@ -9,13 +11,14 @@ import org.hammerlab.test.Suite
 class BlocksTest
   extends MainSuite(classOf[Registrar]) {
 //  extends Suite {
+
   test("foo") {
     implicit val path = tcgaBamExcerpt.path
 
-    val args: Args =
-      Args(
-        blocksPerPartition = 5
-      )
+//    val args: Args =
+//      Args(
+//        blocksPerPartition = 5
+//      )
 
 //    val conf = new SparkConf(false)
 //    conf.setMaster("local[4]")

@@ -28,7 +28,7 @@ object Main
     with SparkApp[Opts]
     with CanCompareSplits {
 
-  override def run(opts: Opts, args: Seq[String]): Unit = {
+  override def _run(opts: Opts, args: Seq[String]): Unit = {
 
     implicit val sampleSize = opts.printLimit
     implicit val printer = Printer(opts.outPath)

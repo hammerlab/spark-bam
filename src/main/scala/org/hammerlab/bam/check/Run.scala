@@ -92,7 +92,7 @@ abstract class Run[
           path + ".records"
         )
 
-//    val whitelistBroadcast = blocks.whitelistBroadcast
+    val whitelistBroadcast = blocks.whitelistBroadcast
 
     /** Parse the true read-record-boundary positions from [[recordsFile]] */
     sc
@@ -110,7 +110,8 @@ abstract class Run[
       )
       .filter {
         case Pos(blockPos, _) ⇒
-          blocks.whitelist
+          whitelistBroadcast
+            .value
             .forall(_.blocks(blockPos))
       }
       .cache
