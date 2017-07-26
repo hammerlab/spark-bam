@@ -4,7 +4,7 @@ import caseapp.core.Messages
 import caseapp.{ CaseApp, Parser, RemainingArgs }
 import grizzled.slf4j.Logging
 
-abstract class App[Args: Parser: Messages]
+abstract class App[Args : Parser : Messages]
   extends CaseApp[Args]
     with Logging {
   final override def run(options: Args, remainingArgs: RemainingArgs): Unit =

@@ -18,18 +18,24 @@ trait Run
   def apply(args: Args)(implicit sc: Context, path: Path): Result = {
     val (calls, blocks) = getCalls(args)
 
-    val numResultPartitions =
-      ceil(
-        blocks.uncompressedSize,
-        args.resultsPerPartition
-      )
-      .toInt
+    val readPositions = {
+      val calledReadPositions =
+        calls
+          .filter(_._2)
+          .keys
+          .cache
 
-    val readPositions =
-      calls
-        .filter(_._2)
-        .keys
-        .orderedRepartition(numResultPartitions)
+      val numCalledReadPositions = calledReadPositions.size
+
+      val numResultPartitions =
+        ceil(
+          numCalledReadPositions,
+          args.resultsPerPartition
+        )
+        .toInt
+
+      calledReadPositions.orderedRepartition(numResultPartitions)
+    }
 
     val trueReadPositions =
       getTrueReadPositions(

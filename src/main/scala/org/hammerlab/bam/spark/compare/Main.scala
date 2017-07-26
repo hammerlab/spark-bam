@@ -3,7 +3,9 @@ package org.hammerlab.bam.spark.compare
 import caseapp.{ ExtraName ⇒ O }
 import com.esotericsoftware.kryo.Kryo
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
+import org.apache.spark.serializer.KryoRegistrator
 import org.hammerlab.app.{ App, SparkApp }
+import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark.{ CanCompareSplits, SplitsArgs }
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.hadoop.Configuration
@@ -27,6 +29,8 @@ object Main
   extends App[Opts]
     with SparkApp[Opts]
     with CanCompareSplits {
+
+  override def registrar: Class[_ <: KryoRegistrator] = classOf[Registrar]
 
   override def _run(opts: Opts, args: Seq[String]): Unit = {
 

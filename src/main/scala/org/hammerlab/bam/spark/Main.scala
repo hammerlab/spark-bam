@@ -5,6 +5,7 @@ import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.rdd.AsHadoopPartition
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark.Main.time
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
@@ -92,7 +93,7 @@ trait CanCompareSplits {
 }
 
 object Main
-  extends SparkPathApp[Args]
+  extends SparkPathApp[Args](classOf[Registrar])
     with Timer
     with CanCompareSplits {
 

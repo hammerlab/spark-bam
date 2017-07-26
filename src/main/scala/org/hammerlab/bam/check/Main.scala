@@ -2,6 +2,7 @@ package org.hammerlab.bam.check
 
 import caseapp.{ ExtraName ⇒ O }
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.io.Printer._
 import org.hammerlab.io.SampleSize
@@ -40,7 +41,7 @@ case class Args(@O("e") eager: Boolean = false,
   extends SparkPathAppArgs
 
 object Main
-  extends SparkPathApp[Args] {
+  extends SparkPathApp[Args](classOf[Registrar]) {
 
   /**
    * Entry-point delegated to by [[caseapp]]'s [[main]]; delegates to a [[Run]] implementation indicated by

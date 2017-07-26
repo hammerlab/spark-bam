@@ -3,25 +3,33 @@ package org.hammerlab.app
 import caseapp.Parser
 import caseapp.core.Messages
 import grizzled.slf4j.Logging
+import org.apache.spark.serializer.KryoRegistrator
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.hammerlab.io.{ Printer, SampleSize }
-import org.hammerlab.spark.{ Conf, Context }
+import org.hammerlab.spark.{ Conf, Context, DynamicAllocationConfs, EventLogConfs, KryoConfs, SparkConfBase, SpeculationConfs }
 
 trait SparkPathAppArgs
   extends OutPathArgs {
   def printLimit: SampleSize
 }
 
-trait SparkApp[Args] {
+trait HasSparkConf
+  extends SparkConfBase
+    with KryoConfs
+    with DynamicAllocationConfs
+    with EventLogConfs
+    with SpeculationConfs
+
+trait SparkApp[Args]
+  extends HasSparkConf {
   self: App[Args] with Logging ⇒
-  private var _sparkConf: SparkConf = _
+
   private var _sc: SparkContext = _
 
   implicit def sc: SparkContext = {
     if (_sc == null) {
-      _sparkConf = Conf()
       info("Creating SparkContext")
-      _sc = new SparkContext(_sparkConf)
+      _sc = new SparkContext(makeSparkConf)
     }
     _sc
   }
@@ -29,7 +37,7 @@ trait SparkApp[Args] {
   implicit def ctx: Context = sc
 
   override def done(): Unit = {
-    if (!_sc.isStopped) {
+    if (_sc != null && !_sc.isStopped) {
       info("Stopping SparkContext")
       _sc.stop()
     }
@@ -41,7 +49,7 @@ trait SparkApp[Args] {
  * [[SparkApp]] that takes an input path and prints some information to stdout or a path, with optional truncation of
  * such output.
  */
-abstract class SparkPathApp[Args <: SparkPathAppArgs : Parser : Messages ]
+abstract class SparkPathApp[Args <: SparkPathAppArgs : Parser : Messages ](override val registrar: Class[_ <: KryoRegistrator])
   extends PathApp[Args]
     with SparkApp[Args]{
 
