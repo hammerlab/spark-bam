@@ -6,7 +6,7 @@ deps ++= Seq(
   iterators % "1.3.0-SNAPSHOT",
   magic_rdds % "1.5.0-SNAPSHOT",
   paths % "1.1.1-SNAPSHOT",
-  reference % "1.3.1-SNAPSHOT",
+  reference % "1.4.0-SNAPSHOT",
   slf4j,
   spark_util % "1.2.0-SNAPSHOT"
 )
