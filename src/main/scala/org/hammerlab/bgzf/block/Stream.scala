@@ -4,7 +4,8 @@ import java.io.{ Closeable, EOFException, IOException, InputStream }
 import java.util.zip.Inflater
 
 import org.hammerlab.bgzf.block.Block.{ FOOTER_SIZE, MAX_BLOCK_SIZE }
-import org.hammerlab.io.{ Buffer, ByteChannel, SeekableByteChannel }
+import org.hammerlab.channel.{ ByteChannel, SeekableByteChannel }
+import org.hammerlab.io.Buffer
 import org.hammerlab.iterator.SimpleBufferedIterator
 
 import scala.collection.mutable

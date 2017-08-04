@@ -3,7 +3,7 @@ package org.hammerlab.bgzf.block
 import java.io.{ IOException, InputStream }
 import java.nio.ByteBuffer
 
-import org.hammerlab.io.ByteChannel
+import org.hammerlab.channel.ByteChannel
 
 /**
  * BGZF-block header

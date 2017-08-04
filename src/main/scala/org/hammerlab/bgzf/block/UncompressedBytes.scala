@@ -3,7 +3,7 @@ package org.hammerlab.bgzf.block
 import java.io.Closeable
 
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
+import org.hammerlab.channel.{ ByteChannel, SeekableByteChannel }
 import org.hammerlab.iterator.FlatteningIterator._
 import org.hammerlab.iterator.SimpleBufferedIterator
 

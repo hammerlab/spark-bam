@@ -4,7 +4,7 @@ import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
-import org.hammerlab.io.SeekableByteChannel
+import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
 

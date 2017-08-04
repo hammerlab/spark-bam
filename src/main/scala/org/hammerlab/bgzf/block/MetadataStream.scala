@@ -4,7 +4,8 @@ import java.io.{ Closeable, EOFException }
 
 import org.hammerlab.bgzf.block.Block.FOOTER_SIZE
 import org.hammerlab.bgzf.block.Header.EXPECTED_HEADER_SIZE
-import org.hammerlab.io.{ Buffer, ByteChannel }
+import org.hammerlab.channel.ByteChannel
+import org.hammerlab.io.Buffer
 import org.hammerlab.iterator.SimpleBufferedIterator
 
 /**

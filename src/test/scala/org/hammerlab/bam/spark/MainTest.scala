@@ -28,8 +28,8 @@ class MainTest
         splitSize = Some(470.KB)
       ),
       """Split-size distribution:
-        |num:	2,	mean:	474291.5,	stddev:	2723.5,	mad:	2723.5
-        |elems:	471568, 477015
+        |N: 2, μ/σ: 474291.5/2723.5
+        | elems: 471568 477015
         |
         |2 splits:
         |	Split(0:45846,486847:7)
@@ -45,8 +45,8 @@ class MainTest
         splitSize = Some(470.KB)
       ),
       """Split-size distribution:
-        |num:	2,	mean:	493351.5,	stddev:	5508.5,	mad:	5508.5
-        |elems:	487843, 498860
+        |N: 2, μ/σ: 493351.5/5508.5
+        | elems: 487843 498860
         |
         |2 splits:
         |	Split(0:45846,481280:65535)
@@ -77,9 +77,9 @@ class MainTest
       """All splits matched!
         |
         |Split-size distribution:
-        |num:	2,	mean:	474291.5,	stddev:	21385.5,	mad:	21385.5
-        |elems:	495677, 452906
-        |sorted:	452906, 495677
+        |N: 2, μ/σ: 474291.5/21385.5
+        | elems: 495677 452906
+        |sorted: 452906 495677
         |
         |2 splits:
         |	Split(0:45846,510891:202)

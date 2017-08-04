@@ -3,7 +3,7 @@ package org.hammerlab.bgzf.block
 import java.nio.channels.FileChannel
 import java.nio.file.Paths
 
-import org.hammerlab.io.SeekableByteChannel._
+import org.hammerlab.channel.SeekableByteChannel._
 import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
 

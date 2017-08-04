@@ -2,7 +2,8 @@ package org.hammerlab.bam.index
 
 import org.hammerlab.bam.index.Index.{ Bin, Chunk, METADATA_BIN_ID, Metadata, Reference }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.io.{ Buffer, ByteChannel }
+import org.hammerlab.channel.ByteChannel
+import org.hammerlab.io.Buffer
 
 import scala.collection.mutable.ArrayBuffer
 

@@ -1,6 +1,7 @@
 package org.hammerlab.bam.spark
 
 import caseapp.{ ExtraName ⇒ O }
+import cats.implicits.catsStdShowForInt
 import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.rdd.AsHadoopPartition

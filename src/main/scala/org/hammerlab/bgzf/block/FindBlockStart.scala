@@ -1,7 +1,7 @@
 package org.hammerlab.bgzf.block
 
 import org.hammerlab.bgzf.block.Block.MAX_BLOCK_SIZE
-import org.hammerlab.io.SeekableByteChannel
+import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.paths.Path
 
 object FindBlockStart {

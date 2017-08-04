@@ -3,8 +3,8 @@ package org.hammerlab.bam.header
 import htsjdk.samtools.{ SAMFileHeader, SAMSequenceDictionary, SAMSequenceRecord }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ UncompressedBytes, UncompressedBytesI }
+import org.hammerlab.channel.ByteChannel
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
-import org.hammerlab.io.ByteChannel
 import org.hammerlab.paths.Path
 
 import scala.collection.JavaConverters._

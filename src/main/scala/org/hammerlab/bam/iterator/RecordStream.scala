@@ -4,7 +4,7 @@ import htsjdk.samtools.{ BAMRecordCodec, DefaultSAMRecordFactory, SAMRecord }
 import org.hammerlab.bam.header.Header
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ SeekableUncompressedBytes, UncompressedBytes, UncompressedBytesI }
-import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
+import org.hammerlab.channel.{ ByteChannel, SeekableByteChannel }
 
 /**
  * Interface for iterating over BAM records (keyed by [[Pos]])

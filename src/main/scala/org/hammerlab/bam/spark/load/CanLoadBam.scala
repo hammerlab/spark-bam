@@ -13,13 +13,13 @@ import org.hammerlab.bam.iterator.{ RecordStream, SeekableRecordStream }
 import org.hammerlab.bam.spark.{ BAMRecordRDD, FindRecordStart, Split }
 import org.hammerlab.bgzf.block.{ FindBlockStart, SeekableUncompressedBytes }
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
+import org.hammerlab.channel.CachingChannel._
+import org.hammerlab.channel.SeekableByteChannel.ChannelByteChannel
+import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.{ FileSplits, MaxSplitSize }
-import org.hammerlab.io.CachingChannel._
-import org.hammerlab.io.SeekableByteChannel.ChannelByteChannel
-import org.hammerlab.io.{ CachingChannel, SeekableByteChannel }
 import org.hammerlab.iterator.CappedCostGroupsIterator.ElementTooCostlyStrategy.EmitAlone
 import org.hammerlab.iterator.CappedCostGroupsIterator._
 import org.hammerlab.iterator.FinishingIterator._

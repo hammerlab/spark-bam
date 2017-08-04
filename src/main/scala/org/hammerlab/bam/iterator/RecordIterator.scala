@@ -5,7 +5,7 @@ import java.io.{ Closeable, InputStream }
 import org.hammerlab.bam.header.Header
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Block, UncompressedBytesI }
-import org.hammerlab.io.ByteChannel
+import org.hammerlab.channel.ByteChannel
 import org.hammerlab.iterator.SimpleBufferedIterator
 
 /**

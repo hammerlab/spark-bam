@@ -3,8 +3,8 @@ package org.hammerlab.bam.check.seqdoop
 import java.io.EOFException
 
 import htsjdk.samtools.seekablestream.SeekableStream
+import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.paths.Path
-import org.hammerlab.io.SeekableByteChannel
 
 import scala.math.min
 

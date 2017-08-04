@@ -2,7 +2,7 @@ package org.hammerlab.bam.iterator
 
 import htsjdk.samtools.SAMRecord
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.io.SeekableByteChannel.ChannelByteChannel
+import org.hammerlab.channel.SeekableByteChannel.ChannelByteChannel
 import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
 

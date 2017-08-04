@@ -3,8 +3,8 @@ package org.hammerlab.bgzf.index
 import caseapp.{ ExtraName ⇒ O }
 import org.hammerlab.app.{ IndexingApp, OutPathArgs }
 import org.hammerlab.bgzf.block.{ Metadata, MetadataStream }
+import org.hammerlab.channel.{ ByteChannel, SeekableByteChannel }
 import org.hammerlab.io.Printer._
-import org.hammerlab.io.{ ByteChannel, SeekableByteChannel }
 import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat
 

@@ -1,6 +1,6 @@
 package org.hammerlab.bgzf.block
 
-import org.hammerlab.io.SeekableByteChannel
+import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.resources.bam5k
 import org.hammerlab.spark.test.suite.SparkSuite
 

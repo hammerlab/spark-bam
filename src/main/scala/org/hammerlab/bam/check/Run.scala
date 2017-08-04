@@ -4,9 +4,9 @@ import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
+import org.hammerlab.channel.CachingChannel._
+import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.hadoop.Configuration
-import org.hammerlab.io.CachingChannel._
-import org.hammerlab.io.SeekableByteChannel
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.Context

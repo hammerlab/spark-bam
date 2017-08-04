@@ -5,7 +5,7 @@ import java.io.IOException
 import org.hammerlab.bam.index.Index.{ Bin, Chunk, Reference }
 import org.hammerlab.bam.index.Read._
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
-import org.hammerlab.io.ByteChannel
+import org.hammerlab.channel.ByteChannel
 import org.hammerlab.paths.Path
 
 case class Index(references: Seq[Reference]) {

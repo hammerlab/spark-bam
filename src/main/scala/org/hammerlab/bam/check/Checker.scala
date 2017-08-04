@@ -7,7 +7,8 @@ import org.hammerlab.bam.check.full.error.{ NegativeRefIdx, NegativeRefIdxAndPos
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
-import org.hammerlab.io.{ Buffer, ByteChannel }
+import org.hammerlab.channel.ByteChannel
+import org.hammerlab.io.Buffer
 
 trait Checker[Call]
   extends Closeable {
