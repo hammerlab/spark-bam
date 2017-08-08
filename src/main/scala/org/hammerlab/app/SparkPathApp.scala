@@ -3,10 +3,10 @@ package org.hammerlab.app
 import caseapp.Parser
 import caseapp.core.Messages
 import grizzled.slf4j.Logging
+import org.apache.spark.SparkContext
 import org.apache.spark.serializer.KryoRegistrator
-import org.apache.spark.{ SparkConf, SparkContext }
 import org.hammerlab.io.{ Printer, SampleSize }
-import org.hammerlab.spark.{ Conf, Context, DynamicAllocationConfs, EventLogConfs, KryoConfs, SparkConfBase, SpeculationConfs }
+import org.hammerlab.spark.{ Context, SparkConfBase, confs }
 
 trait SparkPathAppArgs
   extends OutPathArgs {
@@ -15,10 +15,10 @@ trait SparkPathAppArgs
 
 trait HasSparkConf
   extends SparkConfBase
-    with KryoConfs
-    with DynamicAllocationConfs
-    with EventLogConfs
-    with SpeculationConfs
+    with confs.Kryo
+    with confs.DynamicAllocation
+    with confs.EventLog
+    with confs.Speculation
 
 trait SparkApp[Args]
   extends HasSparkConf {

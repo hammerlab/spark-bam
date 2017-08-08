@@ -1,28 +1,25 @@
 name := "spark-bam"
 version := "1.1.0-SNAPSHOT"
 deps ++= Seq(
-  bytes % "1.0.0-SNAPSHOT",
+  bytes % "1.0.1",
   case_app,
   cats,
-  channel % "1.0.0-SNAPSHOT",
-  hadoop_bam % "7.8.1-SNAPSHOT",
-  io % "1.0.0-SNAPSHOT",
-  iterators % "1.3.0-SNAPSHOT",
+  channel % "1.0.0",
+  hadoop_bam % "7.9.0",
+  io % "1.0.0",
+  iterators % "1.3.0",
   magic_rdds % "1.5.0-SNAPSHOT",
-  math % "1.0.0-SNAPSHOT",
-  paths % "1.1.1-SNAPSHOT",
-  reference % "1.4.0-SNAPSHOT",
+  math % "1.0.0",
+  paths % "1.2.0",
+  reference % "1.4.0",
   slf4j,
-  spark_util % "1.2.0-SNAPSHOT",
-  stats % "1.0.0-SNAPSHOT"
+  spark_util % "1.2.1",
+  stats % "1.0.0"
 )
 
-compileAndTestDeps += loci % "2.0.0-SNAPSHOT"
+compileAndTestDeps += loci % "2.0.1"
 
 addSparkDeps
-
-testUtilsVersion := "1.2.4-SNAPSHOT"
-sparkTestsVersion := "2.1.0-SNAPSHOT"
 
 shadedDeps += shapeless
 
