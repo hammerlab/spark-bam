@@ -8,7 +8,7 @@ deps ++= Seq(
   hadoop_bam % "7.9.0",
   io % "1.0.0",
   iterators % "1.3.0",
-  magic_rdds % "1.5.0-SNAPSHOT",
+  magic_rdds % "2.0.0",
   math % "1.0.0",
   paths % "1.2.0",
   reference % "1.4.0",

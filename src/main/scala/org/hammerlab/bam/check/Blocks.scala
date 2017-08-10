@@ -3,9 +3,12 @@ package org.hammerlab.bam.check
 import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
-import org.hammerlab.bgzf.block.Metadata
+import org.hammerlab.bgzf.block.{ FindBlockStart, Metadata, MetadataStream }
+import org.hammerlab.bytes._
+import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
 import org.hammerlab.math.MonoidSyntax._
+import org.hammerlab.math.Monoid.zero
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.Context
@@ -37,34 +40,60 @@ case class Blocks(partitionedBlocks: RDD[Metadata],
                   whitelistBroadcast: Broadcast[Option[Whitelist]])
 
 object Blocks {
-  def apply(args: Args)(implicit sc: Context, path: Path): Blocks = {
+  def apply(args: Args)(implicit sc: Context, path: Path): (Path, RDD[Metadata], Option[Whitelist]) = {
 
     val blocksPath: Path =
       args
-      .blocks
-      .getOrElse(
-        path + ".blocks"
-      )
+        .blocks
+        .getOrElse(
+          path + ".blocks"
+        )
 
     /** Parse BGZF-block [[Metadata]] emitted by [[org.hammerlab.bgzf.index.IndexBlocks]] */
     val allBlocks =
-      sc
-      .textFile(blocksPath.toString)
-      .map(
-        line ⇒
-          line.split(",") match {
-            case Array(block, compressedSize, uncompressedSize) ⇒
-              Metadata(
-                block.toLong,
-                compressedSize.toInt,
-                uncompressedSize.toInt
-              )
-            case _ ⇒
-              throw new IllegalArgumentException(
-                s"Bad blocks-index line: $line"
-              )
+      if (blocksPath.exists)
+        sc
+        .textFile(blocksPath.toString)
+        .map(
+          line ⇒
+            line.split(",") match {
+              case Array(block, compressedSize, uncompressedSize) ⇒
+                Metadata(
+                  block.toLong,
+                  compressedSize.toInt,
+                  uncompressedSize.toInt
+                )
+              case _ ⇒
+                throw new IllegalArgumentException(
+                  s"Bad blocks-index line: $line"
+                )
+            }
+        )
+      else {
+        val splitSize = args.splitSize.getOrElse(1.MB).bytes
+        val numSplits = ceil(path.size, splitSize).toInt
+        sc
+          .parallelize(
+            0 until numSplits,
+            numSplits
+          )
+          .flatMap {
+            idx ⇒
+              val start = idx * splitSize
+              val end = (idx + 1) * splitSize
+              val in = SeekableByteChannel(path)
+              val blockStart =
+                FindBlockStart(
+                  path,
+                  start,
+                  in,
+                  args.bgzfBlockHeadersToCheck
+                )
+
+              in.seek(blockStart)
+              MetadataStream(in).takeWhile(_.start < end)
           }
-      )
+      }
 
     /**
      * Apply any applicable filters to [[allBlocks]]; also store the set of filtered blocks, if applicable.
@@ -87,7 +116,13 @@ object Blocks {
         case (_, Some(numBlocks)) ⇒
           val filteredBlocks = allBlocks.take(numBlocks)
           (
-            sc.parallelize(filteredBlocks),
+            sc.parallelize(
+              filteredBlocks,
+              ceil(
+                numBlocks,
+                args.blocksPerPartition
+              )
+            ),
             Some(
               Whitelist(
                 filteredBlocks
@@ -100,12 +135,22 @@ object Blocks {
           (allBlocks, None)
       }
 
+    (blocksPath, blocks, whitelist)
+  }
+
+  def partitioned(args: Args)(implicit sc: Context, path: Path): Blocks = {
+    val (blocksPath, blocks, whitelist) = apply(args)
+
+    blocks
+      .setName("blocks")
+      .cache
+
     val (uncompressedSize, numBlocks) =
       blocks
         .map {
           _.uncompressedSize.toLong → 1L
         }
-        .reduce(_ |+| _)
+        .fold(zero[(Long, Long)])(_ |+| _)
 
     val blocksPerPartition = args.blocksPerPartition
 
@@ -118,14 +163,17 @@ object Blocks {
 
     /** Repartition [[blocks]] to obey [[blocksPerPartition]] constraint. */
     val partitionedBlocks =
-      (for {
-        (block, idx) ← blocks.zipWithIndex()
-      } yield
-        (idx / blocksPerPartition).toInt →
-          idx →
-          block
-      )
-      .partitionByKey(numPartitions)
+      if (blocksPath.exists)
+        (for {
+          (block, idx) ← blocks.zipWithIndex()
+        } yield
+          (idx / blocksPerPartition).toInt →
+            idx →
+              block
+        )
+        .partitionByKey(numPartitions)
+      else
+        blocks
 
     Blocks(
       partitionedBlocks,
@@ -138,5 +186,6 @@ object Blocks {
 
   def register(implicit kryo: Kryo): Unit = {
     kryo.register(classOf[Whitelist])
+    kryo.register(classOf[Range])
   }
 }

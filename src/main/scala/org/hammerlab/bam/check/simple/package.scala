@@ -19,7 +19,9 @@ package object simple {
       }
   }
 
-  sealed trait PosResult
+  sealed trait PosResult {
+    self: check.PosResult ⇒
+  }
 
   case object  TruePositive extends PosResult with  check.TruePositive
   case object  TrueNegative extends PosResult with  check.TrueNegative

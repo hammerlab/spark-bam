@@ -46,7 +46,7 @@ abstract class Run[
 
     val Header(contigLengths, _, _) = Header(path)
 
-    val blocks = Blocks(args)
+    val blocks = Blocks.partitioned(args)
 
     /**
      * Apply a [[PosCallIterator]] to each block, generating [[Call]]s.
