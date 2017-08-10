@@ -1,6 +1,8 @@
 package org.hammerlab.bam.check.full.error
 
-import shapeless.{ Generic, Poly1 }
+import cats.Show
+import cats.Show.show
+import shapeless.{ Generic, LabelledGeneric, Poly1 }
 
 import scala.collection.immutable.BitSet
 
@@ -41,13 +43,34 @@ object Flags {
   /**
    * Convert an [[Flags]] to an [[Counts]] by changing true/false to [[1L]]/[[0L]]
    */
-  implicit def toCounts(error: Flags): Counts =
+  implicit def toCounts(flags: Flags): Counts =
     Generic[Counts]
       .from(
         Generic[Flags]
-          .to(error)
+          .to(flags)
           .map(toLong)
       )
+
+  private val lg = LabelledGeneric[Flags]
+
+  implicit def makeShow: Show[Flags] =
+    show {
+      flags ⇒
+        import shapeless._
+        import ops.record._
+
+        val trueFields: List[String] =
+          Fields[lg.Repr]
+            .apply(lg.to(flags))
+            .toList
+            .filter(_._2)
+            .map {
+              case (k, v) ⇒
+                k.name
+            }
+
+        trueFields.mkString(",")
+    }
 
   /**
    * Construct an [[Flags]] from some convenient wrappers around subsets of the possible flags

@@ -1,5 +1,7 @@
 package org.hammerlab.bam.check
 
+import cats.syntax.all._
+import cats.Show.show
 import caseapp.{ ExtraName ⇒ O }
 import htsjdk.samtools.SAMRecord
 import org.apache.log4j.Level.WARN
@@ -168,6 +170,8 @@ object Main
             .mapPartitions {
               it ⇒
                 val ch = SeekableUncompressedBytes(path)
+                val contigLengths = contigLengthsBroadcast.value
+                val fullChecker = full.Checker(ch, contigLengths)
                 it
                   .map {
                     pos ⇒
@@ -176,18 +180,27 @@ object Main
                           path,
                           ch,
                           pos,
-                          contigLengthsBroadcast.value
+                          contigLengths
                         )
+
+                      val allChecks = fullChecker(pos).get
 
                       ch.seek(nextRecordPos)
 
-                      val nextRecord = RecordStream(ch, headerBroadcast.value).next()._2
+                      val nextRecord =
+                        RecordStream(
+                          ch,
+                          headerBroadcast.value
+                        )
+                        .next()
+                        ._2
 
                       pos →
                         (
                           nextRecordPos,
                           distance,
-                          nextRecord
+                          nextRecord,
+                          allChecks
                         )
                   }
                   .finish(ch.close())
@@ -200,23 +213,27 @@ object Main
           s"$numReads reads"
         )
 
-        def showRecord(record: SAMRecord): String = {
-          record.toString() +
-            (
-              if (record.getReadUnmappedFlag && record.getStart >= 0)
-                s" (placed at ${header.contigLengths(record.getReferenceIndex)._1}:${record.getStart})"
-              else
-                ""
-            )
-        }
+        implicit val showRecord =
+          show[SAMRecord] {
+            record ⇒
+              record.toString() +
+                (
+                  if (record.getReadUnmappedFlag && record.getStart >= 0)
+                    s" (placed at ${header.contigLengths(record.getReferenceIndex)._1}:${record.getStart})"
+                  else
+                    ""
+                )
+          }
+
+        import cats.implicits._
 
         def printSeqdoopOnly(): Unit = {
           val sampledPositions =
             sample(
               seqdoopsWithNextRecords
                 .map {
-                  case (pos, (_, delta, record)) ⇒
-                    s"$pos:\t$delta before ${showRecord(record)}"
+                  case (pos, (_, delta, record, flags)) ⇒
+                    show"$pos:\t$delta before $record. Failing checks: $flags"
                 },
               numSeqdoopOnly
             )

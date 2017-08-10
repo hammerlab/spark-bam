@@ -38,7 +38,7 @@ case class Result(numPositions: Long,
 
     print(
       "Critical error counts (true negatives where only one check failed):",
-      criticalErrorCounts.pp(includeZeros = false),
+      criticalErrorCounts.show(includeZeros = false),
       ""
     )
 
@@ -50,14 +50,14 @@ case class Result(numPositions: Long,
             "True negatives where exactly two checks failed:",
             counts
               ._1
-              .pp(includeZeros = false),
+              .show(includeZeros = false),
             ""
           )
       }
 
     print(
       "Total error counts:",
-      totalErrorCounts.pp(),
+      totalErrorCounts.show(),
       ""
     )
   }

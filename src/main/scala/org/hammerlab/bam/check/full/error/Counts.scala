@@ -1,5 +1,7 @@
 package org.hammerlab.bam.check.full.error
 
+import cats.Show
+import cats.Show.show
 import shapeless.{ Generic, LabelledGeneric }
 
 case class Counts(tooFewFixedBlockBytes: Long,
@@ -19,7 +21,12 @@ case class Counts(tooFewFixedBlockBytes: Long,
                   tooFewBytesForCigarOps: Long,
                   invalidCigarOp: Long,
                   tooFewRemainingBytesImplied: Long)
-  extends Error[Long]
+  extends Error[Long] {
+  def show(indent: String = "",
+           wrapFields: Boolean = false,
+           includeZeros: Boolean = true): String =
+    Counts.makeShow(indent, wrapFields, includeZeros).show(this)
+}
 
 object Counts {
 
@@ -47,41 +54,6 @@ object Counts {
         .sortBy(-_._2)
 
     /**
-     * Pretty-print an [[Counts]]
-     */
-    def pp(indent: String = "",
-           wrapFields: Boolean = false,
-           includeZeros: Boolean = true): String = {
-
-      val dc = descCounts
-
-      val maxKeySize = dc.map(_._1.length).max
-      val maxValSize = dc.map(_._2.toString.length).max
-
-      val lines =
-        for {
-          (k, v) ← dc
-          if (v > 0 || includeZeros)
-        } yield
-          s"${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
-
-      if (wrapFields)
-        lines
-          .mkString(
-            s"${indent}Errors(\n\t$indent",
-            s"\n\t$indent",
-            s"\n$indent)"
-          )
-      else
-        lines
-          .mkString(
-            indent,
-            s"\n$indent",
-            ""
-          )
-    }
-
-    /**
      * Count the number of non-zero fields in an [[Counts]]
      */
     def numNonZeroFields: Int =
@@ -91,5 +63,40 @@ object Counts {
         .count(_ > 0)
   }
 
+  /**
+   * Pretty-print an [[Counts]]
+   */
+  implicit def makeShow(indent: String = "",
+                        wrapFields: Boolean = false,
+                        includeZeros: Boolean = true): Show[Counts] =
+    show {
+      counts ⇒
 
+        val dc = counts.descCounts
+
+        val maxKeySize = dc.map(_._1.length).max
+        val maxValSize = dc.map(_._2.toString.length).max
+
+        val lines =
+          for {
+            (k, v) ← dc
+            if (v > 0 || includeZeros)
+          } yield
+            s"${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
+
+        if (wrapFields)
+          lines
+            .mkString(
+              s"${indent}Errors(\n\t$indent",
+              s"\n\t$indent",
+              s"\n$indent)"
+            )
+        else
+          lines
+            .mkString(
+              indent,
+              s"\n$indent",
+              ""
+            )
+    }
 }

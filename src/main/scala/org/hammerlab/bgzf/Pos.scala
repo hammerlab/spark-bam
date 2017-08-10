@@ -1,5 +1,8 @@
 package org.hammerlab.bgzf
 
+import cats.Show
+import cats.Show.show
+
 import scala.math.max
 
 /**
@@ -49,4 +52,7 @@ object Pos {
       vpos >>> 16,
       (vpos & 0xffff).toInt
     )
+
+  implicit val showPos: Show[Pos] =
+    show[Pos] { pos ⇒ pos.toString }
 }
