@@ -314,7 +314,8 @@ class MainTest
         |     tooFewBytesForReadName:	     70
         |     tooFewBytesForCigarOps:	     22
         |
-        |""",
+        |"""
+      .stripMargin,
       Args(
         printLimit = 10
       )

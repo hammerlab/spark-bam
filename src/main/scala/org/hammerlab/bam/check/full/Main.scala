@@ -20,7 +20,7 @@ import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.io.Printer._
 import org.hammerlab.io.SampleSize
 import org.hammerlab.iterator.FinishingIterator._
-import org.hammerlab.magic.rdd.SampleRDD.sample
+import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.math.Monoid.zero
 import org.hammerlab.math.MonoidSyntax._
 import org.hammerlab.paths.Path
@@ -195,12 +195,10 @@ object Main
         )
 
         val criticalCalls =
-          sample(
-            closeCalls
-              .filter(_._1 == 1)
-              .values,
-            numCriticalCalls
-          )
+          closeCalls
+            .filter(_._1 == 1)
+            .values
+            .sample(numCriticalCalls)
 
         print(
           criticalCalls,
@@ -234,11 +232,7 @@ object Main
             .collect
             .sortBy(-_._1)
 
-        val sampledCalls =
-          sample(
-            calls,
-            numCloseCalls
-          )
+        val sampledCalls = calls.sample(numCloseCalls)
 
         print(
           sampledCalls,

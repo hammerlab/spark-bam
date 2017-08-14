@@ -2,6 +2,7 @@ package org.hammerlab.bam.spark
 
 import caseapp.{ ExtraName ⇒ O }
 import cats.implicits.catsStdShowForInt
+import cats.syntax.all._
 import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.rdd.AsHadoopPartition
@@ -148,9 +149,9 @@ object Main
             diffs
               .map {
               case Left(ours) ⇒
-                ours.toString
+                ours.show
               case Right(theirs) ⇒
-                s"\t$theirs"
+                show"\t$theirs"
             },
             s"${diffs.length} splits differ (totals: ${our.splits.size}, ${their.splits.length}):",
             n ⇒ s"First $n of ${diffs.length} splits that differ (totals: ${our.splits.size}, ${their.splits.length}):"

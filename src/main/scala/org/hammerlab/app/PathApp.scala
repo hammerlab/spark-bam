@@ -10,7 +10,7 @@ abstract class PathApp[Args : Parser : Messages]
   extends App[Args]
     with Closeable {
 
-  implicit var path: Path = _
+  @transient implicit var path: Path = _
 
   def init(options: Args): Unit = {}
   def close(): Unit = {}

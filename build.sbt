@@ -12,9 +12,9 @@ deps ++= Seq(
   math % "1.0.0",
   paths % "1.2.0",
   reference % "1.4.0",
-  slf4j,
+  slf4j % "1.3.1",
   spark_util % "1.2.1",
-  stats % "1.0.0"
+  stats % "1.0.1-SNAPSHOT"
 )
 
 compileAndTestDeps += loci % "2.0.1"

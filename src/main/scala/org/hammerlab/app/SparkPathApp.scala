@@ -21,8 +21,7 @@ trait HasSparkConf
     with confs.Speculation
 
 trait SparkApp[Args]
-  extends HasSparkConf
-    with Serializable {
+  extends HasSparkConf {
 
   self: App[Args] with Logging ⇒
 

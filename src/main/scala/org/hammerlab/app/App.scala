@@ -7,6 +7,7 @@ import grizzled.slf4j.Logging
 abstract class App[Args : Parser : Messages]
   extends CaseApp[Args]
     with Logging {
+
   final override def run(options: Args, remainingArgs: RemainingArgs): Unit =
     remainingArgs match {
       case RemainingArgs(args, Nil) ⇒
