@@ -5,11 +5,12 @@ import java.io.Closeable
 import htsjdk.samtools.SAMFormatException
 import htsjdk.samtools.seekablestream.SeekableStream
 import htsjdk.samtools.util.RuntimeIOException
+import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check
+import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.channel.CachingChannel._
-import org.hammerlab.channel.SeekableByteChannel
+import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.BAMPosGuesser
 import org.seqdoop.hadoop_bam.BAMSplitGuesser.MAX_BYTES_READ
@@ -17,11 +18,10 @@ import org.seqdoop.hadoop_bam.BAMSplitGuesser.MAX_BYTES_READ
 import scala.math.min
 
 case class Checker(path: Path,
+                   cachingChannel: CachingChannel[SeekableByteChannel],
                    contigLengths: ContigLengths)
   extends check.Checker[Boolean]
     with Closeable {
-
-  val cachingChannel = SeekableByteChannel(path).cache
 
   /** Wrap block-caching input stream in an HTSJDK [[SeekableStream]] for consumption by [[BAMPosGuesser]] */
   val ss = TruncatableSeekableStream(cachingChannel, path)
@@ -58,3 +58,17 @@ case class BadBlockPos(pos: Pos, e: RuntimeException)
     s"Failed to parse block at $pos",
     e
   )
+
+object Checker {
+  implicit def makeChecker(implicit
+                           path: Path,
+                           contigLengths: Broadcast[ContigLengths]): MakeChecker[Boolean, Checker] =
+    new MakeChecker[Boolean, Checker] {
+      override def apply(ch: CachingChannel[SeekableByteChannel]): Checker =
+        Checker(
+          path,
+          ch,
+          contigLengths.value
+        )
+    }
+}

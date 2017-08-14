@@ -24,8 +24,15 @@ case class Counts(tooFewFixedBlockBytes: Long,
   extends Error[Long] {
   def show(indent: String = "",
            wrapFields: Boolean = false,
-           includeZeros: Boolean = true): String =
-    Counts.makeShow(indent, wrapFields, includeZeros).show(this)
+           includeZeros: Boolean = true,
+           hideTooFewFixedBlockBytes: Boolean = false): String =
+    Counts.makeShow(
+      indent,
+      wrapFields,
+      includeZeros,
+      hideTooFewFixedBlockBytes
+    )
+    .show(this)
 }
 
 object Counts {
@@ -68,7 +75,8 @@ object Counts {
    */
   implicit def makeShow(indent: String = "",
                         wrapFields: Boolean = false,
-                        includeZeros: Boolean = true): Show[Counts] =
+                        includeZeros: Boolean = true,
+                        hideTooFewFixedBlockBytes: Boolean = false): Show[Counts] =
     show {
       counts ⇒
 
@@ -80,7 +88,7 @@ object Counts {
         val lines =
           for {
             (k, v) ← dc
-            if (v > 0 || includeZeros)
+            if (v > 0 || includeZeros) && (k != "tooFewFixedBlockBytes" || !hideTooFewFixedBlockBytes)
           } yield
             s"${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
 

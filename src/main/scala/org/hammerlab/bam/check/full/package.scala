@@ -12,24 +12,6 @@ package object full {
   type Call = Option[Flags]
 
   /**
-   * Turn an [[Option[Flags]]] ([[Call]]) into a [[PosResult]] whcih stores [[Flags]] info for all positions that were
-   * ruled out as read-record-boundaries.
-   */
-  implicit object MakePosResult extends MakePosResult[Call, PosResult] {
-    def apply(call: Option[Flags], isReadStart: Boolean): PosResult =
-      (call, isReadStart) match {
-        case (None, true) ⇒
-          TruePositive
-        case (None, false) ⇒
-          FalsePositive
-        case (Some(flags), true) ⇒
-          FalseNegative(flags)
-        case (Some(flags), false) ⇒
-          TrueNegative(flags)
-      }
-  }
-
-  /**
    * [[PosResult]] "implementation" which attaches full [[Flags]] info to [[Negative]] calls (both [[True]] and
    * [[False]]).
    */

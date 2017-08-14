@@ -2,6 +2,7 @@ package org.hammerlab.bam.check.full.error
 
 import cats.Show
 import cats.Show.show
+import shapeless.ops.hlist.Length
 import shapeless.{ Generic, LabelledGeneric, Poly1 }
 
 import scala.collection.immutable.BitSet
@@ -40,16 +41,31 @@ object Flags {
       )
   }
 
+  val gen = Generic[Flags]
+
+  val size: Int = Length[gen.Repr].apply().toInt
+
   /**
    * Convert an [[Flags]] to an [[Counts]] by changing true/false to [[1L]]/[[0L]]
    */
   implicit def toCounts(flags: Flags): Counts =
     Generic[Counts]
       .from(
-        Generic[Flags]
+        gen
           .to(flags)
           .map(toLong)
       )
+
+  implicit class FlagsWrapper(val flags: Flags) extends AnyVal {
+    /**
+     * Count the number of non-zero fields in an [[Counts]]
+     */
+    def numNonZeroFields: Int =
+      gen
+        .to(flags)
+        .toList[Boolean]
+        .count(x ⇒ x)
+  }
 
   private val lg = LabelledGeneric[Flags]
 
@@ -141,4 +157,6 @@ object Flags {
       invalidCigarOp              = flags(15),
       tooFewRemainingBytesImplied = flags(16)
     )
+
+  val TooFewFixedBlockBytes = fromBitSet(BitSet(0))
 }

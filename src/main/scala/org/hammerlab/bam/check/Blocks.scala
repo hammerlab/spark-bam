@@ -17,6 +17,10 @@ case class Whitelist(blocks: Set[Long])
 
 object Whitelist {
 
+  trait Args {
+    def blocksWhitelist: Option[String]
+  }
+
   def apply(blocks: Option[Set[Long]]): Option[Whitelist] =
     blocks.map(apply)
 
@@ -40,7 +44,21 @@ case class Blocks(partitionedBlocks: RDD[Metadata],
                   whitelistBroadcast: Broadcast[Option[Whitelist]])
 
 object Blocks {
-  def apply(args: Args)(implicit sc: Context, path: Path): (Path, RDD[Metadata], Option[Whitelist]) = {
+
+  trait Args
+    extends Whitelist.Args {
+    def blocks: Option[Path]
+    def splitSize: Option[Bytes]
+    def bgzfBlockHeadersToCheck: Int
+    def numBlocks: Option[Int]
+    def blocksPerPartition: Int
+  }
+
+  def apply(args: Args)(
+      implicit
+      sc: Context,
+      path: Path
+  ): (RDD[Metadata], Option[Whitelist]) = {
 
     val blocksPath: Path =
       args
@@ -135,53 +153,7 @@ object Blocks {
           (allBlocks, None)
       }
 
-    (blocksPath, blocks, whitelist)
-  }
-
-  def partitioned(args: Args)(implicit sc: Context, path: Path): Blocks = {
-    val (blocksPath, blocks, whitelist) = apply(args)
-
-    blocks
-      .setName("blocks")
-      .cache
-
-    val (uncompressedSize, numBlocks) =
-      blocks
-        .map {
-          _.uncompressedSize.toLong → 1L
-        }
-        .fold(zero[(Long, Long)])(_ |+| _)
-
-    val blocksPerPartition = args.blocksPerPartition
-
-    val numPartitions =
-      ceil(
-        numBlocks,
-        blocksPerPartition.toLong
-      )
-      .toInt
-
-    /** Repartition [[blocks]] to obey [[blocksPerPartition]] constraint. */
-    val partitionedBlocks =
-      if (blocksPath.exists)
-        (for {
-          (block, idx) ← blocks.zipWithIndex()
-        } yield
-          (idx / blocksPerPartition).toInt →
-            idx →
-              block
-        )
-        .partitionByKey(numPartitions)
-      else
-        blocks
-
-    Blocks(
-      partitionedBlocks,
-      uncompressedSize,
-      numBlocks,
-      whitelist,
-      sc.broadcast(whitelist)
-    )
+    (blocks, whitelist)
   }
 
   def register(implicit kryo: Kryo): Unit = {

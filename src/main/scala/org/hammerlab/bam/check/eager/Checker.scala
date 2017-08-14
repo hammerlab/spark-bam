@@ -2,11 +2,13 @@ package org.hammerlab.bam.check.eager
 
 import java.io.IOException
 
+import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check
-import org.hammerlab.bam.check.Checker.allowedReadNameChars
-import org.hammerlab.bam.check.{ CheckerBase, simple }
+import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, allowedReadNameChars }
+import org.hammerlab.bam.check.CheckerBase
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
+import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 
 /**
  * [[check.Checker]] implementation that emits a [[Boolean]] at each [[org.hammerlab.bgzf.Pos]] indicating whether it is
@@ -64,10 +66,10 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
       try {
         if (
           (0 until numCigarOps)
-          .exists {
-            _ ⇒
-              (uncompressedBytes.getInt & 0xf) > 8
-          }
+            .exists {
+              _ ⇒
+                (uncompressedBytes.getInt & 0xf) > MAX_CIGAR_OP
+            }
         )
           return false
       } catch {
@@ -82,4 +84,15 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
 
     true
   }
+}
+
+object Checker {
+  implicit def makeChecker(implicit contigLengths: Broadcast[ContigLengths]): MakeChecker[Boolean, Checker] =
+    new MakeChecker[Boolean, Checker] {
+      override def apply(ch: CachingChannel[SeekableByteChannel]): Checker =
+        Checker(
+          SeekableUncompressedBytes(ch),
+          contigLengths.value
+        )
+    }
 }

@@ -21,10 +21,12 @@ trait HasSparkConf
     with confs.Speculation
 
 trait SparkApp[Args]
-  extends HasSparkConf {
+  extends HasSparkConf
+    with Serializable {
+
   self: App[Args] with Logging ⇒
 
-  private var _sc: SparkContext = _
+  @transient private var _sc: SparkContext = _
 
   implicit def sc: SparkContext = {
     if (_sc == null) {
@@ -51,10 +53,10 @@ trait SparkApp[Args]
  */
 abstract class SparkPathApp[Args <: SparkPathAppArgs : Parser : Messages ](override val registrar: Class[_ <: KryoRegistrator])
   extends PathApp[Args]
-    with SparkApp[Args]{
+    with SparkApp[Args] {
 
-  implicit var printer: Printer = _
-  implicit var printLimit: SampleSize = _
+  @transient implicit var printer: Printer = _
+  @transient implicit var printLimit: SampleSize = _
 
   override def init(options: Args): Unit = {
     printer = Printer(options.out)

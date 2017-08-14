@@ -1,14 +1,14 @@
 name := "spark-bam"
 version := "1.1.0-SNAPSHOT"
 deps ++= Seq(
-  bytes % "1.0.1",
+  bytes % "1.0.2-SNAPSHOT",
   case_app,
   cats,
   channel % "1.0.0",
   hadoop_bam % "7.9.0",
-  io % "1.0.0",
+  io % "1.1.0-SNAPSHOT",
   iterators % "1.3.0",
-  magic_rdds % "2.0.0",
+  magic_rdds % "2.0.1-SNAPSHOT",
   math % "1.0.0",
   paths % "1.2.0",
   reference % "1.4.0",

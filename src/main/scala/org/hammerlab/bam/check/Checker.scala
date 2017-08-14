@@ -7,11 +7,10 @@ import org.hammerlab.bam.check.full.error.{ NegativeRefIdx, NegativeRefIdxAndPos
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
-import org.hammerlab.channel.ByteChannel
+import org.hammerlab.channel.{ ByteChannel, CachingChannel, SeekableByteChannel }
 import org.hammerlab.io.Buffer
 
-trait Checker[Call]
-  extends Closeable {
+trait Checker[+Call] {
   def apply(pos: Pos): Call
 }
 
@@ -80,9 +79,6 @@ trait CheckerBase[Call]
     else
       None
   }
-
-  override def close(): Unit =
-    uncompressedBytes.close()
 }
 
 object Checker {
@@ -94,4 +90,10 @@ object Checker {
     .toSet
 
   val FIXED_FIELDS_SIZE = 9 * 4  // 9 4-byte ints at the start of every BAM record
+
+  val MAX_CIGAR_OP = 8
+
+  trait MakeChecker[Call, C <: Checker[Call]]
+    extends ((CachingChannel[SeekableByteChannel]) ⇒ C)
+      with Serializable
 }

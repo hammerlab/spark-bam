@@ -3,11 +3,11 @@ package org.hammerlab.bam.kryo
 import java.util
 
 import com.esotericsoftware.kryo.Kryo
-import htsjdk.samtools.{ SAMFileHeader, SAMProgramRecord, SAMReadGroupRecord, SAMSequenceDictionary, SAMSequenceRecord }
+import htsjdk.samtools.{ BAMRecord, SAMFileHeader, SAMProgramRecord, SAMReadGroupRecord, SAMRecord, SAMSequenceDictionary, SAMSequenceRecord, ValidationStringency }
 import org.apache.spark.serializer.KryoRegistrator
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
-import org.hammerlab.bam.check.{ Blocks, full, simple }
+import org.hammerlab.bam.check.{ Blocks, NextRecord, PosMetadata, full, simple }
 import org.hammerlab.bam.header.ContigLengths.ContigLengthsSerializer
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.index.Index.Chunk
@@ -67,6 +67,7 @@ class Registrar extends KryoRegistrator {
     kryo.register(classOf[util.HashMap[_, _]])
     kryo.register(classOf[SAMReadGroupRecord])
     kryo.register(classOf[SAMSequenceDictionary])
+    kryo.register(Class.forName("scala.collection.convert.Wrappers$"))
     kryo.register(classOf[SAMSequenceRecord])
     kryo.register(classOf[SAMProgramRecord])
 
@@ -92,5 +93,11 @@ class Registrar extends KryoRegistrator {
     compare.Main.register(kryo)
 
     Blocks.register
+
+    kryo.register(classOf[Array[PosMetadata]])
+    kryo.register(classOf[PosMetadata])
+    kryo.register(classOf[NextRecord])
+    kryo.register(classOf[BAMRecord])
+    kryo.register(classOf[ValidationStringency])
   }
 }

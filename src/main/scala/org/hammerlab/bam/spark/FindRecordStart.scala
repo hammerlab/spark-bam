@@ -10,23 +10,28 @@ object FindRecordStart {
 
   def apply(path: Path,
             uncompressedBytes: SeekableUncompressedBytes,
-            blockStart: Long,
+            start: Long,
             contigLengths: ContigLengths,
             maxReadSize: Int = 100000): Pos =
     withDelta(
-      path,
       uncompressedBytes,
-      Pos(blockStart, 0),
+      Pos(start, 0),
       contigLengths,
       maxReadSize
     )
-    ._1
+    .map(_._1)
+    .getOrElse(
+      throw NoReadFoundException(
+        path,
+        start,
+        maxReadSize
+      )
+    )
 
-  def withDelta(path: Path,
-                uncompressedBytes: SeekableUncompressedBytes,
+  def withDelta(uncompressedBytes: SeekableUncompressedBytes,
                 start: Pos,
                 contigLengths: ContigLengths,
-                maxReadSize: Int = 100000): (Pos, Int) = {
+                maxReadSize: Int = 100000): Option[(Pos, Int)] = {
 
     uncompressedBytes.seek(start)
 
@@ -41,22 +46,22 @@ object FindRecordStart {
       uncompressedBytes.curPos match {
         case Some(pos) ⇒
           if (checker()) {
-            return pos → idx
+            return Some(pos → idx)
           }
           uncompressedBytes.seek(pos)  // go back to this failed position
           uncompressedBytes.next()     // move over by 1 byte
         case None ⇒
-          throw NoReadFoundException(path, start, maxReadSize)
+          return None
       }
       idx += 1
     }
 
-    throw NoReadFoundException(path, start, maxReadSize)
+    None
   }
 }
 
 case class NoReadFoundException(path: Path,
-                                start: Pos,
+                                start: Long,
                                 maxReadSize: Int)
   extends Exception(
     s"Failed to find a valid read-start in $maxReadSize attempts in $path from $start"

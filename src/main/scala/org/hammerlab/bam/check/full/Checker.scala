@@ -2,12 +2,14 @@ package org.hammerlab.bam.check.full
 
 import java.io.IOException
 
-import org.hammerlab.bam.check.Checker.allowedReadNameChars
+import org.apache.spark.broadcast.Broadcast
+import org.hammerlab.bam.check.Checker.{ MakeChecker, allowedReadNameChars }
 import org.hammerlab.bam.check.full.error.{ CigarOpsError, EmptyReadName, Flags, InvalidCigarOp, NoReadName, NonASCIIReadName, NonNullTerminatedReadName, ReadNameError, RefPosError, TooFewBytesForCigarOps, TooFewBytesForReadName }
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.CheckerBase
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
+import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 
 /**
  * [[check.Checker]] that builds [[Flags]] of all failing checks at each [[org.hammerlab.bgzf.Pos]].
@@ -127,6 +129,17 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
             cigarOpsError = cigarOpsError,
             tooFewRemainingBytesImplied = tooFewRemainingBytesImplied
           )
+        )
+    }
+}
+
+object Checker {
+  implicit def makeChecker(implicit contigLengths: Broadcast[ContigLengths]): MakeChecker[Option[Flags], Checker] =
+    new MakeChecker[Option[Flags], Checker] {
+      override def apply(ch: CachingChannel[SeekableByteChannel]): Checker =
+        Checker(
+          SeekableUncompressedBytes(ch),
+          contigLengths.value
         )
     }
 }

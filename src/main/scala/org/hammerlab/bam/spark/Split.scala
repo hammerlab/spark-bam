@@ -1,5 +1,8 @@
 package org.hammerlab.bam.spark
 
+import cats.Show
+import cats.Show.show
+import cats.syntax.all._
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.seqdoop.hadoop_bam.FileVirtualSplit
 
@@ -16,4 +19,10 @@ object Split {
       Pos(fvs.getStartVirtualOffset),
       Pos(fvs.getEndVirtualOffset)
     )
+
+  implicit def makeShow(implicit showPos: Show[Pos]): Show[Split] =
+    show {
+      case Split(start, end) ⇒
+        show"$start-$end"
+    }
 }

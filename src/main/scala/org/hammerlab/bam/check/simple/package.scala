@@ -4,20 +4,6 @@ import org.hammerlab.bam.check
 
 package object simple {
   type Call = Boolean
-  implicit object MakePosResult
-    extends MakePosResult[Call, PosResult] {
-    override def apply(call: Call, isReadStart: Boolean): PosResult =
-      (call, isReadStart) match {
-        case (true, true) ⇒
-          TruePositive
-        case (true, false) ⇒
-          FalsePositive
-        case (false, true) ⇒
-          FalseNegative
-        case (false, false) ⇒
-          TrueNegative
-      }
-  }
 
   sealed trait PosResult {
     self: check.PosResult ⇒
