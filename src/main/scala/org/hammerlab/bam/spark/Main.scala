@@ -5,7 +5,7 @@ import cats.implicits.catsStdShowForInt
 import cats.syntax.all._
 import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
-import org.apache.spark.rdd.AsHadoopPartition
+import org.apache.spark.rdd.AsNewHadoopPartition
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark.Main.time
@@ -82,7 +82,7 @@ trait CanCompareSplits {
       val partitions =
         rdd
           .partitions
-          .map(AsHadoopPartition(_))
+          .map(AsNewHadoopPartition(_))
           .map[Split, Vector[Split]](
             _
               .serializableHadoopSplit
