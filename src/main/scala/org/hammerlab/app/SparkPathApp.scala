@@ -50,7 +50,7 @@ trait SparkApp[Args]
  * [[SparkApp]] that takes an input path and prints some information to stdout or a path, with optional truncation of
  * such output.
  */
-abstract class SparkPathApp[Args <: SparkPathAppArgs : Parser : Messages ](override val registrar: Class[_ <: KryoRegistrator])
+abstract class SparkPathApp[Args <: SparkPathAppArgs : Parser : Messages](override val registrar: Class[_ <: KryoRegistrator])
   extends PathApp[Args]
     with SparkApp[Args] {
 

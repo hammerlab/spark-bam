@@ -1,10 +1,13 @@
 package org.hammerlab.bam.check.full
 
+import java.lang.{ Long ⇒ JLong }
+
 import caseapp.{ ExtraName ⇒ O }
 import cats.implicits.catsStdShowForLong
 import cats.syntax.all._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.bam.check.Main.sc
 import org.hammerlab.bam.check.PosMetadata.showRecord
 import org.hammerlab.bam.check.full.error.Flags.{ TooFewFixedBlockBytes, toCounts }
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
@@ -17,6 +20,7 @@ import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
+import org.hammerlab.guava.collect.RangeSet
 import org.hammerlab.io.Printer._
 import org.hammerlab.io.SampleSize
 import org.hammerlab.iterator.FinishingIterator._
@@ -26,17 +30,16 @@ import org.hammerlab.math.MonoidSyntax._
 import org.hammerlab.paths.Path
 
 import scala.collection.immutable.SortedMap
+import org.hammerlab.bam.check.ParseRanges.parser
 
 case class Args(@O("g") bgzfBlockHeadersToCheck: Int = 5,
-                @O("i") blocksPerPartition: Int = 20,
+                @O("i") ranges: Option[RangeSet[JLong]] = None,
                 @O("k") blocks: Option[Path] = None,
                 @O("l") printLimit: SampleSize = SampleSize(None),
-                @transient @O("m") splitSize: Option[Bytes] = None,
-                @O("n") numBlocks: Option[Int] = None,
+                @O("m") splitSize: Option[Bytes] = None,
                 @O("o") out: Option[Path] = None,
                 @O("q") resultsPerPartition: Int = 1000000,
                 @O("r") records: Option[Path] = None,
-                @O("w") blocksWhitelist: Option[String] = None,
                 warn: Boolean = false
                )
   extends SparkPathAppArgs
@@ -52,6 +55,7 @@ object Main
     val header = Header(path)
     implicit val headerBroadcast = sc.broadcast(header)
     implicit val contigLengthsBroadcast = sc.broadcast(header.contigLengths)
+    implicit val rangesBroadcast = sc.broadcast(args.ranges)
 
     val calls =
       if (args.recordsPath.exists) {
@@ -77,7 +81,7 @@ object Main
               pos → flags
           }
       } else {
-        val (blocks, _) = Blocks(args)
+        val blocks = Blocks(args)
 
         blocks
           .mapPartitions {

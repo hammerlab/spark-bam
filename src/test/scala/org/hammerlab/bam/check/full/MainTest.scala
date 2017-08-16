@@ -2,9 +2,12 @@ package org.hammerlab.bam.check.full
 
 import org.hammerlab.resources.{ tcgaBamExcerpt, tcgaBamExcerptUnindexed, bam5k }
 import org.hammerlab.spark.test.suite.MainSuite
+import org.hammerlab.bytes._
 
 class MainTest
   extends MainSuite {
+
+  implicit def wrapOpt[T](t: T): Option[T] = Some(t)
 
   val expectedTcgaHeader =
     """2580596 uncompressed positions
@@ -61,25 +64,50 @@ class MainTest
       |"""
     .stripMargin
 
+  def checkCLI(path: String)(
+      args: String*
+  )(
+      expected: String
+  ): Unit = {
+    val outputPath = tmpPath()
+
+    Main.main(
+      args.toArray ++
+        Array(
+          "-l", "10",
+          "-o", outputPath.toString,
+          path
+        )
+    )
+
+    outputPath.read should be(expected.stripMargin)
+  }
+
   def check(path: String,
-            expected: String,
-            args: Args = Args(blocksPerPartition = 5)): Unit = {
+            args: Args =
+              Args(
+                splitSize = 200 KB,
+                printLimit = 10
+              )
+           )(
+      expected: String
+  ): Unit = {
     val outputPath = tmpPath()
 
     Main.run(
       args.copy(
-        out = Some(outputPath),
-        printLimit = 10
+        out = Some(outputPath)
       ),
       Seq(path)
     )
 
-    outputPath.read should be(expected)
+    outputPath.read should be(expected.stripMargin)
   }
 
   test("tcga excerpt with indexed records") {
     check(
-      tcgaBamExcerpt,
+      tcgaBamExcerpt
+    )(
       List(
         expectedTcgaHeader,
         expectedTcgaFlagStats
@@ -90,14 +118,18 @@ class MainTest
 
   test("tcga excerpt without indexed records") {
     check(
-      tcgaBamExcerptUnindexed,
+      tcgaBamExcerptUnindexed
+    )(
       expectedTcgaFlagStats
     )
   }
 
   test("5k.bam header block") {
-    check(
-      bam5k,
+    checkCLI(
+      bam5k
+    )(
+      "-i", "0"
+    )(
       """5650 uncompressed positions
         |2.4K compressed
         |Compression ratio: 2.30
@@ -132,16 +164,15 @@ class MainTest
         |     tooFewBytesForCigarOps:	   0
         |
         |"""
-      .stripMargin,
-      Args(
-        numBlocks = Some(1)
-      )
     )
   }
 
   test("5k.bam second block, with reads") {
-    check(
-      bam5k,
+    checkCLI(
+      bam5k
+    )(
+      "-i", "27784"
+    )(
       """64902 uncompressed positions
         |23.0K compressed
         |Compression ratio: 2.75
@@ -191,26 +222,25 @@ class MainTest
         |     tooFewBytesForCigarOps:	    0
         |
         |"""
-        .stripMargin,
-      Args(
-        blocksWhitelist = Some("27784"),
-        printLimit = 10
-      )
     )
   }
 
-  test("5k.bam 10 blocks") {
-    check(
-      bam5k,
-      """590166 uncompressed positions
-        |195K compressed
-        |Compression ratio: 2.95
-        |918 reads
+  test("5k.bam 200k") {
+    checkCLI(
+      bam5k
+    )(
+      "-i", "-200k",
+      "-m", "100k"
+    )(
+      """655132 uncompressed positions
+        |215K compressed
+        |Compression ratio: 2.98
+        |1022 reads
         |All calls matched!
         |
         |No positions where only one check failed
         |
-        |10 of 919 positions where exactly two checks failed:
+        |10 of 1023 positions where exactly two checks failed:
         |	0:5649:	1 before HWI-ST807:461:C2P0JACXX:4:2115:8592:79724 2/2 101b aligned read @ 1:10001. Failing checks: noReadName,invalidCigarOp
         |	2454:623:	1 before HWI-ST807:461:C2P0JACXX:4:2115:8592:79724 1/2 101b aligned read @ 1:10009. Failing checks: noReadName,invalidCigarOp
         |	2454:1243:	1 before HWI-ST807:461:C2P0JACXX:4:1304:9505:89866 2/2 101b aligned read @ 1:10048. Failing checks: noReadName,invalidCigarOp
@@ -224,44 +254,40 @@ class MainTest
         |	…
         |
         |	Histogram:
-        |		916:	noReadName,invalidCigarOp
+        |		1020:	noReadName,invalidCigarOp
         |		3:	nonNullTerminatedReadName,invalidCigarOp
         |
         |	Per-flag totals:
-        |	             invalidCigarOp:	919
-        |	                 noReadName:	916
-        |	  nonNullTerminatedReadName:	  3
+        |	             invalidCigarOp:	1023
+        |	                 noReadName:	1020
+        |	  nonNullTerminatedReadName:	   3
         |
         |Total error counts:
-        |             invalidCigarOp:	573463
-        |            tooLargeReadIdx:	569630
-        |        tooLargeNextReadIdx:	569624
-        |  nonNullTerminatedReadName:	517552
-        |tooFewRemainingBytesImplied:	490690
-        |           nonASCIIReadName:	 34590
-        |                 noReadName:	 33701
-        |        negativeNextReadIdx:	 12847
-        |        negativeNextReadPos:	 12847
-        |            negativeReadPos:	 12846
-        |            negativeReadIdx:	 12845
-        |        tooLargeNextReadPos:	  2963
-        |            tooLargeReadPos:	  2962
-        |              emptyReadName:	  1938
+        |             invalidCigarOp:	636643
+        |            tooLargeReadIdx:	632450
+        |        tooLargeNextReadIdx:	632444
+        |  nonNullTerminatedReadName:	574675
+        |tooFewRemainingBytesImplied:	545259
+        |           nonASCIIReadName:	 38387
+        |                 noReadName:	 37336
+        |        negativeNextReadIdx:	 14144
+        |        negativeNextReadPos:	 14144
+        |            negativeReadPos:	 14143
+        |            negativeReadIdx:	 14142
+        |        tooLargeNextReadPos:	  3253
+        |            tooLargeReadPos:	  3251
+        |              emptyReadName:	  2112
         |     tooFewBytesForReadName:	     0
         |     tooFewBytesForCigarOps:	     0
         |
         |"""
-      .stripMargin,
-      Args(
-        numBlocks = Some(10),
-        printLimit = 10
-      )
     )
   }
 
   test("5k.bam all") {
     check(
-      bam5k,
+      bam5k
+    )(
       """3139404 uncompressed positions
         |987K compressed
         |Compression ratio: 3.11
@@ -315,10 +341,6 @@ class MainTest
         |     tooFewBytesForCigarOps:	     22
         |
         |"""
-      .stripMargin,
-      Args(
-        printLimit = 10
-      )
     )
   }
 }

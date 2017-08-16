@@ -1,5 +1,6 @@
 package org.hammerlab.bam.check
 
+import org.hammerlab.bytes._
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.resources.{ tcgaBamExcerpt, tcgaBamExcerptUnindexed }
 import org.hammerlab.spark.test.suite.MainSuite
@@ -7,15 +8,17 @@ import org.hammerlab.spark.test.suite.MainSuite
 class MainTest
   extends MainSuite(classOf[Registrar]) {
 
+  implicit def wrapOpt[T](t: T): Option[T] = Some(t)
+
   def compare(path: String, expected: String): Unit = {
     val outputPath = tmpPath()
 
     Main.run(
       Args(
-        blocksPerPartition = 5,
         eager = true,
         seqdoop = true,
-        out = Some(outputPath)
+        splitSize = 200 KB,
+        out = outputPath
       ),
       Seq(path)
     )
@@ -61,7 +64,7 @@ class MainTest
 
     Main.run(
       Args(
-        blocksPerPartition = 5,
+        splitSize = 200 KB,
         seqdoop = true,
         out = Some(outputPath)
       ),
@@ -76,7 +79,7 @@ class MainTest
 
     Main.run(
       Args(
-        blocksPerPartition = 5,
+        splitSize = 200 KB,
         eager = true,
         out = Some(outputPath)
       ),

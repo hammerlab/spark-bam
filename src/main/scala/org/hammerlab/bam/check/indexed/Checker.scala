@@ -1,11 +1,13 @@
 package org.hammerlab.bam.check.indexed
 
+import java.lang.{ Long ⇒ JLong }
+
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check
-import org.hammerlab.bam.check.Whitelist
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.guava.collect.RangeSet
 import org.hammerlab.magic.rdd.partitions.RangePartitionRDD._
 import org.hammerlab.magic.rdd.partitions.SortedRDD
 import org.hammerlab.magic.rdd.partitions.SortedRDD.{ Bounds, bounds }
@@ -40,9 +42,10 @@ object IndexedRecordPositions {
         .getOrElse(path + ".records")
   }
 
-  def apply(path: Path,
-            whitelistBroadcast: Broadcast[Option[Whitelist]])(
-      implicit sc: SparkContext
+  def apply(path: Path)(
+      implicit
+      sc: SparkContext,
+      rangesBroadcast: Broadcast[Option[RangeSet[JLong]]]
   ): IndexedRecordPositions = {
     val reads =
       sc
@@ -60,9 +63,9 @@ object IndexedRecordPositions {
         )
         .filter {
           case Pos(blockPos, _) ⇒
-            whitelistBroadcast
-            .value
-            .forall(_.blocks(blockPos))
+            rangesBroadcast
+              .value
+              .forall(_.contains(blockPos))
         }
         .cache
 

@@ -1,5 +1,7 @@
 package org.hammerlab.bam.check
 
+import java.lang.{ Long ⇒ JLong }
+
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -13,6 +15,7 @@ import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
+import org.hammerlab.guava.collect.RangeSet
 import org.hammerlab.io.Printer.{ echo, print }
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.SampleRDD._
@@ -171,30 +174,26 @@ trait AnalyzeCalls {
       implicit
       path: Path,
       sc: SparkContext,
-      makeChecker: MakeChecker[Call, C]
+      makeChecker: MakeChecker[Call, C],
+      rangesBroadcast: Broadcast[Option[RangeSet[JLong]]]
   ): (LongAccumulator, RDD[(Pos, (Boolean, Call))]) = {
 
-    val (blocks, whitelist) = Blocks(args)
-
-    val whitelistBroadcast = sc.broadcast(whitelist)
+    val blocks = Blocks(args)
 
     val indexedRecords =
-      IndexedRecordPositions(
-        args.recordsPath,
-        whitelistBroadcast
-      )
-      .toSets(
-        bounds(
-          blocks
-            .map(
-              block ⇒
-                Pos(
-                  block.start,
-                  0
-                )
-            )
+      IndexedRecordPositions(args.recordsPath)
+        .toSets(
+          bounds(
+            blocks
+              .map(
+                block ⇒
+                  Pos(
+                    block.start,
+                    0
+                  )
+              )
+          )
         )
-      )
 
     val compressedSizeAccumulator = sc.longAccumulator("compressedSize")
 

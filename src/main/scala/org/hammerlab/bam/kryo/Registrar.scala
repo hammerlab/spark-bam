@@ -15,6 +15,7 @@ import org.hammerlab.bam.spark.{ Split, compare }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.genomics.{ loci, reference }
+import org.hammerlab.guava.collect.TreeRangeSet
 
 import scala.collection.mutable
 
@@ -99,5 +100,16 @@ class Registrar extends KryoRegistrator {
     kryo.register(classOf[NextRecord])
     kryo.register(classOf[BAMRecord])
     kryo.register(classOf[ValidationStringency])
+
+    kryo.register(
+      classOf[TreeRangeSet[_]]
+    )
+    kryo.register(classOf[util.TreeMap[_, _]])
+    kryo.register(classOf[org.hammerlab.guava.collect.Range[_]])
+    kryo.register(Class.forName("org.hammerlab.guava.collect.Cut$BelowValue"))
+
+    kryo.register(classOf[mutable.WrappedArray.ofInt])
   }
 }
+
+object Registrar extends Registrar
