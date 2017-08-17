@@ -1,13 +1,12 @@
 package org.hammerlab.bam.check.indexed
 
-import java.lang.{ Long ⇒ JLong }
-
+import caseapp.{ ExtraName ⇒ O, HelpMessage ⇒ M }
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
+import org.hammerlab.args.ByteRanges
 import org.hammerlab.bam.check
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.guava.collect.RangeSet
 import org.hammerlab.magic.rdd.partitions.RangePartitionRDD._
 import org.hammerlab.magic.rdd.partitions.SortedRDD
 import org.hammerlab.magic.rdd.partitions.SortedRDD.{ Bounds, bounds }
@@ -35,17 +34,20 @@ case class IndexedRecordPositions(rdd: RDD[Pos],
 }
 
 object IndexedRecordPositions {
-  trait Args {
-    def records: Option[Path]
-    def recordsPath(implicit path: Path): Path =
+  case class Args(
+    @O("r")
+    @M("file with BAM-record-start positions as output by IndexRecords")
+    records: Option[Path]
+  ) {
+    def path(implicit bamPath: Path): Path =
       records
-        .getOrElse(path + ".records")
+        .getOrElse(bamPath + ".records")
   }
 
   def apply(path: Path)(
       implicit
       sc: SparkContext,
-      rangesBroadcast: Broadcast[Option[RangeSet[JLong]]]
+      rangesBroadcast: Broadcast[Option[ByteRanges]]
   ): IndexedRecordPositions = {
     val reads =
       sc

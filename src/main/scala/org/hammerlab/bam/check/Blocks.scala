@@ -1,14 +1,16 @@
 package org.hammerlab.bam.check
 
 import java.lang.{ Long ⇒ JLong }
+
+import caseapp.{ Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
 import cats.implicits.catsKernelStdGroupForLong
 import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.rdd.RDD
+import org.hammerlab.args.{ ByteRanges, SplitSize }
 import org.hammerlab.bgzf.block.{ FindBlockStart, Metadata, MetadataStream }
 import org.hammerlab.bytes._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.guava.collect.Range.closedOpen
-import org.hammerlab.guava.collect.RangeSet
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
 import org.hammerlab.magic.rdd.scan.ScanLeftValuesRDD._
@@ -19,17 +21,30 @@ import org.hammerlab.spark.Context
 
 object Blocks {
 
-  trait Args {
-    def blocks: Option[Path]
-    def splitSize: Option[Bytes]
-    def bgzfBlockHeadersToCheck: Int
-    @transient def ranges: Option[RangeSet[JLong]]
-  }
+  case class Args(
+    @O("g")
+    @M("When searching for BGZF-block boundaries, look this many blocks ahead to verify that a candidate is a valid block. In general, probability of a false-positive is 2^(-32N) for N blocks of look-ahead")
+    bgzfBlockHeadersToCheck: Int = 5,
 
-  def apply(args: Args)(
+    @O("i")
+    @M(
+      "Comma-separated list of byte-ranges to restrict to; when specified, only BGZF blocks whose starts are in this set will be considered. Allowed formats: <start>-<end>, <start>+<length>, <position>. All values can take integer or byte-shorthand (e.g. \"10m\") values."
+    )
+    ranges: Option[ByteRanges] = None,
+
+    @O("k")
+    @M("File with bgzf-block-start positions as output by IndexBlocks; if one doesn't exist, use a parallel search for BGZF blocks (see bgzfBlockHeadersToCheck)")
+    blocks: Option[Path] = None,
+
+    @Recurse
+    splits: SplitSize.Args
+  )
+
+  def apply()(
       implicit
       sc: Context,
-      path: Path
+      path: Path,
+      args: Args
   ): RDD[Metadata] = {
 
     val blocksPath: Path =
@@ -39,7 +54,11 @@ object Blocks {
           path + ".blocks"
         )
 
-    val splitSize = args.splitSize.getOrElse(2.MB).bytes
+    val splitSize =
+      args
+      .splits
+        .maxSplitSize(2.MB)
+        .size
 
     val rangeSetBroadcast = sc.broadcast(args.ranges)
 

@@ -1,8 +1,7 @@
 package org.hammerlab.bam.check.full
 
-import org.hammerlab.resources.{ tcgaBamExcerpt, tcgaBamExcerptUnindexed, bam5k }
+import org.hammerlab.resources.{ bam5k, tcgaBamExcerpt, tcgaBamExcerptUnindexed }
 import org.hammerlab.spark.test.suite.MainSuite
-import org.hammerlab.bytes._
 
 class MainTest
   extends MainSuite {
@@ -64,7 +63,9 @@ class MainTest
       |"""
     .stripMargin
 
-  def checkCLI(path: String)(
+  def check(
+      path: String
+  )(
       args: String*
   )(
       expected: String
@@ -83,30 +84,11 @@ class MainTest
     outputPath.read should be(expected.stripMargin)
   }
 
-  def check(path: String,
-            args: Args =
-              Args(
-                splitSize = 200 KB,
-                printLimit = 10
-              )
-           )(
-      expected: String
-  ): Unit = {
-    val outputPath = tmpPath()
-
-    Main.run(
-      args.copy(
-        out = Some(outputPath)
-      ),
-      Seq(path)
-    )
-
-    outputPath.read should be(expected.stripMargin)
-  }
-
   test("tcga excerpt with indexed records") {
     check(
       tcgaBamExcerpt
+    )(
+      "-m", "200k"
     )(
       List(
         expectedTcgaHeader,
@@ -120,12 +102,14 @@ class MainTest
     check(
       tcgaBamExcerptUnindexed
     )(
+      "-m", "200k"
+    )(
       expectedTcgaFlagStats
     )
   }
 
   test("5k.bam header block") {
-    checkCLI(
+    check(
       bam5k
     )(
       "-i", "0"
@@ -168,7 +152,7 @@ class MainTest
   }
 
   test("5k.bam second block, with reads") {
-    checkCLI(
+    check(
       bam5k
     )(
       "-i", "27784"
@@ -226,7 +210,7 @@ class MainTest
   }
 
   test("5k.bam 200k") {
-    checkCLI(
+    check(
       bam5k
     )(
       "-i", "-200k",
@@ -287,6 +271,7 @@ class MainTest
   test("5k.bam all") {
     check(
       bam5k
+    )(
     )(
       """3139404 uncompressed positions
         |987K compressed

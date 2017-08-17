@@ -1,6 +1,5 @@
 package org.hammerlab.bam.check
 
-import org.hammerlab.bytes._
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.resources.{ tcgaBamExcerpt, tcgaBamExcerptUnindexed }
 import org.hammerlab.spark.test.suite.MainSuite
@@ -13,14 +12,12 @@ class MainTest
   def compare(path: String, expected: String): Unit = {
     val outputPath = tmpPath()
 
-    Main.run(
-      Args(
-        eager = true,
-        seqdoop = true,
-        splitSize = 200 KB,
-        out = outputPath
-      ),
-      Seq(path)
+    Main.main(
+      Array(
+        "-m", "200k",
+        "-o", outputPath.toString,
+        path
+      )
     )
 
     outputPath.read should be(expected.stripMargin)
@@ -66,13 +63,13 @@ class MainTest
   test("tcga seqdoop") {
     val outputPath = tmpPath()
 
-    Main.run(
-      Args(
-        splitSize = 200 KB,
-        seqdoop = true,
-        out = Some(outputPath)
-      ),
-      Seq[String](tcgaBamExcerpt)
+    Main.main(
+      Array(
+        "-s",
+        "-m", "200k",
+        "-o", outputPath.toString,
+        tcgaBamExcerpt
+      )
     )
 
     outputPath.read should be(seqdoopTCGAExpectedOutput)
@@ -81,13 +78,13 @@ class MainTest
   test("tcga eager") {
     val outputPath = tmpPath()
 
-    Main.run(
-      Args(
-        splitSize = 200 KB,
-        eager = true,
-        out = Some(outputPath)
-      ),
-      Seq[String](tcgaBamExcerpt)
+    Main.main(
+      Array(
+        "-e",
+        "-m", "200k",
+        "-o", outputPath.toString,
+        tcgaBamExcerpt
+      )
     )
 
     outputPath.read should be(

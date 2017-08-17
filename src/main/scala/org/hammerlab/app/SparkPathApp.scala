@@ -5,12 +5,12 @@ import caseapp.core.Messages
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.serializer.KryoRegistrator
+import org.hammerlab.args.OutputArgs
 import org.hammerlab.io.{ Printer, SampleSize }
 import org.hammerlab.spark.{ Context, SparkConfBase, confs }
 
-trait SparkPathAppArgs
-  extends OutPathArgs {
-  def printLimit: SampleSize
+trait SparkPathAppArgs {
+  def output: OutputArgs
 }
 
 trait HasSparkConf
@@ -58,7 +58,7 @@ abstract class SparkPathApp[Args <: SparkPathAppArgs : Parser : Messages](overri
   @transient implicit var printLimit: SampleSize = _
 
   override def init(options: Args): Unit = {
-    printer = Printer(options.out)
-    printLimit = options.printLimit
+    printer = Printer(options.output.path)
+    printLimit = options.output.printLimit
   }
 }

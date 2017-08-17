@@ -1,18 +1,35 @@
 package org.hammerlab.bam.spark
 
+import org.hammerlab.args.OutputArgs
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bytes._
 import org.hammerlab.resources.tcgaBamExcerpt
 import org.hammerlab.spark.test.suite.MainSuite
 
 class MainTest
   extends MainSuite(classOf[Registrar]) {
 
+  def check(args: String*)(expected: String): Unit = {
+    val outPath = tmpPath()
+
+    Main.main(
+      args.toArray ++
+        Array[String](
+          "-o", outPath.toString,
+          tcgaBamExcerpt
+        )
+    )
+
+    outPath.read should be(expected.stripMargin)
+  }
+
   def check(args: Args, expected: String): Unit = {
     val outPath = tmpPath()
     Main.run(
       args.copy(
-        out = Some(outPath)
+        output =
+          OutputArgs(
+            path = Some(outPath)
+          )
       ),
       Seq[String](
         tcgaBamExcerpt
@@ -24,9 +41,9 @@ class MainTest
 
   test("eager 470KB") {
     check(
-      Args(
-        splitSize = Some(470.KB)
-      ),
+      "-e",
+      "-m", "470k"
+    )(
       """Split-size distribution:
         |N: 2, μ/σ: 474291.5/2723.5
         | elems: 471568 477015
@@ -40,10 +57,9 @@ class MainTest
 
   test("seqdoop 470KB") {
     check(
-      Args(
-        seqdoop = true,
-        splitSize = Some(470.KB)
-      ),
+      "-s",
+      "-m", "470k"
+    )(
       """Split-size distribution:
         |N: 2, μ/σ: 493351.5/5508.5
         | elems: 487843 498860
@@ -57,10 +73,8 @@ class MainTest
 
   test("compare 470KB") {
     check(
-      Args(
-        compare = true,
-        splitSize = Some(470.KB)
-      ),
+      "-m", "470k"
+    )(
       """2 splits differ (totals: 2, 2):
         |		486847:6-963864:65535
         |	486847:7-963864:0
@@ -70,10 +84,8 @@ class MainTest
 
   test("compare 480KB") {
     check(
-      Args(
-        compare = true,
-        splitSize = Some(480.KB)
-      ),
+      "-m", "480k"
+    )(
       """All splits matched!
         |
         |Split-size distribution:

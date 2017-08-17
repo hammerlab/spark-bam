@@ -1,20 +1,19 @@
 package org.hammerlab.bam.spark
 
-import caseapp.{ ExtraName ⇒ O }
+import caseapp.{ Recurse, ExtraName ⇒ O }
 import cats.implicits.catsStdShowForInt
 import cats.syntax.all._
 import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.rdd.AsNewHadoopPartition
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.args.{ OutputArgs, SplitSize }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark.Main.time
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.collection.canBuildVector
-import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.io.Printer._
-import org.hammerlab.io.SampleSize
 import org.hammerlab.iterator.sorted.OrZipIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.paths.Path
@@ -24,36 +23,36 @@ import org.hammerlab.timing.Timer
 import org.hammerlab.types._
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
-trait SplitsArgs {
-  def splitSize: Option[Bytes]
-}
-
-case class Args(@O("c") compare: Boolean = false,
+case class Args(@Recurse output: OutputArgs,
+                @Recurse splitSizeArgs: SplitSize.Args,
+                @O("e") eager: Boolean = false,
                 @O("g") gsBuffer: Option[Bytes] = None,
-                @O("l") printLimit: SampleSize = SampleSize(None),
-                @O("m") splitSize: Option[Bytes] = None,
-                @O("o") out: Option[Path] = None,
                 @O("p") printReadPartitionStats: Boolean = false,
                 @O("s") seqdoop: Boolean = false
                )
-  extends SparkPathAppArgs
-    with SplitsArgs {
+  extends SparkPathAppArgs {
 }
 
 trait CanCompareSplits {
   implicit def ctx: Context
 
-  def sparkBamLoad(args: SplitsArgs,
-                   path: Path): BAMRecordRDD =
+  def sparkBamLoad(
+      implicit
+      args: SplitSize.Args,
+      path: Path
+  ): BAMRecordRDD =
     time("Get spark-bam splits") {
       ctx.loadSplitsAndReads(
         path,
-        splitSize = MaxSplitSize(args.splitSize)
+        splitSize = args.maxSplitSize
       )
     }
 
-  def hadoopBamLoad(args: SplitsArgs,
-                    path: Path): BAMRecordRDD =
+  def hadoopBamLoad(
+      implicit
+      args: SplitSize.Args,
+      path: Path
+  ): BAMRecordRDD =
     time("Get hadoop-bam splits") {
 
       args
@@ -123,13 +122,34 @@ object Main
       )
     }
 
-    (args.seqdoop, args.compare) match {
+    implicit val splitSizeArgs = args.splitSizeArgs
+
+    (args.eager, args.seqdoop) match {
       case (false, true) ⇒
+        val BAMRecordRDD(splits, reads) = hadoopBamLoad
+        printSplits(splits)
+        if (args.printReadPartitionStats) {
+          val partitionSizes = reads.partitionSizes
+          val partitionSizeStats = Stats(partitionSizes)
+          echo(
+            "Partition count stats:",
+            partitionSizeStats
+          )
+        }
+      case (true, false) ⇒
+        val BAMRecordRDD(splits, reads) = sparkBamLoad
+        printSplits(splits)
+        if (args.printReadPartitionStats)
+          echo(
+            "Partition count stats:",
+            Stats(reads.partitionSizes)
+          )
+      case _ ⇒
         info("Computing spark-bam splits")
-        val our = sparkBamLoad(args, path)
+        val our = sparkBamLoad
 
         info("Computing hadoop-bam splits")
-        val their = hadoopBamLoad(args, path)
+        val their = hadoopBamLoad
 
         implicit def toStart(split: Split): Pos = split.start
 
@@ -171,33 +191,6 @@ object Main
             )
           }
         }
-
-      case (true, false) ⇒
-        val BAMRecordRDD(splits, reads) = hadoopBamLoad(args, path)
-        printSplits(splits)
-        if (args.printReadPartitionStats) {
-          val partitionSizes = reads.partitionSizes
-          val partitionSizeStats = Stats(partitionSizes)
-          echo(
-            "Partition count stats:",
-            partitionSizeStats
-          )
-        }
-      case (false, false) ⇒
-        val BAMRecordRDD(splits, reads) = sparkBamLoad(args, path)
-        printSplits(splits)
-        if (args.printReadPartitionStats) {
-          val partitionSizes = reads.partitionSizes
-          val partitionSizeStats = Stats(partitionSizes)
-          echo(
-            "Partition count stats:",
-            partitionSizeStats
-          )
-        }
-      case (true, true) ⇒
-        throw new IllegalArgumentException(
-          s"Provide only one of {'-c', '-d'}"
-        )
     }
   }
 }

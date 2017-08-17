@@ -1,14 +1,12 @@
 package org.hammerlab.bam.check
 
-import java.lang.{ Long ⇒ JLong }
-
-import cats.syntax.all._
-import cats.implicits.catsStdShowForLong
+import cats.implicits._
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.LongAccumulator
 import org.hammerlab.app.SparkPathApp
+import org.hammerlab.args.ByteRanges
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.header.{ ContigLengths, Header }
@@ -17,7 +15,6 @@ import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
-import org.hammerlab.guava.collect.RangeSet
 import org.hammerlab.io.Printer.{ echo, print }
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.SampleRDD._
@@ -145,7 +142,6 @@ trait AnalyzeCalls {
           .reduceByKey(_ + _)
           .collect()
           .sortBy(-_._2)
-
       print(
         flagsHist
         .map {
@@ -198,18 +194,20 @@ trait AnalyzeCalls {
     }
   }
 
-  def vsIndexed[Call, C <: Checker[Call]](args: Blocks.Args with IndexedRecordPositions.Args)(
+  def vsIndexed[Call, C <: Checker[Call]](
       implicit
       path: Path,
       sc: SparkContext,
       makeChecker: MakeChecker[Call, C],
-      rangesBroadcast: Broadcast[Option[RangeSet[JLong]]]
+      rangesBroadcast: Broadcast[Option[ByteRanges]],
+      blockArgs: Blocks.Args,
+      recordArgs: IndexedRecordPositions.Args
   ): (LongAccumulator, RDD[(Pos, (Boolean, Call))]) = {
 
-    val blocks = Blocks(args)
+    val blocks = Blocks()
 
     val indexedRecords =
-      IndexedRecordPositions(args.recordsPath)
+      IndexedRecordPositions(recordArgs.path)
         .toSets(
           bounds(
             blocks

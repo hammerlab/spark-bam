@@ -2,10 +2,10 @@ package org.hammerlab.bam.check
 
 import caseapp._
 import org.apache.spark.serializer.KryoRegistrator
+import org.hammerlab.args.SplitSize
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bytes._
 import org.hammerlab.magic.rdd.collect.CollectPartitionsRDD._
-import org.hammerlab.paths.Path
 import org.hammerlab.resources.{ tcgaBamExcerpt, tcgaBamExcerptUnindexed }
 import org.hammerlab.spark.test.suite.KryoSparkSuite
 import org.hammerlab.test.resources.File
@@ -59,13 +59,11 @@ class UnindexedBlocksTCGATest
 abstract class BlocksTest(file: File)
   extends KryoSparkSuite {
 
-  import ParseRanges.parser
-
   implicit val path = file.path
 
   override def registrar: Class[_ <: KryoRegistrator] = classOf[Registrar]
 
-  def check(args: String*)(expected: Array[Array[Int]])(implicit parser: Parser[Args]): Unit =
+  def check(args: String*)(expected: Array[Array[Int]])(implicit parser: Parser[Blocks.Args]): Unit =
     check(
       parser(args)
         .right
@@ -74,8 +72,8 @@ abstract class BlocksTest(file: File)
       expected
     )
 
-  def check(args: Args, expected: Array[Array[Int]]): Unit = {
-    Blocks(args)
+  def check(implicit args: Blocks.Args, expected: Array[Array[Int]]): Unit = {
+    Blocks()
       .map(_.start)
       .collectParts should be(expected)
   }
@@ -85,8 +83,10 @@ abstract class BlocksTest(file: File)
 
   test("all blocks") {
     check(
-      Args(
-        splitSize = Some(200.KB)
+      Blocks.Args(
+        splits = SplitSize.Args(
+          splitSize = Some(200.KB)
+        )
       ),
       allBlocks
     )

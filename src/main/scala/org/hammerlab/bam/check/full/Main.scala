@@ -1,12 +1,10 @@
 package org.hammerlab.bam.check.full
 
-import java.lang.{ Long ⇒ JLong }
-
-import caseapp.{ ExtraName ⇒ O }
-import cats.implicits.catsStdShowForLong
+import caseapp.{ Recurse, ExtraName ⇒ O }
 import cats.syntax.all._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.args.OutputArgs
 import org.hammerlab.bam.check.PosMetadata.showRecord
 import org.hammerlab.bam.check.full.error.Flags.{ TooFewFixedBlockBytes, toCounts }
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
@@ -16,34 +14,23 @@ import org.hammerlab.bam.header.Header
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
-import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
-import org.hammerlab.guava.collect.RangeSet
 import org.hammerlab.io.Printer._
-import org.hammerlab.io.SampleSize
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.math.Monoid.zero
 import org.hammerlab.math.MonoidSyntax._
-import org.hammerlab.paths.Path
 
 import scala.collection.immutable.SortedMap
-import org.hammerlab.bam.check.ParseRanges.parser
 
-case class Args(@O("g") bgzfBlockHeadersToCheck: Int = 5,
-                @O("i") ranges: Option[RangeSet[JLong]] = None,
-                @O("k") blocks: Option[Path] = None,
-                @O("l") printLimit: SampleSize = SampleSize(None),
-                @O("m") splitSize: Option[Bytes] = None,
-                @O("o") out: Option[Path] = None,
+case class Args(@Recurse blocks: Blocks.Args,
+                @Recurse records: IndexedRecordPositions.Args,
+                @Recurse output: OutputArgs,
                 @O("q") resultsPerPartition: Int = 1000000,
-                @O("r") records: Option[Path] = None,
                 warn: Boolean = false
                )
   extends SparkPathAppArgs
-    with Blocks.Args
-    with IndexedRecordPositions.Args
 
 object Main
   extends SparkPathApp[Args](classOf[Registrar])
@@ -51,16 +38,19 @@ object Main
 
   override def run(args: Args): Unit = {
 
+    implicit val blockArgs = args.blocks
+    implicit val recordArgs = args.records
+
     val header = Header(path)
     implicit val headerBroadcast = sc.broadcast(header)
     implicit val contigLengthsBroadcast = sc.broadcast(header.contigLengths)
-    implicit val rangesBroadcast = sc.broadcast(args.ranges)
+    implicit val rangesBroadcast = sc.broadcast(args.blocks.ranges)
 
     val calls =
-      if (args.recordsPath.exists) {
+      if (args.records.path.exists) {
 
         val (compressedSizeAccumulator, calls) =
-          vsIndexed[Option[Flags], Checker](args)
+          vsIndexed[Option[Flags], Checker]
 
         analyzeCalls(
           calls
@@ -80,7 +70,7 @@ object Main
               pos → flags
           }
       } else {
-        val blocks = Blocks(args)
+        val blocks = Blocks()
 
         blocks
           .mapPartitions {
@@ -247,6 +237,7 @@ object Main
         echo("")
 
         if (closeCallHist.head._1 > 1) {
+          import cats.implicits.catsStdShowForLong
           print(
             closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
             "\tHistogram:",

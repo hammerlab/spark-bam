@@ -3,8 +3,9 @@ package org.hammerlab.bam.kryo
 import java.util
 
 import com.esotericsoftware.kryo.Kryo
-import htsjdk.samtools.{ BAMRecord, SAMFileHeader, SAMProgramRecord, SAMReadGroupRecord, SAMRecord, SAMSequenceDictionary, SAMSequenceRecord, ValidationStringency }
+import htsjdk.samtools.{ BAMRecord, SAMFileHeader, SAMProgramRecord, SAMReadGroupRecord, SAMSequenceDictionary, SAMSequenceRecord, ValidationStringency }
 import org.apache.spark.serializer.KryoRegistrator
+import org.hammerlab.args.{ ByteRanges, Endpoints, OffsetLength, Point }
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
 import org.hammerlab.bam.check.{ Blocks, NextRecord, PosMetadata, full, simple }
@@ -15,7 +16,6 @@ import org.hammerlab.bam.spark.{ Split, compare }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.genomics.{ loci, reference }
-import org.hammerlab.guava.collect.TreeRangeSet
 
 import scala.collection.mutable
 
@@ -101,12 +101,15 @@ class Registrar extends KryoRegistrator {
     kryo.register(classOf[BAMRecord])
     kryo.register(classOf[ValidationStringency])
 
-    kryo.register(
-      classOf[TreeRangeSet[_]]
-    )
-    kryo.register(classOf[util.TreeMap[_, _]])
-    kryo.register(classOf[org.hammerlab.guava.collect.Range[_]])
-    kryo.register(Class.forName("org.hammerlab.guava.collect.Cut$BelowValue"))
+    kryo.register(classOf[ByteRanges])
+    kryo.register(classOf[mutable.ArraySeq[_]])
+    kryo.register(classOf[Array[Object]])
+    kryo.register(classOf[OffsetLength[_]])
+    kryo.register(classOf[Point[_]])
+    kryo.register(classOf[Endpoints[_]])
+    kryo.register(classOf[spire.math.Integral[_]])
+    kryo.register(Class.forName("spire.math.LongIsIntegral"))
+    kryo.register(classOf[cats.kernel.instances.LongGroup])
 
     kryo.register(classOf[mutable.WrappedArray.ofInt])
   }

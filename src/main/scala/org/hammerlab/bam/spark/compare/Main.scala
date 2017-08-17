@@ -1,29 +1,27 @@
 package org.hammerlab.bam.spark.compare
 
-import caseapp.{ ExtraName ⇒ O }
+import caseapp.{ Recurse, ExtraName ⇒ O }
 import com.esotericsoftware.kryo.Kryo
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.serializer.KryoRegistrator
 import org.hammerlab.app.{ App, SparkApp }
+import org.hammerlab.args.{ OutputArgs, SplitSize }
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bam.spark.{ CanCompareSplits, SplitsArgs }
-import org.hammerlab.bytes.Bytes
+import org.hammerlab.bam.spark.CanCompareSplits
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
+import org.hammerlab.io.Printer
 import org.hammerlab.io.Printer._
-import org.hammerlab.io.{ Printer, SampleSize }
 import org.hammerlab.iterator.SliceIterator._
 import org.hammerlab.kryo.serializeAs
 import org.hammerlab.paths.Path
 
-case class Opts(@O("f") bamsFile: Path,
-                @O("l") printLimit: SampleSize = SampleSize(None),
-                @O("m") splitSize: Option[Bytes] = None,
+case class Opts(@Recurse output: OutputArgs,
+                @Recurse splitSizeArgs: SplitSize.Args,
+                @O("f") bamsFile: Path,
                 @O("n") filesLimit: Option[Int] = None,
-                @O("o") outPath: Option[Path] = None,
                 @O("s") startOffset: Option[Int] = None
                )
-  extends SplitsArgs
 
 object Main
   extends App[Opts]
@@ -34,8 +32,8 @@ object Main
 
   override def _run(opts: Opts, args: Seq[String]): Unit = {
 
-    implicit val sampleSize = opts.printLimit
-    implicit val printer = Printer(opts.outPath)
+    implicit val sampleSize = opts.output.printLimit
+    implicit val printer = Printer(opts.output.path)
 
     val lines =
       opts
@@ -48,7 +46,7 @@ object Main
 
     val numBams = lines.length
 
-    implicit val splitSize: MaxSplitSize = opts.splitSize
+    implicit val splitSize: MaxSplitSize = opts.splitSizeArgs.maxSplitSize
 
     ctx.setLong(SPLIT_MAXSIZE, splitSize)
 
@@ -68,11 +66,13 @@ object Main
             implicit val conf = confBroadcast.value
 
             bamPath →
-              getPathResult(bamPath)(splitSize, conf)
+              getPathResult(bamPath)
         }
         .cache
 
-    import org.hammerlab.math.MonoidSyntax._
+    import cats.syntax.all._
+    import cats.implicits.catsKernelStdGroupForInt
+    import org.hammerlab.types.Monoid._
 
     val (
       numSparkBamSplits,
