@@ -1,6 +1,8 @@
 package org.hammerlab.bam.spark.compare
 
 import caseapp.{ Recurse, ExtraName ⇒ O }
+import cats.implicits.catsKernelStdGroupForInt
+import cats.syntax.all._
 import com.esotericsoftware.kryo.Kryo
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.serializer.KryoRegistrator
@@ -15,6 +17,7 @@ import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.SliceIterator._
 import org.hammerlab.kryo.serializeAs
 import org.hammerlab.paths.Path
+import org.hammerlab.types.Monoid._
 
 case class Opts(@Recurse output: OutputArgs,
                 @Recurse splitSizeArgs: SplitSize.Args,
@@ -69,10 +72,6 @@ object Main
               getPathResult(bamPath)
         }
         .cache
-
-    import cats.syntax.all._
-    import cats.implicits.catsKernelStdGroupForInt
-    import org.hammerlab.types.Monoid._
 
     val (
       numSparkBamSplits,

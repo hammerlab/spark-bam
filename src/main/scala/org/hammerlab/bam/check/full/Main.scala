@@ -1,7 +1,9 @@
 package org.hammerlab.bam.check.full
 
 import caseapp.{ Recurse, ExtraName ⇒ O }
-import cats.implicits._
+import cats.instances.long._
+import org.hammerlab.types.Monoid._
+import cats.syntax.all._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.args.{ LogArgs, OutputArgs }
@@ -18,8 +20,6 @@ import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.SampleRDD._
-import org.hammerlab.math.Monoid.zero
-import org.hammerlab.math.MonoidSyntax._
 
 import scala.collection.immutable.SortedMap
 
@@ -92,6 +92,7 @@ object Main
                 None
             }
             .keyBy(_._2.numNonZeroFields)
+
 
         /**
          * How many times each flag correctly rules out a [[Pos]], grouped by how many total flags rule out that [[Pos]].

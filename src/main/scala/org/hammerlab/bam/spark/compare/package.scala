@@ -13,7 +13,7 @@ import org.hammerlab.hadoop.splits.{ FileSplit, FileSplits, MaxSplitSize }
 import org.hammerlab.iterator.sliding.Sliding2Iterator._
 import org.hammerlab.iterator.sorted.OrZipIterator._
 import org.hammerlab.paths.Path
-import org.hammerlab.types.{ Both, LO, RO }
+import org.hammerlab.types.{ Both, L, R }
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 
 import scala.collection.JavaConverters._
@@ -49,8 +49,8 @@ package object compare {
         .sortedOrZip[Split, Pos](hadoopBamSplits)
         .flatMap {
           case Both(_, _) ⇒ None
-          case LO(ours) ⇒ Some(Left(ours))
-          case RO(theirs) ⇒ Some(Right(theirs))
+          case L(ours) ⇒ Some(Left(ours))
+          case R(theirs) ⇒ Some(Right(theirs))
         }
         .toVector
 

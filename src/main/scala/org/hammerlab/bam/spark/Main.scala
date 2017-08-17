@@ -159,8 +159,8 @@ object Main
             .sortedOrZip[Split, Pos](their.splits)
             .flatMap {
               case Both(_, _) ⇒ None
-              case LO(ours) ⇒ Some(Left(ours))
-              case RO(theirs) ⇒ Some(Right(theirs))
+              case L(ours) ⇒ Some(Left(ours))
+              case R(theirs) ⇒ Some(Right(theirs))
             }
             .toVector
 
