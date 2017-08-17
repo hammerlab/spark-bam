@@ -1,4 +1,4 @@
-package org.hammerlab.bam
+package org.hammerlab.bam.rewrite
 
 import caseapp.{ ExtraName ⇒ O, _ }
 import grizzled.slf4j.Logging
@@ -6,7 +6,7 @@ import htsjdk.samtools.{ SAMFileWriterFactory, SamReaderFactory }
 import org.hammerlab.bam.index.IndexRecords
 import org.hammerlab.bgzf.index.IndexBlocks
 import org.hammerlab.paths.Path
-import org.hammerlab.{bam, bgzf}
+import org.hammerlab.{ bam, bgzf }
 
 import scala.collection.JavaConverters._
 
@@ -19,6 +19,8 @@ import scala.collection.JavaConverters._
  * @param indexRecords if set, compute a ".records" file with positions of BAM records in the output BAM; see
  *                     [[IndexRecords]]
  */
+@AppName("spark-bam")
+@ProgName("rewrite")
 case class Args(@O("s") start: Option[Int] = None,
                 @O("e") end: Option[Int] = None,
                 @O("f") overwrite: Boolean = false,
@@ -32,7 +34,7 @@ case class Args(@O("s") start: Option[Int] = None,
  *
  * This is necessary to test out [[org.hammerlab.bam.check.Checker]] machinery.
  */
-object HTSJDKRewrite
+object Main
   extends CaseApp[Args]
     with Logging {
 

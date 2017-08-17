@@ -1,20 +1,20 @@
-package org.hammerlab.bam
+package org.hammerlab.bam.rewrite
 
 import caseapp.RemainingArgs
+import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
 import org.hammerlab.test.matchers.files.DirMatcher.dirMatch
-import org.hammerlab.resources.bam5k
 import org.hammerlab.test.resources.File
 
-class HTSJDKRewriteTest
+class MainTest
   extends Suite {
 
   /**
-   * Use [[HTSJDKRewrite]] to pull records [100,3000) out of 5k.bam, test that the results are as expected.
+   * Use [[Main]] to pull records [100,3000) out of 5k.bam, test that the results are as expected.
    */
   test("slice 5k.bam") {
     val outDir = tmpDir()
-    HTSJDKRewrite.run(
+    Main.run(
       Args(
         start = Some(100),
         end = Some(3000),
