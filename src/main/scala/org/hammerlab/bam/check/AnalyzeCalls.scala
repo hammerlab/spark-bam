@@ -2,6 +2,8 @@ package org.hammerlab.bam.check
 
 import java.lang.{ Long ⇒ JLong }
 
+import cats.syntax.all._
+import cats.implicits.catsStdShowForLong
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -97,6 +99,13 @@ trait AnalyzeCalls {
 
     val compressionRatio = totalCalls.toDouble / compressedSize
 
+    echo(
+      s"$totalCalls uncompressed positions",
+      s"${Bytes.format(compressedSize)} compressed",
+      "Compression ratio: %.2f".format(compressionRatio),
+      s"$numReads reads"
+    )
+
     val fps = differingCalls.filter(!_._2).keys
     val fns = differingCalls.filter( _._2).keys
 
@@ -129,14 +138,25 @@ trait AnalyzeCalls {
               .finish(uncompressedBytes.close())
         }
 
-    echo(
-      s"$totalCalls uncompressed positions",
-      s"${Bytes.format(compressedSize)} compressed",
-      "Compression ratio: %.2f".format(compressionRatio),
-      s"$numReads reads"
-    )
-
     def printFalsePositives(): Unit = {
+      val flagsHist =
+        fpsWithMetadata
+          .map(_.flags → 1L)
+          .reduceByKey(_ + _)
+          .collect()
+          .sortBy(-_._2)
+
+      print(
+        flagsHist
+        .map {
+          case (flags, count) ⇒
+            show"$count:\t$flags"
+        },
+        "False-positive-site flags histogram:",
+        _ ⇒ "False-positive-site flags histogram:"
+      )
+      echo("")
+
       val sampledPositions = fpsWithMetadata.sample(numFalsePositives)
 
       import PosMetadata.showRecord
@@ -144,8 +164,8 @@ trait AnalyzeCalls {
       print(
         sampledPositions,
         numFalsePositives,
-        s"$numFalsePositives false positives:",
-        n ⇒ s"$n of $numFalsePositives false positives:"
+        s"False positives with succeeding read info:",
+        n ⇒ s"$n of $numFalsePositives false positives with succeeding read info::"
       )
     }
 
@@ -161,7 +181,11 @@ trait AnalyzeCalls {
       case (false, false) ⇒
         echo("All calls matched!")
       case (falsePositives, falseNegatives) ⇒
-        echo(s"$numFalsePositives false positives, $numFalseNegatives false negatives")
+        echo(
+          s"$numFalsePositives false positives, $numFalseNegatives false negatives",
+          ""
+        )
+
         if (falsePositives)
           printFalsePositives()
 

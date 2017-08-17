@@ -32,7 +32,11 @@ class MainTest
       |Compression ratio: 2.68
       |7976 reads
       |9 false positives, 0 false negatives
-      |9 false positives:
+      |
+      |False-positive-site flags histogram:
+      |	9:	tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
+      |
+      |False positives with succeeding read info:
       |	39374:30965:	1 before D0N7FACXX120305:6:2301:3845:171905 2/2 76b unmapped read (placed at 1:24795617). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
       |	366151:51533:	1 before C0FR5ACXX120302:4:1204:6790:58160 2/2 76b unmapped read (placed at 1:24932215). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
       |	391261:35390:	1 before C0FR5ACXX120302:4:1106:5132:48894 2/2 76b unmapped read (placed at 1:24969786). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp

@@ -7,7 +7,6 @@ import cats.implicits.catsStdShowForLong
 import cats.syntax.all._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.bam.check.Main.sc
 import org.hammerlab.bam.check.PosMetadata.showRecord
 import org.hammerlab.bam.check.full.error.Flags.{ TooFewFixedBlockBytes, toCounts }
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }

@@ -99,8 +99,6 @@ object Main
   extends SparkPathApp[Args](classOf[Registrar])
     with AnalyzeCalls {
 
-//  val parser = implicitly[Parser[Args]]
-
   override def run(args: Args): Unit = {
 
     if (args.warn)
