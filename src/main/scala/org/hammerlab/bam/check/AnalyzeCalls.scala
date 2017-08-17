@@ -157,9 +157,13 @@ trait AnalyzeCalls {
       )
       echo("")
 
-      val sampledPositions = fpsWithMetadata.sample(numFalsePositives)
-
       import PosMetadata.showRecord
+
+      val sampledPositions =
+        fpsWithMetadata
+          // Optimization: convert to strings before collecting, otherwise reads can be huge due to denormalized headers
+          .map(_.show)
+          .sample(numFalsePositives)
 
       print(
         sampledPositions,

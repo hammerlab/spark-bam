@@ -37,15 +37,16 @@ object PosMetadata {
     show {
       record ⇒
         record
-        .toString
-        .dropRight(1) +  // remove trailing period
-          (
-            if (record.getReadUnmappedFlag && record.getStart >= 0)
-              s" (placed at ${recordPos(record)})"
-            else if (!record.getReadUnmappedFlag)
-              s" @ ${recordPos(record)}"
-            else
-              ""
+          .toString
+          .dropRight(1) +  // remove trailing period
+            (
+              // Append info about mapped/placed location
+              if (record.getReadUnmappedFlag && record.getStart >= 0)
+                s" (placed at ${recordPos(record)})"
+              else if (!record.getReadUnmappedFlag)
+                s" @ ${recordPos(record)}"
+              else
+                ""
             )
     }
 
