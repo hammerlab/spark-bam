@@ -25,21 +25,6 @@ class Registrar extends KryoRegistrator {
     kryo.register(Class.forName("scala.reflect.ClassTag$$anon$1"))
     kryo.register(classOf[java.lang.Class[_]])
 
-    kryo.register(check.TruePositive.getClass)
-    kryo.register(check.TrueNegative.getClass)
-    kryo.register(check.FalsePositive.getClass)
-    kryo.register(check.FalseNegative.getClass)
-
-    kryo.register(simple.TruePositive.getClass)
-    kryo.register(simple.TrueNegative.getClass)
-    kryo.register(simple.FalsePositive.getClass)
-    kryo.register(simple.FalseNegative.getClass)
-
-    kryo.register(full.TruePositive.getClass)
-    kryo.register(classOf[full.TrueNegative])
-    kryo.register(full.FalsePositive.getClass)
-    kryo.register(classOf[full.FalseNegative])
-
     kryo.register(classOf[Flags])
     kryo.register(classOf[Counts])
 
