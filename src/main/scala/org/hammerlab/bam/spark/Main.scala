@@ -1,6 +1,6 @@
 package org.hammerlab.bam.spark
 
-import caseapp.{ Recurse, ExtraName ⇒ O }
+import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O }
 import cats.implicits.catsStdShowForInt
 import cats.syntax.all._
 import org.apache.hadoop.io.LongWritable
@@ -23,6 +23,8 @@ import org.hammerlab.timing.Timer
 import org.hammerlab.types._
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
+@AppName("Compute and print BAM-splits using spark-bam and/or hadoop-bam; if both, compare the two as well")
+@ProgName("… org.hammerlab.bam.spark.Main")
 case class Args(@Recurse output: OutputArgs,
                 @Recurse splitSizeArgs: SplitSize.Args,
                 @O("e") eager: Boolean = false,

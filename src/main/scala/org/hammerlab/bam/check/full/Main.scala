@@ -1,12 +1,11 @@
 package org.hammerlab.bam.check.full
 
-import caseapp.{ Recurse, ExtraName ⇒ O }
+import caseapp.{ AppName, ProgName, Recurse }
 import cats.instances.long._
-import org.hammerlab.types.Monoid._
 import cats.syntax.all._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.args.{ LogArgs, OutputArgs }
+import org.hammerlab.args.{ LogArgs, OutputArgs, PostPartitionArgs }
 import org.hammerlab.bam.check.PosMetadata.showRecord
 import org.hammerlab.bam.check.full.error.Flags.{ TooFewFixedBlockBytes, toCounts }
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
@@ -20,14 +19,17 @@ import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.SampleRDD._
+import org.hammerlab.types.Monoid._
 
 import scala.collection.immutable.SortedMap
 
+@AppName("Check all uncompressed positions in a BAM with the 'full' checker; print statistics about which checks fail how often")
+@ProgName("… org.hammerlab.bam.check.full.Main")
 case class Args(@Recurse blocks: Blocks.Args,
                 @Recurse records: IndexedRecordPositions.Args,
                 @Recurse logging: LogArgs,
                 @Recurse output: OutputArgs,
-                @O("q") resultsPerPartition: Int = 1000000
+                @Recurse partitioning: PostPartitionArgs
                )
   extends SparkPathAppArgs
 
@@ -52,7 +54,7 @@ object Main
                   case (pos, (expected, flags)) ⇒
                     pos → (expected, flags.isEmpty)
                 },
-              args.resultsPerPartition,
+              args.partitioning.resultsPerPartition,
               compressedSizeAccumulator
             )
             echo("")

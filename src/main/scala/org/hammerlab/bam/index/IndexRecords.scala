@@ -2,7 +2,7 @@ package org.hammerlab.bam.index
 
 import java.io.IOException
 
-import caseapp.{ ExtraName ⇒ O }
+import caseapp.{ AppName, ProgName, ExtraName ⇒ O }
 import htsjdk.samtools.util.{ RuntimeEOFException, RuntimeIOException }
 import org.hammerlab.app.{ IndexingApp, OutPathArgs }
 import org.hammerlab.bam.iterator.{ PosStream, RecordStream, SeekablePosStream, SeekableRecordStream }
@@ -12,7 +12,7 @@ import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat
 
 /**
- * Traverse a BAM file (the sole argument) and output the BGZP "virtual" positions ([[Pos]]) of all record-starts.
+ * Traverse a BAM file (the sole argument) and output the BGZF "virtual" positions ([[Pos]]) of all record-starts.
  *
  * @param out      File to write read-boundary [[Pos]]s to
  * @param parseRecords If true, parse [[htsjdk.samtools.SAMRecord]]s into memory while traversing, for minimal
@@ -22,6 +22,8 @@ import org.hammerlab.timing.Interval.heartbeat
  * @param throwOnTruncation If true, throw an [[IOException]] in case of an unexpected EOF; default: stop traversing,
  *                          output only through end of last complete record, exit 0.
  */
+@AppName("Iterate through and index the records in a BAM file")
+@ProgName("… org.hammerlab.bam.index.IndexRecords")
 case class Args(@O("o") out: Option[Path] = None,
                 @O("r") parseRecords: Boolean = false,
                 @O("c") useChannel: Boolean = false,

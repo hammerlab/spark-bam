@@ -1,6 +1,6 @@
 package org.hammerlab.bam.spark.compare
 
-import caseapp.{ Recurse, ExtraName ⇒ O }
+import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
 import cats.implicits.catsKernelStdGroupForInt
 import cats.syntax.all._
 import com.esotericsoftware.kryo.Kryo
@@ -19,11 +19,22 @@ import org.hammerlab.kryo.serializeAs
 import org.hammerlab.paths.Path
 import org.hammerlab.types.Monoid._
 
+@AppName("Compare splits computed from many BAM files listed in a given file")
+@ProgName("… org.hammerlab.bam.spark.compare")
 case class Opts(@Recurse output: OutputArgs,
                 @Recurse splitSizeArgs: SplitSize.Args,
-                @O("f") bamsFile: Path,
-                @O("n") filesLimit: Option[Int] = None,
-                @O("s") startOffset: Option[Int] = None
+                
+                @O("f") 
+                @M("File with paths to BAM files to compute and compare splits of")
+                bamsFile: Path,
+                
+                @O("n") 
+                @M("Only process this many files")
+                filesLimit: Option[Int] = None,
+                
+                @O("s")
+                @M("Start from this offset into the file")
+                startOffset: Option[Int] = None
                )
 
 object Main

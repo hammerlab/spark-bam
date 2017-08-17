@@ -19,8 +19,8 @@ import scala.collection.JavaConverters._
  * @param indexRecords if set, compute a ".records" file with positions of BAM records in the output BAM; see
  *                     [[IndexRecords]]
  */
-@AppName("spark-bam")
-@ProgName("rewrite")
+@AppName("Rewrite BAM file with HTSJDK; records not aligned to BGZF-block boundaries")
+@ProgName("… org.hammerlab.bam.rewrite.Main")
 case class Args(@O("s") start: Option[Int] = None,
                 @O("e") end: Option[Int] = None,
                 @O("f") overwrite: Boolean = false,

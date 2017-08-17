@@ -1,6 +1,6 @@
 package org.hammerlab.bgzf.index
 
-import caseapp.{ ExtraName ⇒ O }
+import caseapp.{ AppName, ProgName, ExtraName ⇒ O }
 import org.hammerlab.app.{ IndexingApp, OutPathArgs }
 import org.hammerlab.bgzf.block.{ Metadata, MetadataStream }
 import org.hammerlab.channel.{ ByteChannel, SeekableByteChannel }
@@ -17,6 +17,8 @@ import org.hammerlab.timing.Interval.heartbeat
  *
  * @param out path to write bgzf-block-positions to
  */
+@AppName("Iterate through and index the BGZF blocks in a BAM file")
+@ProgName("… org.hammerlab.bgzf.index.IndexBlocks")
 case class Args(@O("o") out: Option[Path] = None)
   extends OutPathArgs
 
