@@ -20,7 +20,7 @@ class MainTest
       Array(
         "-m", "470k",
         "-o", outPath.toString,
-        "-f", bamsPath.toString
+        bamsPath.toString
       )
     )
 
@@ -43,7 +43,7 @@ class MainTest
       Array(
         "-m", "400k",
         "-o", outPath.toString,
-        "-f", bamsPath.toString
+        bamsPath.toString
       )
     )
 

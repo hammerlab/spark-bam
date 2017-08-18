@@ -74,8 +74,8 @@ package object compare {
 
   def getSparkBamSplits(path: Path,
                         fileSplits: Seq[FileSplit])(
-                           implicit conf: Configuration
-                       ): Vector[Split] = {
+      implicit conf: Configuration
+  ): Vector[Split] = {
     val Channels(
       _,
       compressedChannel,
@@ -112,8 +112,8 @@ package object compare {
 
   def getHadoopBamSplits(path: Path,
                          fileSplits: Seq[FileSplit])(
-                            implicit conf: Configuration
-                        ): Vector[Split] = {
+      implicit conf: Configuration
+  ): Vector[Split] = {
 
     val ifmt = new BAMInputFormat
     val job = Job.getInstance(conf, s"$path:file-splits")

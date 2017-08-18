@@ -60,7 +60,7 @@ class MainTest
       """DefaultBaseCommand
         |Usage: default-base-command [options] [command] [command-options]
         |
-        |Available commands: check, compare-splits, compute-splits, full-check, htsjdk-rewrite, index-blocks, index-records
+        |Available commands: check-bam, compare-splits, compute-splits, full-check, htsjdk-rewrite, index-blocks, index-records
         |
         |Type  default-base-command command --help  for help on an individual command
         |"""
@@ -69,17 +69,17 @@ class MainTest
 
   test("check help") {
     check(
-      "check", "-h"
+      "check-bam", "-h"
     )(
-      """Command: check
-        |Usage: default-base-command check 
+      """Command: check-bam
+        |Usage: default-base-command check-bam 
         |  --bgzf-block-headers-to-check | -z  <num>
         |        When searching for BGZF-block boundaries, look this many blocks ahead to verify that a candidate is a valid block. In general, probability of a false-positive is 2^(-32N) for N blocks of look-ahead
         |  --ranges | --intervals | -i  <intervals>
         |        Comma-separated list of byte-ranges to restrict computation to; when specified, only BGZF blocks whose starts are in this set will be considered. Allowed formats: <start>-<end>, <start>+<length>, <position>. All values can take integer values or byte-size shorthands (e.g. "10m")
         |  --blocks-path | -b  <path>
         |        File with bgzf-block-start positions as output by index-blocks; If unset, the BAM path with a ".blocks" extension appended is used. If this path doesn't exist, use a parallel search for BGZF blocks (see --bgzf-block-headers-to-check)
-        |  --split-size | -m  <bytes>
+        |  --split-size | --max-split-size | -m  <bytes>
         |        Maximum Hadoop split-size; if unset, default to underlying FileSystem's value. Integers as well as byte-size short-hands accepted, e.g. 64m, 32MB
         |  --records-path | -r  <path>
         |        File with BAM-record-start positions, as output by index-records. If unset, the BAM path with a ".records" extension appended is used
