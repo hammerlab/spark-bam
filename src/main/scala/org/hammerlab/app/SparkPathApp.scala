@@ -58,7 +58,7 @@ abstract class SparkPathApp[Args <: SparkPathAppArgs : Parser : Messages](overri
   @transient implicit var printLimit: SampleSize = _
 
   override def init(options: Args): Unit = {
-    printer = Printer(options.output.path)
+    printer = Printer(options.output.outputPath)
     printLimit = options.output.printLimit
   }
 }

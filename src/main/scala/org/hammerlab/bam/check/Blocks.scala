@@ -2,7 +2,7 @@ package org.hammerlab.bam.check
 
 import java.lang.{ Long ⇒ JLong }
 
-import caseapp.{ Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ Recurse, ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
 import cats.implicits.catsKernelStdGroupForLong
 import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.rdd.RDD
@@ -22,19 +22,20 @@ import org.hammerlab.spark.Context
 object Blocks {
 
   case class Args(
-    @O("g")
+    @O("z")
+    @ValueDescription("num")
     @M("When searching for BGZF-block boundaries, look this many blocks ahead to verify that a candidate is a valid block. In general, probability of a false-positive is 2^(-32N) for N blocks of look-ahead")
     bgzfBlockHeadersToCheck: Int = 5,
 
-    @O("i")
-    @M(
-      "Comma-separated list of byte-ranges to restrict to; when specified, only BGZF blocks whose starts are in this set will be considered. Allowed formats: <start>-<end>, <start>+<length>, <position>. All values can take integer or byte-shorthand (e.g. \"10m\") values."
-    )
+    @O("intervals") @O("i")
+    @ValueDescription("intervals")
+    @M("Comma-separated list of byte-ranges to restrict computation to; when specified, only BGZF blocks whose starts are in this set will be considered. Allowed formats: <start>-<end>, <start>+<length>, <position>. All values can take integer values or byte-size shorthands (e.g. \"10m\")")
     ranges: Option[ByteRanges] = None,
 
-    @O("k")
-    @M("File with bgzf-block-start positions as output by IndexBlocks; if one doesn't exist, use a parallel search for BGZF blocks (see bgzfBlockHeadersToCheck)")
-    blocks: Option[Path] = None,
+    @O("b")
+    @ValueDescription("path")
+    @M("File with bgzf-block-start positions as output by index-blocks; If unset, the BAM path with a \".blocks\" extension appended is used. If this path doesn't exist, use a parallel search for BGZF blocks (see --bgzf-block-headers-to-check)")
+    blocksPath: Option[Path] = None,
 
     @Recurse
     splits: SplitSize.Args
@@ -49,7 +50,7 @@ object Blocks {
 
     val blocksPath: Path =
       args
-        .blocks
+        .blocksPath
         .getOrElse(
           path + ".blocks"
         )

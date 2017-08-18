@@ -47,7 +47,7 @@ object Main
   override def _run(opts: Opts, args: Seq[String]): Unit = {
 
     implicit val sampleSize = opts.output.printLimit
-    implicit val printer = Printer(opts.output.path)
+    implicit val printer = Printer(opts.output.outputPath)
 
     val lines =
       opts

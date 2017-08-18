@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check.indexed
 
-import caseapp.{ ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -36,11 +36,12 @@ case class IndexedRecordPositions(rdd: RDD[Pos],
 object IndexedRecordPositions {
   case class Args(
     @O("r")
-    @M("file with BAM-record-start positions as output by IndexRecords")
-    records: Option[Path]
+    @ValueDescription("path")
+    @M("File with BAM-record-start positions, as output by index-records. If unset, the BAM path with a \".records\" extension appended is used")
+    recordsPath: Option[Path]
   ) {
     def path(implicit bamPath: Path): Path =
-      records
+      recordsPath
         .getOrElse(bamPath + ".records")
   }
 

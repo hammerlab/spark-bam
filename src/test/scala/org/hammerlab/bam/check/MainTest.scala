@@ -60,12 +60,12 @@ class MainTest
     )
   }
 
-  test("tcga seqdoop") {
+  test("tcga hadoop-bam") {
     val outputPath = tmpPath()
 
     Main.main(
       Array(
-        "-s",
+        "-u",
         "-m", "200k",
         "-o", outputPath.toString,
         tcgaBamExcerpt
@@ -75,12 +75,12 @@ class MainTest
     outputPath.read should be(seqdoopTCGAExpectedOutput)
   }
 
-  test("tcga eager") {
+  test("tcga spark-bam") {
     val outputPath = tmpPath()
 
     Main.main(
       Array(
-        "-e",
+        "-s",
         "-m", "200k",
         "-o", outputPath.toString,
         tcgaBamExcerpt

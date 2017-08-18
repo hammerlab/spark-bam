@@ -1,6 +1,6 @@
 package org.hammerlab.bam.spark
 
-import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O }
+import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
 import cats.implicits.catsStdShowForInt
 import cats.syntax.all._
 import org.apache.hadoop.io.LongWritable
@@ -25,13 +25,26 @@ import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWrita
 
 @AppName("Compute and print BAM-splits using spark-bam and/or hadoop-bam; if both, compare the two as well")
 @ProgName("… org.hammerlab.bam.spark.Main")
-case class Args(@Recurse output: OutputArgs,
-                @Recurse splitSizeArgs: SplitSize.Args,
-                @O("e") eager: Boolean = false,
-                @O("g") gsBuffer: Option[Bytes] = None,
-                @O("p") printReadPartitionStats: Boolean = false,
-                @O("s") seqdoop: Boolean = false
-               )
+case class Args(
+    @Recurse output: OutputArgs,
+    @Recurse splitSizeArgs: SplitSize.Args,
+
+    @O("g")
+    @M("Set the buffer size (fs.gs.io.buffersize) used by the GCS-HDFS connector")
+    gsBuffer: Option[Bytes] = None,
+
+    @O("p")
+    @M("Print extra statistics, about the distributions of computed split sizes and number of reads per partition")
+    printReadPartitionStats: Boolean = false,
+
+    @O("s")
+    @M("Run the spark-bam checker; if both or neither of -s and -u are set, then they are both run, and the results compared. If only one is set, its computed splits are printed")
+    sparkBam: Boolean = false,
+
+    @O("upstream") @O("u")
+    @M("Run the hadoop-bam checker; if both or neither of -s and -u are set, then they are both run, and the results compared. If only one is set, its computed splits are printed")
+    hadoopBam: Boolean = false
+)
   extends SparkPathAppArgs {
 }
 
@@ -126,7 +139,7 @@ object Main
 
     implicit val splitSizeArgs = args.splitSizeArgs
 
-    (args.eager, args.seqdoop) match {
+    (args.sparkBam, args.hadoopBam) match {
       case (false, true) ⇒
         val BAMRecordRDD(splits, reads) = hadoopBamLoad
         printSplits(splits)

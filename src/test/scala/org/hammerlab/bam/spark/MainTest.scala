@@ -28,7 +28,7 @@ class MainTest
       args.copy(
         output =
           OutputArgs(
-            path = Some(outPath)
+            outputPath = Some(outPath)
           )
       ),
       Seq[String](

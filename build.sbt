@@ -30,7 +30,7 @@ shadeRenames ++= Seq(
   "shapeless.**" → "org.hammerlab.shapeless.@1"
 )
 
-main := "org.hammerlab.bam.spark.Main"
+main := "org.hammerlab.bam.Main"
 
 // It can be convenient to keep google-cloud-nio and gcs-connecter shaded JARs in lib/, though they're not checked into
 // git. However, we exclude them from the assembly JAR by default, on the assumption that they'll be provided otherwise
