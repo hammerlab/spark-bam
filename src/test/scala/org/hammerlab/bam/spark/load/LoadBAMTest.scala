@@ -8,6 +8,7 @@ import org.hammerlab.bam.spark.load.CanLoadBam.getIntevalChunks
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.hadoop.splits.MaxSplitSize
+import org.hammerlab.resources.tcgaBamExcerpt
 
 class LoadBAMTest
   extends LoadBAMChecks {
@@ -111,6 +112,17 @@ class LoadBAMTest
       records.getNumPartitions should be(2)
       records.count should be(129)
     }
+  }
+
+  test("tcga bam") {
+    import org.hammerlab.bytes._
+
+    sc
+      .loadBam(
+        tcgaBamExcerpt,
+        splitSize = 400 KB
+      )
+      .count should be(7976)
   }
 }
 

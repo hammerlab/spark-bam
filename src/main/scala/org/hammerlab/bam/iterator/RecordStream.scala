@@ -1,5 +1,6 @@
 package org.hammerlab.bam.iterator
 
+import htsjdk.samtools.util.RuntimeEOFException
 import htsjdk.samtools.{ BAMRecordCodec, DefaultSAMRecordFactory, SAMRecord }
 import org.hammerlab.bam.header.Header
 import org.hammerlab.bgzf.Pos
@@ -24,13 +25,25 @@ trait RecordStreamI[Stream <: UncompressedBytesI[_]]
   }
 
   override protected def _advance: Option[(Pos, SAMRecord)] = {
+
     for {
       pos ← curPos
-      rec ← Option(bamCodec.decode())
-    } yield
-      pos → rec
+      rec ← Option(
+        try {
+          bamCodec.decode()
+        } catch {
+          case e: RuntimeEOFException ⇒
+            throw UnexpectedEOF(pos, e)
+        }
+      )
+      } yield
+        pos → rec
   }
 }
+
+case class UnexpectedEOF(pos: Pos,
+                         exception: RuntimeEOFException)
+  extends RuntimeException(pos.toString, exception)
 
 /**
  * Non-seekable [[RecordStreamI]]

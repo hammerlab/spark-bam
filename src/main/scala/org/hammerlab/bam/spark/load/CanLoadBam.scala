@@ -260,9 +260,13 @@ trait CanLoadBam
           val rs = RecordStream(uncompressedBytes, header)
 
           uncompressedBytes.seek(startPos)
-          uncompressedBytes.stopAt(Pos(end, 0))
 
-          rs
+          val endPos = Pos(end, 0)
+
+          rs.takeWhile {
+            case (pos, _) ⇒
+              pos < endPos
+          }
       }
   }
 
