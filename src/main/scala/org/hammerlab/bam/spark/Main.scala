@@ -45,8 +45,7 @@ case class Args(
     @M("Run the hadoop-bam checker; if both or neither of -s and -u are set, then they are both run, and the results compared. If only one is set, its computed splits are printed")
     hadoopBam: Boolean = false
 )
-  extends SparkPathAppArgs {
-}
+  extends SparkPathAppArgs
 
 trait CanCompareSplits {
   implicit def ctx: Context
