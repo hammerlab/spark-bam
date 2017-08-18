@@ -23,7 +23,7 @@ object Blocks {
 
   case class Args(
     @O("z")
-    @ValueDescription("num")
+    @ValueDescription("num=5")
     @M("When searching for BGZF-block boundaries, look this many blocks ahead to verify that a candidate is a valid block. In general, probability of a false-positive is 2^(-32N) for N blocks of look-ahead")
     bgzfBlockHeadersToCheck: Int = 5,
 

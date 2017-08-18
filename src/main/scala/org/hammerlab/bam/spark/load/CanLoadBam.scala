@@ -203,9 +203,9 @@ trait CanLoadBam
   }
 
   def loadReadsAndPositions(path: Path,
-                            bgzfBlockHeadersToCheck: Int = 5,
-                            maxReadSize: Int = 10000000,
-                            splitSize: MaxSplitSize = MaxSplitSize()
+                            bgzfBlockHeadersToCheck: Int,
+                            maxReadSize: Int,
+                            splitSize: MaxSplitSize
                            ): RDD[(Pos, SAMRecord)] = {
 
     val headerBroadcast = sc.broadcast(Header(path))
