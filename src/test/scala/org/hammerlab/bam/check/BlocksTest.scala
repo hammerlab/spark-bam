@@ -32,6 +32,19 @@ class BlocksTCGATest
       Array(),
       Array(315322)
     )
+
+  override def boundariesCaseBounds: Seq[(Int, Option[Int])] =
+    Seq(
+          0 → Some(10240),
+      10240 → Some(20480),
+      20480 → Some(30720),
+      30720 → Some(40960),
+      40960 → Some(51200),
+      51200 → Some(61440),
+      61440 → Some(71680),
+      71680 → Some(81920)
+    )
+
 }
 
 class UnindexedBlocksTCGATest
@@ -54,6 +67,16 @@ class UnindexedBlocksTCGATest
       Array(),
       Array(315322)
     )
+
+  override def boundariesCaseBounds: Seq[(Int, Option[Int])] =
+    Seq(
+       10240 → Some( 20480),
+       20480 → Some( 30720),
+       30720 → Some( 40960),
+      286720 → Some(296960),
+      296960 → Some(307200),
+      307200 → Some(317440)
+    )
 }
 
 abstract class BlocksTest(file: File)
@@ -63,32 +86,58 @@ abstract class BlocksTest(file: File)
 
   override def registrar: Class[_ <: KryoRegistrator] = classOf[Registrar]
 
-  def check(args: String*)(expected: Array[Array[Int]])(implicit parser: Parser[Blocks.Args]): Unit =
+  def check(
+      args: String*
+  )(
+      expected: Array[Array[Int]],
+      expectedBounds: (Int, Option[Int])*
+  )(
+      implicit
+      parser: Parser[Blocks.Args]
+  ): Unit =
     check(
       parser(args)
         .right
         .get
         ._1,
-      expected
+      expected,
+      expectedBounds: _*
     )
 
-  def check(implicit args: Blocks.Args, expected: Array[Array[Int]]): Unit = {
-    Blocks()
+  def check(implicit
+            args: Blocks.Args,
+            expectedBlocks: Array[Array[Int]],
+            expectedBounds: (Int, Option[Int])*): Unit = {
+    val (blocks, bounds) = Blocks()
+
+    blocks
       .map(_.start)
-      .collectParts should be(expected)
+      .collectParts should be(expectedBlocks)
+
+    bounds.map.toList should be(
+      expectedBounds
+        .zipWithIndex
+        .map(_.swap)
+    )
   }
 
   def allBlocks: Array[Array[Int]]
   def boundariesCase: Array[Array[Int]]
+  def boundariesCaseBounds: Seq[(Int, Option[Int])]
 
   test("all blocks") {
     check(
       Blocks.Args(
         splits = SplitSize.Args(
-          splitSize = Some(200.KB)
+          splitSize = Some(200 KB)
         )
       ),
-      allBlocks
+      allBlocks,
+           0 → Some( 204800),
+      204800 → Some( 409600),
+      409600 → Some( 614400),
+      614400 → Some( 819200),
+      819200 → Some(1024000)
     )
   }
 
@@ -96,7 +145,8 @@ abstract class BlocksTest(file: File)
     check(
       "-i", "0"
     )(
-      Array(Array(0))
+      Array(Array(0)),
+      0 → Some(2097152)
     )
   }
 
@@ -104,7 +154,8 @@ abstract class BlocksTest(file: File)
     check(
       "-i", "0+10k"
     )(
-      Array(Array(0))
+      Array(Array(0)),
+      0 → Some(2097152)
     )
   }
 
@@ -113,7 +164,8 @@ abstract class BlocksTest(file: File)
       "-i", "10k-39374,289818-315323",
       "-m", "10k"
     )(
-      boundariesCase
+      boundariesCase,
+      boundariesCaseBounds: _*
     )
   }
 }

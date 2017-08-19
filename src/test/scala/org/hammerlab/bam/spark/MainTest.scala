@@ -41,7 +41,7 @@ class MainTest
 
   test("eager 470KB") {
     check(
-      "-e",
+      "-s",
       "-m", "470k"
     )(
       """Split-size distribution:
@@ -57,7 +57,7 @@ class MainTest
 
   test("seqdoop 470KB") {
     check(
-      "-s",
+      "-u",
       "-m", "470k"
     )(
       """Split-size distribution:

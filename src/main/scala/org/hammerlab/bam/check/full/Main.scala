@@ -67,6 +67,7 @@ object Main
               }
           } else
             Blocks()
+              ._1
               .mapPartitions {
                 blocks ⇒
 

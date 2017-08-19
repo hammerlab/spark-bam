@@ -19,7 +19,6 @@ import org.hammerlab.io.Printer.{ echo, print }
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.magic.rdd.partitions.OrderedRepartitionRDD._
-import org.hammerlab.magic.rdd.partitions.SortedRDD.bounds
 import org.hammerlab.magic.rdd.size._
 import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
 import org.hammerlab.math.ceil
@@ -204,21 +203,21 @@ trait AnalyzeCalls {
       recordArgs: IndexedRecordPositions.Args
   ): (LongAccumulator, RDD[(Pos, (Boolean, Call))]) = {
 
-    val blocks = Blocks()
+    val (blocks, bounds) = Blocks()
 
     val indexedRecords =
       IndexedRecordPositions(recordArgs.path)
         .toSets(
-          bounds(
-            blocks
-              .map(
-                block ⇒
-                  Pos(
-                    block.start,
-                    0
-                  )
-              )
-          )
+          bounds
+            .copy(
+              map =
+                bounds
+                  .map
+                  .mapValues {
+                    case (start, endOpt) ⇒
+                      Pos(start, 0) → endOpt.map(Pos(_, 0))
+                  }
+            )
         )
 
     val compressedSizeAccumulator = sc.longAccumulator("compressedSize")

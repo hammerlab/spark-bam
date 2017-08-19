@@ -13,11 +13,14 @@ import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.guava.collect.Range.closedOpen
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
+import org.hammerlab.magic.rdd.partitions.SortedRDD.Bounds
 import org.hammerlab.magic.rdd.scan.ScanLeftValuesRDD._
 import org.hammerlab.magic.rdd.scan.ScanValuesRDD
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.Context
+
+import scala.collection.immutable.SortedMap
 
 object Blocks {
 
@@ -46,7 +49,7 @@ object Blocks {
       sc: Context,
       path: Path,
       args: Args
-  ): RDD[Metadata] = {
+  ): (RDD[Metadata], Bounds[Long]) = {
 
     val blocksPath: Path =
       args
@@ -64,53 +67,53 @@ object Blocks {
     val rangeSetBroadcast = sc.broadcast(args.ranges)
 
     /** Parse BGZF-block [[Metadata]] emitted by [[org.hammerlab.bgzf.index.IndexBlocks]] */
-    val blocks =
-      if (blocksPath.exists) {
-        val blocks =
-          sc
-            .textFile(blocksPath.toString)
-            .map(
-              line ⇒
-                line.split(",") match {
-                  case Array(start, compressedSize, uncompressedSize) ⇒
-                    Metadata(
-                      start.toLong,
-                      compressedSize.toInt,
-                      uncompressedSize.toInt
-                    )
-                  case _ ⇒
-                    throw new IllegalArgumentException(
-                      s"Bad blocks-index line: $line"
-                    )
-                }
-            )
-            .filter {
-              case Metadata(start, _, _) ⇒
-                rangeSetBroadcast
-                  .value
-                  .forall(
-                    _.contains(start)
+    if (blocksPath.exists) {
+      val blocks =
+        sc
+          .textFile(blocksPath.toString)
+          .map(
+            line ⇒
+              line.split(",") match {
+                case Array(start, compressedSize, uncompressedSize) ⇒
+                  Metadata(
+                    start.toLong,
+                    compressedSize.toInt,
+                    uncompressedSize.toInt
                   )
-            }
-
-        val ScanValuesRDD(scanRDD, _, total) =
-          blocks
-            .map {
-              block ⇒
-                block →
-                  block
-                    .compressedSize
-                    .toLong
-            }
-            .scanLeftValues
-
-        val numPartitions =
-          ceil(
-            total,
-            splitSize
+                case _ ⇒
+                  throw new IllegalArgumentException(
+                    s"Bad blocks-index line: $line"
+                  )
+              }
           )
-          .toInt
+          .filter {
+            case Metadata(start, _, _) ⇒
+              rangeSetBroadcast
+                .value
+                .forall(
+                  _.contains(start)
+                )
+          }
 
+      val ScanValuesRDD(scanRDD, _, total) =
+        blocks
+          .map {
+            block ⇒
+              block →
+                block
+                  .compressedSize
+                  .toLong
+          }
+          .scanLeftValues
+
+      val numPartitions =
+        ceil(
+          total,
+          splitSize
+        )
+        .toInt
+
+      val repartitionedBlocks =
         scanRDD
           .map {
             case (block, offset) ⇒
@@ -119,22 +122,42 @@ object Blocks {
                 block
           }
           .partitionByKey(numPartitions)
-      } else {
-        val numSplits = ceil(path.size, splitSize).toInt
-        val splitIdxs =
-          0 until numSplits filter {
-            idx ⇒
-              val start = idx * splitSize
-              val end = (idx + 1) * splitSize
-              val range = closedOpen[JLong](start, end)
-              rangeSetBroadcast
-                .value
-                .forall(
-                  !_
-                    .subRangeSet(range)
-                    .isEmpty
-                )
-          }
+
+      (
+        repartitionedBlocks,
+        Bounds(
+          numPartitions,
+          SortedMap(
+            (0 until numPartitions)
+              .map {
+                i ⇒
+                  i →
+                    (
+                      i * splitSize,
+                      Some((i + 1) * splitSize)
+                    )
+              }: _*
+          )
+        )
+      )
+    } else {
+      val numPartitions = ceil(path.size, splitSize).toInt
+      val splitIdxs =
+        0 until numPartitions filter {
+          idx ⇒
+            val start = idx * splitSize
+            val end = (idx + 1) * splitSize
+            val range = closedOpen[JLong](start, end)
+            rangeSetBroadcast
+              .value
+              .forall(
+                !_
+                  .subRangeSet(range)
+                  .isEmpty
+              )
+        }
+
+      val blocks =
         sc
           .parallelize(
             splitIdxs,
@@ -167,9 +190,26 @@ object Blocks {
                 }
                 .finish(in.close())
           }
-      }
 
-    blocks
+      (
+        blocks,
+        Bounds(
+          numPartitions,
+          SortedMap(
+            splitIdxs
+              .zipWithIndex
+              .map {
+                case (i, idx) ⇒
+                  idx →
+                    (
+                      i * splitSize,
+                      Some((i + 1) * splitSize)
+                    )
+              }: _*
+          )
+        )
+      )
+    }
   }
 
   def register(implicit kryo: Kryo): Unit = {

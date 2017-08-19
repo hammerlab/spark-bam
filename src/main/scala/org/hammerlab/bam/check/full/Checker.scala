@@ -3,10 +3,10 @@ package org.hammerlab.bam.check.full
 import java.io.IOException
 
 import org.apache.spark.broadcast.Broadcast
-import org.hammerlab.bam.check.Checker.{ MakeChecker, allowedReadNameChars }
-import org.hammerlab.bam.check.full.error.{ CigarOpsError, EmptyReadName, Flags, InvalidCigarOp, NoReadName, NonASCIIReadName, NonNullTerminatedReadName, ReadNameError, RefPosError, TooFewBytesForCigarOps, TooFewBytesForReadName }
 import org.hammerlab.bam.check
+import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, allowedReadNameChars }
 import org.hammerlab.bam.check.CheckerBase
+import org.hammerlab.bam.check.full.error._
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
@@ -76,10 +76,10 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
         try {
           if (
             (0 until numCigarOps)
-            .exists {
-              _ ⇒
-                (uncompressedBytes.getInt & 0xf) > 8
-            }
+              .exists {
+                _ ⇒
+                  (uncompressedBytes.getInt & 0xf) > MAX_CIGAR_OP
+              }
           )
             Some(InvalidCigarOp)
           else

@@ -90,7 +90,7 @@ object Main
       makeChecker2: MakeChecker[Boolean, C2]
   ): (LongAccumulator, RDD[(Pos, (Boolean, Boolean))]) = {
 
-    val blocks = Blocks()
+    val (blocks, _) = Blocks()
 
     val compressedSizeAccumulator = sc.longAccumulator("compressedSizeAccumulator")
 
