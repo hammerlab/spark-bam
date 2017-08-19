@@ -20,8 +20,6 @@ import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.Context
 
-import scala.collection.immutable.SortedMap
-
 object Blocks {
 
   case class Args(
@@ -104,7 +102,7 @@ object Blocks {
                   .compressedSize
                   .toLong
           }
-          .scanLeftValues
+          .scanLeftValues()
 
       val numPartitions =
         ceil(
@@ -126,18 +124,16 @@ object Blocks {
       (
         repartitionedBlocks,
         Bounds(
-          numPartitions,
-          SortedMap(
-            (0 until numPartitions)
-              .map {
-                i ⇒
-                  i →
-                    (
-                      i * splitSize,
-                      Some((i + 1) * splitSize)
-                    )
-              }: _*
-          )
+          (0 until numPartitions)
+            .map {
+              i ⇒
+                Some(
+                  (
+                    i * splitSize,
+                    Some((i + 1) * splitSize)
+                  )
+                )
+            }
         )
       )
     } else {
@@ -194,19 +190,16 @@ object Blocks {
       (
         blocks,
         Bounds(
-          numPartitions,
-          SortedMap(
-            splitIdxs
-              .zipWithIndex
-              .map {
-                case (i, idx) ⇒
-                  idx →
-                    (
-                      i * splitSize,
-                      Some((i + 1) * splitSize)
-                    )
-              }: _*
-          )
+          splitIdxs
+            .map(
+              i ⇒
+                Some(
+                  (
+                    i * splitSize,
+                    Some((i + 1) * splitSize)
+                  )
+                )
+            )
         )
       )
     }

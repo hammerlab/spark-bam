@@ -205,26 +205,29 @@ trait AnalyzeCalls {
 
     val (blocks, bounds) = Blocks()
 
-    val indexedRecords =
-      IndexedRecordPositions(recordArgs.path)
-        .toSets(
-          bounds
-            .copy(
-              map =
-                bounds
-                  .map
-                  .mapValues {
-                    case (start, endOpt) ⇒
-                      Pos(start, 0) → endOpt.map(Pos(_, 0))
-                  }
-            )
+    val posBounds =
+      bounds
+        .copy(
+          partitions =
+            bounds
+            .partitions
+            .map {
+              _.map {
+                case (start, endOpt) ⇒
+                  Pos(start, 0) → endOpt.map(Pos(_, 0))
+              }
+            }
         )
+
+    val indexedRecords = IndexedRecordPositions(recordArgs.path)
+
+    val repartitionedRecords = indexedRecords.toSets(posBounds)
 
     val compressedSizeAccumulator = sc.longAccumulator("compressedSize")
 
     val calls =
       blocks
-        .zippartitions(indexedRecords) {
+        .zippartitions(repartitionedRecords) {
           (blocks, setsIter) ⇒
             val recordsSet = setsIter.next()
 
