@@ -5,10 +5,10 @@ import cats.instances.long._
 import cats.syntax.all._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.args.{ LogArgs, OutputArgs, PostPartitionArgs }
+import org.hammerlab.args.{ FindReadArgs, LogArgs, OutputArgs, PostPartitionArgs }
 import org.hammerlab.bam.check.PosMetadata.showRecord
 import org.hammerlab.bam.check.full.error.Flags.TooFewFixedBlockBytes
-import org.hammerlab.bam.check.full.error.{ Counts, Flags }
+import org.hammerlab.bam.check.full.error.{ Counts, Flags, Result }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ AnalyzeCalls, Blocks, CheckerMain, PosMetadata }
 import org.hammerlab.bam.kryo.Registrar
@@ -29,7 +29,8 @@ case class Args(@Recurse blocks: Blocks.Args,
                 @Recurse records: IndexedRecordPositions.Args,
                 @Recurse logging: LogArgs,
                 @Recurse output: OutputArgs,
-                @Recurse partitioning: PostPartitionArgs
+                @Recurse partitioning: PostPartitionArgs,
+                @Recurse checkReadArgs: FindReadArgs
                )
   extends SparkPathAppArgs
 
@@ -46,13 +47,13 @@ object Main
           if (args.records.path.exists) {
 
             val (compressedSizeAccumulator, calls) =
-              vsIndexed[Option[Flags], Checker]
+              vsIndexed[Result, Checker]
 
             analyzeCalls(
               calls
                 .map {
-                  case (pos, (expected, flags)) ⇒
-                    pos → (expected, flags.isEmpty)
+                  case (pos, (expected, result)) ⇒
+                    pos → ((expected, result.call))
                 },
               args.partitioning.resultsPerPartition,
               compressedSizeAccumulator
@@ -61,9 +62,13 @@ object Main
 
             calls
               .map {
-                case (pos, (expected, flags))
-                  if flags.isEmpty == expected ⇒
-                  pos → flags
+                case (pos, (expected, result))
+                  if result.call == expected ⇒
+                  pos → result
+                case (pos, (_, result)) ⇒
+                  throw new IllegalStateException(
+                    s"False ${if (result.call) "positive" else "negative"} at $pos: $result"
+                  )
               }
           } else
             Blocks()
@@ -73,7 +78,12 @@ object Main
 
                   val ch = SeekableByteChannel(path).cache
                   val uncompressedBytes = SeekableUncompressedBytes(ch)
-                  val checker = Checker(uncompressedBytes, contigLengthsBroadcast.value)
+                  val checker =
+                    Checker(
+                      uncompressedBytes,
+                      contigLengthsBroadcast.value,
+                      readsToCheck
+                    )
 
                   blocks
                     .flatMap(PosIterator(_))
@@ -88,7 +98,7 @@ object Main
         val flagsByCount: RDD[(Int, (Pos, Flags))] =
           calls
             .flatMap {
-              case (pos, Some(flags))
+              case (pos, flags: Flags)
                 if flags != TooFewFixedBlockBytes ⇒
                 Some(pos → flags)
               case _ ⇒
@@ -151,18 +161,16 @@ object Main
             .mapPartitions {
               it ⇒
                 val ch = SeekableByteChannel(path).cache
-                val uncompressedBytes = SeekableUncompressedBytes(ch)
-                val contigLengths = contigLengthsBroadcast.value
+
+                implicit val uncompressedBytes = SeekableUncompressedBytes(ch)
+
                 it
                   .map {
                     case (numFlags, (pos, flags)) ⇒
                       numFlags →
                         PosMetadata(
-                          uncompressedBytes,
                           pos,
-                          flags,
-                          headerBroadcast.value,
-                          contigLengths
+                          flags
                         )
                   }
                   .finish(uncompressedBytes.close())

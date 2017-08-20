@@ -1,8 +1,8 @@
 package org.hammerlab.bam.check
 
-import java.io.{ Closeable, IOException }
-
-import org.hammerlab.bam.check.Checker.FIXED_FIELDS_SIZE
+import caseapp.core.{ ArgParser, Default }
+import caseapp.core.ArgParser.instance
+import org.hammerlab.bam.check.Checker.{ FIXED_FIELDS_SIZE, ReadsToCheck, SuccessfulReads }
 import org.hammerlab.bam.check.full.error.{ NegativeRefIdx, NegativeRefIdxAndPos, NegativeRefPos, RefPosError, TooLargeRefIdx, TooLargeRefIdxNegativePos, TooLargeRefPos }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
@@ -28,34 +28,20 @@ trait CheckerBase[Call]
 
   def seek(pos: Pos): Unit = uncompressedStream.seek(pos)
 
-  /**
-   * Special-cased [[Call]] for when there are fewer than [[org.hammerlab.bam.check.Checker.FIXED_FIELDS_SIZE]] bytes
-   * remaining in [[uncompressedStream]], which case is handled here in the superclass.
-   */
-  def tooFewFixedBlockBytes: Call
-
-  override def apply(pos: Pos): Call = {
-    seek(pos)
-    apply()
-  }
-
-  def apply(): Call = {
-    buf.position(0)
-    try {
-      uncompressedBytes.readFully(buf)
-    } catch {
-      case _: IOException ⇒
-        return tooFewFixedBlockBytes
-    }
-
-    buf.position(0)
-    val remainingBytes = buf.getInt
-
-    apply(remainingBytes)
-  }
+  def readsToCheck: ReadsToCheck
 
   /** Main record-checking entry-point */
-  def apply(remainingBytes: Int): Call
+  override def apply(pos: Pos): Call = {
+    seek(pos)
+    apply(0)
+  }
+
+  def apply(): Call = apply(0)
+
+  def apply(
+      implicit
+      successfulReads: SuccessfulReads
+  ): Call
 
   /** Reusable logic for fetching a reference-sequence index and reference-position */
   def getRefPosError(): Option[RefPosError] = {
@@ -96,4 +82,42 @@ object Checker {
   trait MakeChecker[Call, C <: Checker[Call]]
     extends ((CachingChannel[SeekableByteChannel]) ⇒ C)
       with Serializable
+
+  implicit class SuccessfulReads(val n: Int) extends AnyVal
+
+  implicit class BGZFBlocksToCheck(val n: Int) extends AnyVal
+  object BGZFBlocksToCheck {
+    implicit val parser: ArgParser[BGZFBlocksToCheck] =
+      instance("bgzf-blocks-to-check") {
+        str ⇒ Right(str.toInt)
+      }
+
+    implicit val default: Default[BGZFBlocksToCheck] =
+      Default.instance(5)
+  }
+
+  implicit class ReadsToCheck(val n: Int) extends AnyVal
+  object ReadsToCheck {
+    implicit val parser: ArgParser[ReadsToCheck] =
+      instance("reads-to-check") {
+        str ⇒ Right(str.toInt)
+      }
+
+    implicit val default: Default[ReadsToCheck] =
+      Default.instance(10)
+  }
+
+  implicit class MaxReadSize(val n: Int) extends AnyVal
+  object MaxReadSize {
+    implicit val parser: ArgParser[MaxReadSize] =
+      instance[MaxReadSize]("max-read-size") {
+        str ⇒ Right(str.toInt)
+      }
+
+    implicit val default: Default[MaxReadSize] =
+      Default.instance(10000000)
+  }
+
+  def default[T]()(implicit d: Default[T]): T = d.apply()
+
 }

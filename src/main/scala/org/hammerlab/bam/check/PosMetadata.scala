@@ -5,6 +5,7 @@ import cats.syntax.all._
 import cats.Show.show
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.broadcast.Broadcast
+import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.iterator.RecordStream
@@ -50,20 +51,20 @@ object PosMetadata {
             )
     }
 
-  def apply(uncompressedBytes: SeekableUncompressedBytes,
-            pos: Pos,
-            flags: Flags,
-            header: Header,
-            contigLengths: ContigLengths): PosMetadata =
+  def apply(pos: Pos,
+            flags: Flags)(
+      implicit
+      uncompressedBytes: SeekableUncompressedBytes,
+      header: Broadcast[Header],
+      readsToCheck: ReadsToCheck,
+      maxReadSize: MaxReadSize
+  ): PosMetadata = {
+    implicit val contigLengths = header.value.contigLengths
     PosMetadata(
       pos,
       {
         FindRecordStart
-          .withDelta(
-            uncompressedBytes,
-            pos,
-            contigLengths
-          )
+          .withDelta(pos)
           .map {
             case (nextRecordPos, delta) ⇒
 
@@ -72,7 +73,7 @@ object PosMetadata {
               NextRecord(
                 RecordStream(
                   uncompressedBytes,
-                  header
+                  header.value
                 )
                 .next()
                 ._2,
@@ -82,4 +83,5 @@ object PosMetadata {
       },
       flags
     )
+  }
 }

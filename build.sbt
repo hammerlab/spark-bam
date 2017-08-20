@@ -7,7 +7,7 @@ deps ++= Seq(
   cats,
   channel % "1.0.0",
   hadoop_bam % "7.9.0",
-  io % "1.1.0",
+  io % "1.2.0-SNAPSHOT",
   iterators % "1.3.1-SNAPSHOT",
   magic_rdds % "2.2.0-SNAPSHOT",
   math % "1.0.0",

@@ -13,9 +13,9 @@ class FlagsSerializer
   override def read(kryo: Kryo, input: Input, clz: Class[Flags]): Flags = {
     kryo
       .readClassAndObject(input)
-      .asInstanceOf[BitSet]
+      .asInstanceOf[(BitSet, Int)]
   }
 
   override def write(kryo: Kryo, output: Output, flags: Flags): Unit =
-    kryo.writeClassAndObject(output, flags: BitSet)
+    kryo.writeClassAndObject(output, flags: (BitSet, Int))
 }

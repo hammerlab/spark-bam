@@ -7,7 +7,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.util.LongAccumulator
 import org.hammerlab.app.SparkPathApp
 import org.hammerlab.args.ByteRanges
-import org.hammerlab.bam.check.Checker.MakeChecker
+import org.hammerlab.bam.check.Checker.{ MakeChecker, MaxReadSize, ReadsToCheck }
+import org.hammerlab.bam.check.full.error.{ Flags, Result, Success }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
@@ -32,7 +33,9 @@ trait AnalyzeCalls {
                    compressedSizeAccumulator: LongAccumulator)(
       implicit
       headerBroadcast: Broadcast[Header],
-      contigLengthsBroadcast: Broadcast[ContigLengths]
+      contigLengthsBroadcast: Broadcast[ContigLengths],
+      readsToCheck: ReadsToCheck,
+      maxReadSize: MaxReadSize
   ): Unit = {
 
     val  truePositiveAccumulator = sc.longAccumulator( "truePositives")
@@ -112,23 +115,28 @@ trait AnalyzeCalls {
         .mapPartitions {
           it ⇒
             val ch = SeekableByteChannel(pathBroadcast.value).cache
-            val uncompressedBytes = SeekableUncompressedBytes(ch)
-            val contigLengths = contigLengthsBroadcast.value
-            val fullChecker = full.Checker(uncompressedBytes, contigLengths)
+
+            implicit val uncompressedBytes = SeekableUncompressedBytes(ch)
+
+            val fullChecker =
+              full.Checker(
+                uncompressedBytes,
+                contigLengthsBroadcast.value,
+                readsToCheck
+              )
+
             it
               .map {
                 pos ⇒
                   PosMetadata(
-                    uncompressedBytes,
                     pos,
-                    fullChecker(pos)
-                      .getOrElse(
+                    fullChecker(pos) match {
+                      case Success(n) ⇒
                         throw new IllegalThreadStateException(
-                          s"Full checker false-positive at $pos"
+                          s"Full checker false-positive at $pos: $n reads parsed successfully"
                         )
-                      ),
-                    headerBroadcast.value,
-                    contigLengths
+                      case flags: Flags ⇒ flags
+                    }
                   )
               }
               .finish(uncompressedBytes.close())

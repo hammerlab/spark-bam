@@ -12,7 +12,7 @@ class FlagsTest
     Flags.fromBitSet(
       BitSet(
         1, 2, 3
-      )
+      ) → 0
     )
     .show should be(
       "negativeReadIdx,tooLargeReadIdx,negativeReadPos"

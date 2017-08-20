@@ -1,5 +1,6 @@
 package org.hammerlab.bgzf.block
 
+import org.hammerlab.bam.check.Checker.BGZFBlocksToCheck
 import org.hammerlab.bgzf.block.Block.MAX_BLOCK_SIZE
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.paths.Path
@@ -8,7 +9,7 @@ object FindBlockStart {
   def apply(path: Path,
             start: Long,
             in: SeekableByteChannel,
-            bgzfBlockHeadersToCheck: Int): Long = {
+            bgzfBlocksToCheck: BGZFBlocksToCheck): Long = {
 
     val headerStream = MetadataStream(in)
 
@@ -19,7 +20,7 @@ object FindBlockStart {
         in.seek(start + pos)
         headerStream.clear()
         headerStream
-          .take(bgzfBlockHeadersToCheck)
+          .take(bgzfBlocksToCheck.n)
           .size
         return start + pos
       } catch {

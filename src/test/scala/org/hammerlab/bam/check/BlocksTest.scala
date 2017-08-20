@@ -109,11 +109,8 @@ abstract class BlocksTest(file: File)
 
   test("all blocks") {
     check(
-      Blocks.Args(
-        splits = SplitSize.Args(
-          splitSize = Some(200 KB)
-        )
-      ),
+      "-m", "200k"
+    )(
       Array(
         Array(     0,  14146,  39374,  65429,  89707, 113583, 138333, 163285, 188181),
         Array(213608, 239479, 264771, 289818, 315322, 340348, 366151, 391261),

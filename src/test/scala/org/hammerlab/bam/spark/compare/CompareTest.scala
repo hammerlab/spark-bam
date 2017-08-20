@@ -1,5 +1,6 @@
 package org.hammerlab.bam.spark.compare
 
+import org.hammerlab.bam.check.Checker.{ BGZFBlocksToCheck, MaxReadSize, ReadsToCheck, default }
 import org.hammerlab.bam.spark.Split
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes._
@@ -9,6 +10,11 @@ import org.hammerlab.spark.test.suite.SparkSuite
 
 class CompareTest
   extends SparkSuite {
+
+  implicit val readsToCheck = default[ReadsToCheck]
+  implicit val maxReadSize = default[MaxReadSize]
+  implicit val bgzfBlocksToCheck = default[BGZFBlocksToCheck]
+
   test("470KB") {
     implicit val splitSize = MaxSplitSize(470.KB)
     getPathResult(tcgaBamExcerpt) should be(

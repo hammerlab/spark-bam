@@ -4,7 +4,7 @@ import java.io.IOException
 
 import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check
-import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, allowedReadNameChars }
+import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, ReadsToCheck, SuccessfulReads, allowedReadNameChars }
 import org.hammerlab.bam.check.CheckerBase
 import org.hammerlab.bam.check.full.error._
 import org.hammerlab.bam.header.ContigLengths
@@ -15,10 +15,35 @@ import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
  * [[check.Checker]] that builds [[Flags]] of all failing checks at each [[org.hammerlab.bgzf.Pos]].
  */
 case class Checker(uncompressedStream: SeekableUncompressedBytes,
-                   contigLengths: ContigLengths)
-  extends CheckerBase[Option[Flags]] {
+                   contigLengths: ContigLengths,
+                   readsToCheck: ReadsToCheck)
+  extends CheckerBase[Result] {
 
-  override def apply(remainingBytes: Int): Option[Flags] = {
+  override def apply(implicit
+                     successfulReads: SuccessfulReads
+  ): Result = {
+
+    if (successfulReads.n == readsToCheck.n)
+      return Success(readsToCheck.n)
+
+    buf.position(0)
+    try {
+      uncompressedBytes.readFully(buf)
+    } catch {
+      case _: IOException ⇒
+        return Flags(
+          tooFewFixedBlockBytes = true,
+          readPosError = None,
+          nextReadPosError = None,
+          readNameError = None,
+          cigarOpsError = None,
+          tooFewRemainingBytesImplied = false,
+          readsBeforeError = successfulReads.n
+        )
+    }
+
+    buf.position(0)
+    val remainingBytes = buf.getInt
 
     val readPosError = getRefPosError()
 
@@ -97,16 +122,14 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
         return build
     }
 
-    build
+    build match {
+      case Success(_) ⇒
+        apply(
+          successfulReads.n + 1
+        )
+      case flags ⇒ flags
+    }
   }
-
-  override def tooFewFixedBlockBytes: Option[Flags] =
-    Some(
-      Flags(
-        tooFewFixedBlockBytes = true,
-        None, None, None, None, false
-      )
-    )
 
   /**
    * Construct an [[Flags]] from some convenient, implicit wrappers around subsets of the possible flags
@@ -115,31 +138,34 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
             posErrors: (Option[RefPosError], Option[RefPosError]),
             readNameError: Option[ReadNameError] = None,
             cigarOpsError: Option[CigarOpsError] = None,
-            tooFewRemainingBytesImplied: Boolean = false): Option[Flags] =
+            tooFewRemainingBytesImplied: Boolean = false,
+            successfulReads: SuccessfulReads): Result =
     (posErrors, readNameError, cigarOpsError, tooFewRemainingBytesImplied) match {
       case ((None, None), None, None, false) ⇒
-        None
+        Success(successfulReads.n)
       case _ ⇒
-        Some(
-          Flags(
-            tooFewFixedBlockBytes = false,
-            readPosError = posErrors._1,
-            nextReadPosError = posErrors._2,
-            readNameError = readNameError,
-            cigarOpsError = cigarOpsError,
-            tooFewRemainingBytesImplied = tooFewRemainingBytesImplied
-          )
+        Flags(
+          tooFewFixedBlockBytes = false,
+          readPosError = posErrors._1,
+          nextReadPosError = posErrors._2,
+          readNameError = readNameError,
+          cigarOpsError = cigarOpsError,
+          tooFewRemainingBytesImplied = tooFewRemainingBytesImplied,
+          readsBeforeError = successfulReads.n
         )
     }
 }
 
 object Checker {
-  implicit def makeChecker(implicit contigLengths: Broadcast[ContigLengths]): MakeChecker[Option[Flags], Checker] =
-    new MakeChecker[Option[Flags], Checker] {
+  implicit def makeChecker(implicit
+                           contigLengths: Broadcast[ContigLengths],
+                           readsToCheck: ReadsToCheck): MakeChecker[Result, Checker] =
+    new MakeChecker[Result, Checker] {
       override def apply(ch: CachingChannel[SeekableByteChannel]): Checker =
         Checker(
           SeekableUncompressedBytes(ch),
-          contigLengths.value
+          contigLengths.value,
+          readsToCheck
         )
     }
 }

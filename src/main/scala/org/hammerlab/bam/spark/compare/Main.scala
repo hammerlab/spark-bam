@@ -6,7 +6,7 @@ import cats.syntax.all._
 import com.esotericsoftware.kryo.Kryo
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.args.{ OutputArgs, SplitSize }
+import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, OutputArgs, SplitSize }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark.CanCompareSplits
 import org.hammerlab.hadoop.Configuration
@@ -21,11 +21,13 @@ import org.hammerlab.types.Monoid._
 @ProgName("… org.hammerlab.bam.spark.compare")
 case class Opts(@Recurse output: OutputArgs,
                 @Recurse splitSizeArgs: SplitSize.Args,
-                
+                @Recurse checkReadArgs: FindReadArgs,
+                @Recurse findBlockArgs: FindBlockArgs,
+
                 @O("n")
                 @M("Only process this many files")
                 filesLimit: Option[Int] = None,
-                
+
                 @O("s")
                 @M("Start from this offset into the file")
                 startOffset: Option[Int] = None
@@ -49,6 +51,10 @@ object Main
     val numBams = lines.length
 
     implicit val splitSize: MaxSplitSize = opts.splitSizeArgs.maxSplitSize
+
+    implicit val FindReadArgs(maxReadSize, readsToCheck) = opts.checkReadArgs
+
+    implicit val bgzfBlocksToCheck = opts.findBlockArgs.bgzfBlocksToCheck
 
     ctx.setLong(SPLIT_MAXSIZE, splitSize)
 

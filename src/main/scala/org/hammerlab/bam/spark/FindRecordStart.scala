@@ -1,5 +1,7 @@
 package org.hammerlab.bam.spark
 
+import org.apache.spark.broadcast.Broadcast
+import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.check.eager.Checker
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
@@ -9,15 +11,14 @@ import org.hammerlab.paths.Path
 object FindRecordStart {
 
   def apply(path: Path,
-            uncompressedBytes: SeekableUncompressedBytes,
-            start: Long,
-            contigLengths: ContigLengths,
-            maxReadSize: Int = 100000): Pos =
+            start: Long)(
+      implicit
+      uncompressedBytes: SeekableUncompressedBytes,
+      contigLengths: ContigLengths,
+      readsToCheck: ReadsToCheck,
+      maxReadSize: MaxReadSize): Pos =
     withDelta(
-      uncompressedBytes,
-      Pos(start, 0),
-      contigLengths,
-      maxReadSize
+      Pos(start, 0)
     )
     .map(_._1)
     .getOrElse(
@@ -28,21 +29,25 @@ object FindRecordStart {
       )
     )
 
-  def withDelta(uncompressedBytes: SeekableUncompressedBytes,
-                start: Pos,
-                contigLengths: ContigLengths,
-                maxReadSize: Int = 100000): Option[(Pos, Int)] = {
+  def withDelta(start: Pos)(
+      implicit
+      uncompressedBytes: SeekableUncompressedBytes,
+      contigLengths: ContigLengths,
+      readsToCheck: ReadsToCheck,
+      maxReadSize: MaxReadSize
+  ): Option[(Pos, Int)] = {
 
     uncompressedBytes.seek(start)
 
     val checker =
       Checker(
         uncompressedBytes,
-        contigLengths
+        contigLengths,
+        readsToCheck
       )
 
     var idx = 0
-    while (idx < maxReadSize) {
+    while (idx < maxReadSize.n) {
       uncompressedBytes.curPos match {
         case Some(pos) ⇒
           if (checker()) {
@@ -62,7 +67,7 @@ object FindRecordStart {
 
 case class NoReadFoundException(path: Path,
                                 start: Long,
-                                maxReadSize: Int)
+                                maxReadSize: MaxReadSize)
   extends Exception(
     s"Failed to find a valid read-start in $maxReadSize attempts in $path from $start"
   )

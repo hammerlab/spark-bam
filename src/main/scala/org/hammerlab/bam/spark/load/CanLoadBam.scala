@@ -7,6 +7,7 @@ import htsjdk.samtools.{ QueryInterval, SAMLineParser, SAMRecord, SamReaderFacto
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.hammerlab.bam.check.Checker.{ BGZFBlocksToCheck, MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.index.Index.Chunk
 import org.hammerlab.bam.iterator.{ RecordStream, SeekableRecordStream }
@@ -155,28 +156,34 @@ trait CanLoadBam
       }
   }
 
+  import org.hammerlab.bam.check.Checker.default
+
   def loadBam(path: Path,
-              bgzfBlockHeadersToCheck: Int = 5,
-              maxReadSize: Int = 10000000,
+              bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],
+              readsToCheck: ReadsToCheck = default[ReadsToCheck],
+              maxReadSize: MaxReadSize = default[MaxReadSize],
               splitSize: MaxSplitSize = MaxSplitSize()
              ): RDD[SAMRecord] =
     loadReadsAndPositions(
       path,
-      bgzfBlockHeadersToCheck,
+      bgzfBlocksToCheck,
+      readsToCheck,
       maxReadSize,
       splitSize
     )
     .values
 
   def loadSplitsAndReads(path: Path,
-                         bgzfBlockHeadersToCheck: Int = 5,
-                         maxReadSize: Int = 10000000,
+                         bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],
+                         readsToCheck: ReadsToCheck = default[ReadsToCheck],
+                         maxReadSize: MaxReadSize = default[MaxReadSize],
                          splitSize: MaxSplitSize = MaxSplitSize()
                         ): BAMRecordRDD = {
     val positionsAndReadsRDD =
       loadReadsAndPositions(
         path,
-        bgzfBlockHeadersToCheck,
+        bgzfBlocksToCheck,
+        readsToCheck,
         maxReadSize,
         splitSize
       )
@@ -203,8 +210,9 @@ trait CanLoadBam
   }
 
   def loadReadsAndPositions(path: Path,
-                            bgzfBlockHeadersToCheck: Int,
-                            maxReadSize: Int,
+                            bgzfBlocksToCheck: BGZFBlocksToCheck,
+                            readsToCheck: ReadsToCheck,
+                            maxReadSize: MaxReadSize,
                             splitSize: MaxSplitSize
                            ): RDD[(Pos, SAMRecord)] = {
 
@@ -231,7 +239,7 @@ trait CanLoadBam
     fileSplitsRDD
       .flatMap {
         case (start, end) ⇒
-          val Channels(
+          implicit val Channels(
             _,
             compressedChannel,
             uncompressedBytes
@@ -243,7 +251,7 @@ trait CanLoadBam
               path,
               start,
               compressedChannel,
-              bgzfBlockHeadersToCheck
+              bgzfBlocksToCheck
             )
 
           val header = headerBroadcast.value
@@ -251,9 +259,11 @@ trait CanLoadBam
           val startPos =
             FindRecordStart(
               path,
+              bgzfBlockStart
+            )(
               uncompressedBytes,
-              bgzfBlockStart,
               contigLengthsBroadcast.value,
+              readsToCheck,
               maxReadSize
             )
 
@@ -274,19 +284,18 @@ trait CanLoadBam
    * Load reads from a .sam or .bam file
    *
    * @param path Path to a .sam or .bam file
-   * @param bgzfBlockHeadersToCheck when searching for bgzf-block-boundaries, check this many blocks ahead before
+   * @param bgzfBlocksToCheck when searching for bgzf-block-boundaries, check this many blocks ahead before
    *                                declaring a position to be a block-boundary
    * @param maxReadSize when searching for BAM-record-boundaries, try up to this many consecutive positions before
    *                    giving up / throwing; reads taking up more than this many bytes on disk can result in
    *                    "false-negative" read-boundary calls
    * @param splitSize maximum split size to pass to [[org.apache.hadoop.mapreduce.lib.input.FileInputFormat]].
-   * @param estimatedCompressionRatio used to estimate distances between [[Pos]]s / sizes of [[Chunk]]s
    */
   def loadReads(path: Path,
-                bgzfBlockHeadersToCheck: Int = 5,
-                maxReadSize: Int = 10000000,
-                splitSize: MaxSplitSize = MaxSplitSize(),
-                estimatedCompressionRatio: EstimatedCompressionRatio = 3.0): RDD[SAMRecord] =
+                bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],
+                readsToCheck: ReadsToCheck = default[ReadsToCheck],
+                maxReadSize: MaxReadSize = default[MaxReadSize],
+                splitSize: MaxSplitSize = MaxSplitSize()): RDD[SAMRecord] =
     path.extension match {
       case "sam" ⇒
         loadSam(
@@ -296,7 +305,8 @@ trait CanLoadBam
       case "bam" ⇒
         loadBam(
           path,
-          bgzfBlockHeadersToCheck,
+          bgzfBlocksToCheck,
+          readsToCheck,
           maxReadSize,
           splitSize
         )
@@ -365,35 +375,6 @@ object CanLoadBam {
           Locus(record.getEnd)
         )
     )
-
-  def fileSplitToRecordStart(channels: Channels,
-                             fileSplitStart: Long,
-                             contigLengths: ContigLengths,
-                             bgzfBlockHeadersToCheck: Int,
-                             maxReadSize: Int): Pos = {
-
-    val Channels(
-      path,
-      compressedChannel,
-      uncompressedBytes
-    ) = channels
-
-    val bgzfBlockStart =
-      FindBlockStart(
-        path,
-        fileSplitStart,
-        compressedChannel,
-        bgzfBlockHeadersToCheck
-      )
-
-    FindRecordStart(
-      path,
-      uncompressedBytes,
-      bgzfBlockStart,
-      contigLengths,
-      maxReadSize
-    )
-  }
 }
 
 case class Channels(path: Path,

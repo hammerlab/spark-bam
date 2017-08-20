@@ -4,7 +4,7 @@ import java.io.IOException
 
 import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check
-import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, allowedReadNameChars }
+import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, ReadsToCheck, SuccessfulReads, allowedReadNameChars }
 import org.hammerlab.bam.check.CheckerBase
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
@@ -15,12 +15,26 @@ import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
  * a read-record boundary.
  */
 case class Checker(uncompressedStream: SeekableUncompressedBytes,
-                   contigLengths: ContigLengths)
+                   contigLengths: ContigLengths,
+                   readsToCheck: ReadsToCheck)
   extends CheckerBase[Boolean] {
 
-  override def tooFewFixedBlockBytes: Boolean = false
+  override def apply(implicit
+                     successfulReads: SuccessfulReads): Boolean = {
 
-  override def apply(remainingBytes: Int): Boolean = {
+    if (successfulReads.n == readsToCheck.n)
+      return true
+
+    buf.position(0)
+    try {
+      uncompressedBytes.readFully(buf)
+    } catch {
+      case _: IOException ⇒
+        return false
+    }
+
+    buf.position(0)
+    val remainingBytes = buf.getInt
 
     if (getRefPosError().isDefined)
       return false
@@ -87,12 +101,15 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
 }
 
 object Checker {
-  implicit def makeChecker(implicit contigLengths: Broadcast[ContigLengths]): MakeChecker[Boolean, Checker] =
+  implicit def makeChecker(implicit
+                           contigLengths: Broadcast[ContigLengths],
+                           readsToCheck: ReadsToCheck): MakeChecker[Boolean, Checker] =
     new MakeChecker[Boolean, Checker] {
       override def apply(ch: CachingChannel[SeekableByteChannel]): Checker =
         Checker(
           SeekableUncompressedBytes(ch),
-          contigLengths.value
+          contigLengths.value,
+          readsToCheck
         )
     }
 }

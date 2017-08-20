@@ -6,7 +6,7 @@ import caseapp.{ Recurse, ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
 import cats.implicits.catsKernelStdGroupForLong
 import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.rdd.RDD
-import org.hammerlab.args.{ ByteRanges, SplitSize }
+import org.hammerlab.args.{ ByteRanges, FindBlockArgs, SplitSize }
 import org.hammerlab.bgzf.block.{ FindBlockStart, Metadata, MetadataStream }
 import org.hammerlab.bytes._
 import org.hammerlab.channel.SeekableByteChannel
@@ -23,10 +23,7 @@ import org.hammerlab.spark.Context
 object Blocks {
 
   case class Args(
-    @O("z")
-    @ValueDescription("num=5")
-    @M("When searching for BGZF-block boundaries, look this many blocks ahead to verify that a candidate is a valid block. In general, probability of a false-positive is 2^(-32N) for N blocks of look-ahead")
-    bgzfBlockHeadersToCheck: Int = 5,
+    @Recurse findBlockArgs: FindBlockArgs,
 
     @O("intervals") @O("i")
     @ValueDescription("intervals")
@@ -41,6 +38,8 @@ object Blocks {
     @Recurse
     splits: SplitSize.Args
   )
+
+  //case class Bloc
 
   def apply()(
       implicit
@@ -58,7 +57,7 @@ object Blocks {
 
     val splitSize =
       args
-      .splits
+        .splits
         .maxSplitSize(2.MB)
         .size
 
@@ -169,7 +168,7 @@ object Blocks {
                   path,
                   start,
                   in,
-                  args.bgzfBlockHeadersToCheck
+                  args.findBlockArgs.bgzfBlocksToCheck
                 )
 
               in.seek(blockStart)

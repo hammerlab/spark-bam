@@ -2,7 +2,6 @@ package org.hammerlab.bam.check.full.error
 
 import cats.Show
 import cats.Show.show
-import shapeless.{ Generic, LabelledGeneric, Poly1 }
 
 case class Counts(tooFewFixedBlockBytes: Long,
                   negativeReadIdx: Long,
@@ -39,16 +38,16 @@ case class Counts(tooFewFixedBlockBytes: Long,
 
 object Counts {
 
-  /** Can't instantiate these inside the [[CountsWrapper]] [[AnyVal]] below. */
-  val lg = LabelledGeneric[Counts]
-  val gen = Generic[Counts]
-
   import shapeless._
   import shapeless.record._
   import ops.record._
 
+  /** Can't instantiate these inside the [[CountsWrapper]] [[AnyVal]] below. */
+  val lg = LabelledGeneric[Counts]
+  val gen = Generic[Counts]
+
   object longFields extends Poly1 {
-    implicit val longCase: Case.Aux[Long, Long] =
+    implicit val longCase: Case.Aux[(Symbol, Long), (Symbol, Long)] =
       at(x ⇒ x)
   }
 
@@ -59,7 +58,7 @@ object Counts {
      * Convert an [[Counts]] to a values-descending array of (key,value) pairs
      */
     def descCounts: Array[(String, Long)] =
-      lg
+      /*lg
         .to(counts)
         .collect(longFields)
         .toMap
@@ -68,16 +67,19 @@ object Counts {
           case (k, v) ⇒
             k.name → v
         }
-        .sortBy(-_._2)
+        .sortBy(-_._2)*/
+      ???
 
     /**
      * Count the number of non-zero fields in an [[Counts]]
      */
     def numNonZeroFields: Int =
-      gen
+      /*gen
         .to(counts)
+        .collect(longFields)
         .toList[Long]
-        .count(_ > 0)
+        .count(_ > 0)*/
+      ???
   }
 
   /**

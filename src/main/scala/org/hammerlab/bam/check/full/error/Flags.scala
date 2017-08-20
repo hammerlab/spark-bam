@@ -6,9 +6,13 @@ import shapeless.ops.hlist.{ Length, Mapper }
 
 import scala.collection.immutable.BitSet
 
-sealed trait Result
+sealed trait Result {
+  def call: Boolean
+}
 
-case class Success(readsParsed: Int) extends Result
+case class Success(readsParsed: Int) extends Result {
+  override def call: Boolean = true
+}
 
 /**
  * Information about BAM-record checks at a [[org.hammerlab.bgzf.Pos]].
@@ -33,7 +37,9 @@ case class Flags(tooFewFixedBlockBytes: Boolean,
                  readsBeforeError: Int
                 )
   extends Error[Boolean]
-    with Result
+    with Result {
+  override def call: Boolean = false
+}
 
 object Flags {
 
@@ -68,8 +74,8 @@ object Flags {
     implicit val flagCase: Case.Aux[Boolean, Boolean] =
       at(b ⇒ b)
 
-    implicit val readsBeforeErrorCase: Case.Aux[Map[Int, Long], Boolean] =
-      at(_.isEmpty)
+    implicit val readsBeforeErrorCase: Case.Aux[Int, Boolean] =
+      at(_ > 0)
   }
 
   object boolFields extends Poly1 {
@@ -83,13 +89,14 @@ object Flags {
      * Convert an [[Flags]] to an [[Counts]] by changing true/false to [[1L]]/[[0L]]
      */
     implicit def toCounts: Counts =
-      Counts
+      /*Counts
         .gen
         .from(
           gen
             .to(flags)
             .map(toCount)
-        )
+        )*/
+      ???
 
 //    implicitly[Mapper[nonZeroCountField.type, gen.Repr]]
 //    the[Mapper[nonZeroCountField.type, gen.Repr]]
@@ -98,14 +105,15 @@ object Flags {
      * Count the number of non-zero fields in an [[Counts]]
      */
     def numNonZeroFields: Int =
-      gen
+      /*gen
         .to(flags)
         .map(nonZeroCountField)
         .toList[Boolean]
-        .count(x ⇒ x)
+        .count(x ⇒ x)*/
+    ???
 
     def trueFields: List[String] = {
-      val lgf = lg.to(flags)
+      /*val lgf = lg.to(flags)
 
       val keys =
         Keys[lg.Repr]
@@ -117,12 +125,13 @@ object Flags {
         Values[lg.Repr]
           .apply(lgf)
           .map(nonZeroCountField)
-          .toList
+          .toList[Boolean]
 
       keys
         .zip(values)
         .filter(_._2)
-        .map(_._1)
+        .map(_._1)*/
+      ???
     }
   }
 
@@ -173,7 +182,7 @@ object Flags {
 
   /** Convert to and from a [[BitSet]] during serialization. */
   implicit def toBitSet(flags: Flags): (BitSet, Int) =
-    BitSet(
+    /*BitSet(
       Generic[Flags]
         .to(flags)
         .collect(boolFields)
@@ -187,7 +196,7 @@ object Flags {
               None
         }: _*
     ) →
-      flags.readsBeforeError
+      flags.readsBeforeError*/ ???
 
   implicit def fromBitSet(flags: (BitSet, Int)): Flags =
     Flags(

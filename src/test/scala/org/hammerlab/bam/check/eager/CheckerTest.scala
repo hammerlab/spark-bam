@@ -1,5 +1,6 @@
 package org.hammerlab.bam.check.eager
 
+import org.hammerlab.bam.check.Checker.{ ReadsToCheck, default }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
@@ -23,7 +24,8 @@ class CheckerTest
     val checker =
       Checker(
         uncompressedBytes,
-        ContigLengths(path)
+        ContigLengths(path),
+        default[ReadsToCheck]
       )
 
     checker(pos) should be(

@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check.full
 
-import cats.Show
+import org.hammerlab.bam.check.Checker.{ ReadsToCheck, default }
 import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
@@ -26,19 +26,18 @@ class CheckerTest
     val checker =
       Checker(
         uncompressedBytes,
-        ContigLengths(path)
+        ContigLengths(path),
+        default[ReadsToCheck]
       )
 
     val actual = checker(pos)
 
     import cats.syntax.all._
-    import cats.implicits.catsStdShowForOption
+    import org.hammerlab.io.show._
 
     println(actual.show)
 
-    actual should be(
-      expected
-    )
+    actual should be(expected)
   }
 
   test("fn") {
@@ -56,7 +55,8 @@ class CheckerTest
       Some(
         Flags(
           tooFewFixedBlockBytes = true,
-          None, None, None, None, false
+          None, None, None, None, false,
+          readsBeforeError = 0
         )
       )
     )

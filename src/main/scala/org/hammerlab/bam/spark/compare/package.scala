@@ -4,6 +4,7 @@ import org.apache.hadoop.fs
 import org.apache.hadoop.mapreduce.lib.input
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths
 import org.apache.hadoop.mapreduce.{ InputSplit, Job }
+import org.hammerlab.bam.check.Checker.{ BGZFBlocksToCheck, MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.header.Header
 import org.hammerlab.bam.spark.load.Channels
 import org.hammerlab.bgzf.Pos
@@ -29,8 +30,11 @@ package object compare {
 
   def getPathResult(path: Path)(
       implicit
+      conf: Configuration,
       splitSize: MaxSplitSize,
-      conf: Configuration
+      bgzfBlocksToCheck: BGZFBlocksToCheck,
+      readsToCheck: ReadsToCheck,
+      maxReadSize: MaxReadSize
   ): Result = {
 
     val fileSplits =
@@ -74,9 +78,13 @@ package object compare {
 
   def getSparkBamSplits(path: Path,
                         fileSplits: Seq[FileSplit])(
-      implicit conf: Configuration
+      implicit
+      conf: Configuration,
+      bgzfBlocksToCheck: BGZFBlocksToCheck,
+      readsToCheck: ReadsToCheck,
+      maxReadSize: MaxReadSize
   ): Vector[Split] = {
-    val Channels(
+    implicit val Channels(
       _,
       compressedChannel,
       uncompressedBytes
@@ -86,6 +94,8 @@ package object compare {
     val header = Header(path)
     val endPos = Pos(path.size, 0)
 
+    implicit val contigLengths = header.contigLengths
+
     fileSplits
       .map {
         case FileSplit(_, start, end, _) ⇒
@@ -94,15 +104,14 @@ package object compare {
               path,
               start,
               compressedChannel,
-              bgzfBlockHeadersToCheck = 5
+              bgzfBlocksToCheck
             )
+
+          uncompressedBytes.stopAt(Pos(end, 0))
 
           FindRecordStart(
             path,
-            uncompressedBytes,
-            bgzfBlockStart,
-            header.contigLengths,
-            maxReadSize = 1000000
+            bgzfBlockStart
           )
       }
       .sliding2(endPos)
