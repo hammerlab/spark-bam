@@ -23,6 +23,24 @@ class MainTest
     outputPath should fileMatch(expected)
   }
 
+  def compareStr(path: String, args: String*)(expected: String): Unit = {
+    val outputPath = tmpPath()
+
+    val a: Array[String] =
+      Array(
+        "-m", "200k",
+        "-o", outputPath.toString
+      ) ++
+        args.toArray[String] ++
+        Array[String](path)
+
+    Main.main(
+      a
+    )
+
+    outputPath.read should be(expected)
+  }
+
   val seqdoopTCGAExpectedOutput = File("output/check-bam/seqdoop/tcga")
 
   test("tcga compare") {
@@ -36,6 +54,16 @@ class MainTest
     compare(
       tcgaBamExcerptUnindexed,
       seqdoopTCGAExpectedOutput
+    )
+  }
+
+  test("fns compare") {
+    compareStr(
+      File("prefix.bam"),
+      "-s",
+      "-i", "12100265"
+    )(
+      ""
     )
   }
 

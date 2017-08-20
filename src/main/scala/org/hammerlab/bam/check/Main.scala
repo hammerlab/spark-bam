@@ -70,7 +70,7 @@ object Main
               compare[
                 eager.Checker,
                 seqdoop.Checker
-                ]
+              ]
           }
 
         analyzeCalls(

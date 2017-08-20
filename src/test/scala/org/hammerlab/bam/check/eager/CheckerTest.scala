@@ -1,20 +1,17 @@
-package org.hammerlab.bam.check.full
+package org.hammerlab.bam.check.eager
 
-import cats.Show
-import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.hadoop.Configuration
-import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.File
 
 class CheckerTest
   extends Suite {
 
-  def check(file: File, pos: Pos, expected: Option[Flags]): Unit = {
+  def check(file: File, pos: Pos, expected: Boolean): Unit = {
     val path = file.path
     val uncompressedBytes =
       SeekableUncompressedBytes(
@@ -29,36 +26,16 @@ class CheckerTest
         ContigLengths(path)
       )
 
-    val actual = checker(pos)
-
-    import cats.syntax.all._
-    import cats.implicits.catsStdShowForOption
-
-    println(actual.show)
-
-    actual should be(
+    checker(pos) should be(
       expected
     )
   }
 
   test("fn") {
     check(
-      File("12896294.bam"),
+      File("prefix.bam"),
       Pos(12100265, 37092),
-      None
-    )
-  }
-
-  test("EoF") {
-    check(
-      bam5k,
-      Pos(1006167, 15243),
-      Some(
-        Flags(
-          tooFewFixedBlockBytes = true,
-          None, None, None, None, false
-        )
-      )
+      true
     )
   }
 }
