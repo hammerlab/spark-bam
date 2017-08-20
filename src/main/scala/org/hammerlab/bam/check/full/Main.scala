@@ -7,7 +7,7 @@ import org.apache.spark.rdd.RDD
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.args.{ LogArgs, OutputArgs, PostPartitionArgs }
 import org.hammerlab.bam.check.PosMetadata.showRecord
-import org.hammerlab.bam.check.full.error.Flags.{ TooFewFixedBlockBytes, toCounts }
+import org.hammerlab.bam.check.full.error.Flags.TooFewFixedBlockBytes
 import org.hammerlab.bam.check.full.error.{ Counts, Flags }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ AnalyzeCalls, Blocks, CheckerMain, PosMetadata }
@@ -96,6 +96,7 @@ object Main
             }
             .keyBy(_._2.numNonZeroFields)
 
+        import cats.implicits.catsKernelStdMonoidForMap
 
         /**
          * How many times each flag correctly rules out a [[Pos]], grouped by how many total flags rule out that [[Pos]].
@@ -107,7 +108,7 @@ object Main
           flagsByCount
             .map {
               case (numFlags, (_, flags)) ⇒
-                numFlags → toCounts(flags)
+                numFlags → flags.toCounts
             }
             .reduceByKey(_ |+| _, Flags.size)
             .collect()

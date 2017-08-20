@@ -2,10 +2,13 @@ package org.hammerlab.bam.check.full.error
 
 import cats.Show
 import cats.Show.show
-import shapeless.ops.hlist.Length
-import shapeless.{ Generic, LabelledGeneric, Poly1 }
+import shapeless.ops.hlist.{ Length, Mapper }
 
 import scala.collection.immutable.BitSet
+
+sealed trait Result
+
+case class Success(readsParsed: Int) extends Result
 
 /**
  * Information about BAM-record checks at a [[org.hammerlab.bgzf.Pos]].
@@ -26,12 +29,19 @@ case class Flags(tooFewFixedBlockBytes: Boolean,
                  emptyReadName: Boolean,
                  tooFewBytesForCigarOps: Boolean,
                  invalidCigarOp: Boolean,
-                 tooFewRemainingBytesImplied: Boolean)
+                 tooFewRemainingBytesImplied: Boolean,
+                 readsBeforeError: Int
+                )
   extends Error[Boolean]
+    with Result
 
 object Flags {
-  object toLong extends Poly1 {
-    implicit val cs: Case.Aux[Boolean, Long] =
+
+  import shapeless._
+  import ops.record._
+
+  object toCount extends Poly1 {
+    implicit val flagCase: Case.Aux[Boolean, Long] =
       at(
         b ⇒
           if (b)
@@ -39,53 +49,90 @@ object Flags {
           else
             0
       )
+
+    implicit val readsBeforeErrorCase: Case.Aux[Int, Map[Int, Long]] =
+      at(
+        readsBeforeError ⇒
+          if (readsBeforeError > 0)
+            Map(readsBeforeError → 1L)
+          else
+            Map.empty
+      )
   }
 
   val gen = Generic[Flags]
 
   val size: Int = Length[gen.Repr].apply().toInt
 
-  /**
-   * Convert an [[Flags]] to an [[Counts]] by changing true/false to [[1L]]/[[0L]]
-   */
-  implicit def toCounts(flags: Flags): Counts =
-    Generic[Counts]
-      .from(
-        gen
-          .to(flags)
-          .map(toLong)
-      )
+  object nonZeroCountField extends Poly1 {
+    implicit val flagCase: Case.Aux[Boolean, Boolean] =
+      at(b ⇒ b)
+
+    implicit val readsBeforeErrorCase: Case.Aux[Map[Int, Long], Boolean] =
+      at(_.isEmpty)
+  }
+
+  object boolFields extends Poly1 {
+    implicit val flagCase: Case.Aux[Boolean, Boolean] =
+      at(b ⇒ b)
+  }
 
   implicit class FlagsWrapper(val flags: Flags) extends AnyVal {
+
+    /**
+     * Convert an [[Flags]] to an [[Counts]] by changing true/false to [[1L]]/[[0L]]
+     */
+    implicit def toCounts: Counts =
+      Counts
+        .gen
+        .from(
+          gen
+            .to(flags)
+            .map(toCount)
+        )
+
+//    implicitly[Mapper[nonZeroCountField.type, gen.Repr]]
+//    the[Mapper[nonZeroCountField.type, gen.Repr]]
+
     /**
      * Count the number of non-zero fields in an [[Counts]]
      */
     def numNonZeroFields: Int =
       gen
         .to(flags)
+        .map(nonZeroCountField)
         .toList[Boolean]
         .count(x ⇒ x)
+
+    def trueFields: List[String] = {
+      val lgf = lg.to(flags)
+
+      val keys =
+        Keys[lg.Repr]
+          .apply()
+          .toList[Symbol]
+          .map(_.name)
+
+      val values =
+        Values[lg.Repr]
+          .apply(lgf)
+          .map(nonZeroCountField)
+          .toList
+
+      keys
+        .zip(values)
+        .filter(_._2)
+        .map(_._1)
+    }
   }
 
   private val lg = LabelledGeneric[Flags]
 
   implicit def makeShow: Show[Flags] =
     show {
-      flags ⇒
-        import shapeless._
-        import ops.record._
-
-        val trueFields: List[String] =
-          Fields[lg.Repr]
-            .apply(lg.to(flags))
-            .toList
-            .filter(_._2)
-            .map {
-              case (k, v) ⇒
-                k.name
-            }
-
-        trueFields.mkString(",")
+      _
+        .trueFields
+        .mkString(",")
     }
 
   /**
@@ -96,7 +143,8 @@ object Flags {
             nextReadPosError: Option[RefPosError],
             readNameError: Option[ReadNameError],
             cigarOpsError: Option[CigarOpsError],
-            tooFewRemainingBytesImplied: Boolean): Flags =
+            tooFewRemainingBytesImplied: Boolean,
+            readsBeforeError: Int): Flags =
     Flags(
       tooFewFixedBlockBytes = tooFewFixedBlockBytes,
 
@@ -118,14 +166,17 @@ object Flags {
 
       tooFewBytesForCigarOps = cigarOpsError.exists(_.tooFewBytesForCigarOps),
       invalidCigarOp = cigarOpsError.exists(_.invalidCigarOp),
-      tooFewRemainingBytesImplied = tooFewRemainingBytesImplied
+      tooFewRemainingBytesImplied = tooFewRemainingBytesImplied,
+
+      readsBeforeError = readsBeforeError
     )
 
   /** Convert to and from a [[BitSet]] during serialization. */
-  implicit def toBitSet(flags: Flags): BitSet =
+  implicit def toBitSet(flags: Flags): (BitSet, Int) =
     BitSet(
       Generic[Flags]
         .to(flags)
+        .collect(boolFields)
         .toList[Boolean]
         .zipWithIndex
         .flatMap {
@@ -135,28 +186,30 @@ object Flags {
             else
               None
         }: _*
-    )
+    ) →
+      flags.readsBeforeError
 
-  implicit def fromBitSet(flags: BitSet): Flags =
+  implicit def fromBitSet(flags: (BitSet, Int)): Flags =
     Flags(
-      tooFewFixedBlockBytes       = flags( 0),
-      negativeReadIdx             = flags( 1),
-      tooLargeReadIdx             = flags( 2),
-      negativeReadPos             = flags( 3),
-      tooLargeReadPos             = flags( 4),
-      negativeNextReadIdx         = flags( 5),
-      tooLargeNextReadIdx         = flags( 6),
-      negativeNextReadPos         = flags( 7),
-      tooLargeNextReadPos         = flags( 8),
-      tooFewBytesForReadName      = flags( 9),
-      nonNullTerminatedReadName   = flags(10),
-      nonASCIIReadName            = flags(11),
-      noReadName                  = flags(12),
-      emptyReadName               = flags(13),
-      tooFewBytesForCigarOps      = flags(14),
-      invalidCigarOp              = flags(15),
-      tooFewRemainingBytesImplied = flags(16)
+      tooFewFixedBlockBytes       = flags._1( 0),
+      negativeReadIdx             = flags._1( 1),
+      tooLargeReadIdx             = flags._1( 2),
+      negativeReadPos             = flags._1( 3),
+      tooLargeReadPos             = flags._1( 4),
+      negativeNextReadIdx         = flags._1( 5),
+      tooLargeNextReadIdx         = flags._1( 6),
+      negativeNextReadPos         = flags._1( 7),
+      tooLargeNextReadPos         = flags._1( 8),
+      tooFewBytesForReadName      = flags._1( 9),
+      nonNullTerminatedReadName   = flags._1(10),
+      nonASCIIReadName            = flags._1(11),
+      noReadName                  = flags._1(12),
+      emptyReadName               = flags._1(13),
+      tooFewBytesForCigarOps      = flags._1(14),
+      invalidCigarOp              = flags._1(15),
+      tooFewRemainingBytesImplied = flags._1(16),
+      readsBeforeError            = flags._2
     )
 
-  val TooFewFixedBlockBytes = fromBitSet(BitSet(0))
+  val TooFewFixedBlockBytes = fromBitSet(BitSet(0) → 0)
 }

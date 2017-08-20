@@ -2,7 +2,7 @@ package org.hammerlab.bam.check.full.error
 
 import cats.Show
 import cats.Show.show
-import shapeless.{ Generic, LabelledGeneric }
+import shapeless.{ Generic, LabelledGeneric, Poly1 }
 
 case class Counts(tooFewFixedBlockBytes: Long,
                   negativeReadIdx: Long,
@@ -20,7 +20,9 @@ case class Counts(tooFewFixedBlockBytes: Long,
                   emptyReadName: Long,
                   tooFewBytesForCigarOps: Long,
                   invalidCigarOp: Long,
-                  tooFewRemainingBytesImplied: Long)
+                  tooFewRemainingBytesImplied: Long,
+                  readsBeforeError: Map[Int, Long]
+                 )
   extends Error[Long] {
   def show(indent: String = "",
            wrapFields: Boolean = false,
@@ -38,10 +40,17 @@ case class Counts(tooFewFixedBlockBytes: Long,
 object Counts {
 
   /** Can't instantiate these inside the [[CountsWrapper]] [[AnyVal]] below. */
-  private val labelledCounts = LabelledGeneric[Counts]
-  private val genericCounts = Generic[Counts]
+  val lg = LabelledGeneric[Counts]
+  val gen = Generic[Counts]
 
+  import shapeless._
   import shapeless.record._
+  import ops.record._
+
+  object longFields extends Poly1 {
+    implicit val longCase: Case.Aux[Long, Long] =
+      at(x ⇒ x)
+  }
 
   implicit class CountsWrapper(val counts: Counts)
     extends AnyVal {
@@ -50,8 +59,9 @@ object Counts {
      * Convert an [[Counts]] to a values-descending array of (key,value) pairs
      */
     def descCounts: Array[(String, Long)] =
-      labelledCounts
+      lg
         .to(counts)
+        .collect(longFields)
         .toMap
         .toArray
         .map {
@@ -64,7 +74,7 @@ object Counts {
      * Count the number of non-zero fields in an [[Counts]]
      */
     def numNonZeroFields: Int =
-      genericCounts
+      gen
         .to(counts)
         .toList[Long]
         .count(_ > 0)
