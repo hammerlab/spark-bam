@@ -42,7 +42,12 @@ object PosMetadata {
           .dropRight(1) +  // remove trailing period
             (
               // Append info about mapped/placed location
-              if (record.getReadUnmappedFlag && record.getStart >= 0)
+              if (
+                record.getReadUnmappedFlag &&
+                  record.getStart >= 0 &&
+                  record.getReferenceIndex >= 0 &&
+                  record.getReferenceIndex < contigLengthsBroadcast.value.size
+              )
                 s" (placed at ${recordPos(record)})"
               else if (!record.getReadUnmappedFlag)
                 s" @ ${recordPos(record)}"

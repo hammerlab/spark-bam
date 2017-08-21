@@ -28,6 +28,8 @@ trait UncompressedBytesI[BlockStream <: StreamI]
     _stopAt = None
   }
 
+  // TODO: allow smart skipping with seek, block by block
+
   override protected def _advance: Option[Byte] =
     if (
       _stopAt

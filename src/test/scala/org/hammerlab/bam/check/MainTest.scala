@@ -26,19 +26,16 @@ class MainTest
   def compareStr(path: String, args: String*)(expected: String): Unit = {
     val outputPath = tmpPath()
 
-    val a: Array[String] =
+    Main.main(
       Array(
         "-m", "200k",
         "-o", outputPath.toString
       ) ++
         args.toArray[String] ++
         Array[String](path)
-
-    Main.main(
-      a
     )
 
-    outputPath.read should be(expected)
+    outputPath.read should be(expected.stripMargin)
   }
 
   val seqdoopTCGAExpectedOutput = File("output/check-bam/seqdoop/tcga")
@@ -57,13 +54,18 @@ class MainTest
     )
   }
 
-  test("fns compare") {
+  test("checks more than one read") {
     compareStr(
       File("prefix.bam"),
       "-s",
       "-i", "12100265"
     )(
-      ""
+      """65181 uncompressed positions
+        |19.6K compressed
+        |Compression ratio: 3.25
+        |171 reads
+        |All calls matched!
+        |"""
     )
   }
 
@@ -101,6 +103,23 @@ class MainTest
         |7976 reads
         |All calls matched!
         |"""
+      .stripMargin
+    )
+  }
+
+  test("exome unmapped") {
+    val outputPath = tmpPath()
+
+    Main.main(
+      Array[String](
+        "-m", "1m",
+        "-o", outputPath.toString,
+        File("HG00096.unmapped.ILLUMINA.bwa.GBR.exome.20120522.bam")
+      )
+    )
+
+    outputPath.read should be(
+      """"""
       .stripMargin
     )
   }

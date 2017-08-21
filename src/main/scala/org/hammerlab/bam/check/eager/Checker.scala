@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check.eager
 
-import java.io.IOException
+import java.io.{ EOFException, IOException }
 
 import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check
@@ -19,8 +19,10 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
                    readsToCheck: ReadsToCheck)
   extends CheckerBase[Boolean] {
 
-  override def apply(implicit
-                     successfulReads: SuccessfulReads): Boolean = {
+  override protected def apply(startPos: Long)(
+      implicit
+      successfulReads: SuccessfulReads
+  ): Boolean = {
 
     if (successfulReads.n == readsToCheck.n)
       return true
@@ -29,12 +31,18 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
     try {
       uncompressedBytes.readFully(buf)
     } catch {
+      case _: EOFException
+        if uncompressedBytes.position() == startPos &&
+        successfulReads.n > 0 ⇒
+        return true
       case _: IOException ⇒
         return false
     }
 
     buf.position(0)
     val remainingBytes = buf.getInt
+
+    val nextOffset = startPos + 4 + remainingBytes
 
     if (getRefPosError().isDefined)
       return false
@@ -46,10 +54,17 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
       case _ ⇒
     }
 
-    val numCigarOps = buf.getInt & 0xffff
+    val flagsAndNumCigarOps = buf.getInt
+
+    val flags = flagsAndNumCigarOps >>> 16
+
+    val numCigarOps = flagsAndNumCigarOps & 0xffff
     val numCigarBytes = 4 * numCigarOps
 
     val seqLen = buf.getInt
+
+    if ((flags & 4) == 0 && (seqLen == 0 || numCigarOps == 0))
+      return false
 
     val numSeqAndQualBytes = (seqLen + 1) / 2 + seqLen
 
@@ -96,7 +111,16 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
         return false
     }
 
-    true
+    val bytesToSkip = nextOffset - uncompressedBytes.position()
+
+    if (bytesToSkip > 0)
+      uncompressedBytes.skip(bytesToSkip)
+
+    apply(
+      nextOffset
+    )(
+      successfulReads.n + 1
+    )
   }
 }
 

@@ -32,13 +32,11 @@ trait CheckerBase[Call]
 
   /** Main record-checking entry-point */
   override def apply(pos: Pos): Call = {
-    seek(pos)
-    apply(0)
+    uncompressedStream.seek(pos)
+    apply(uncompressedBytes.position())(0)
   }
 
-  def apply(): Call = apply(0)
-
-  def apply(
+  protected def apply(startPos: Long)(
       implicit
       successfulReads: SuccessfulReads
   ): Call
@@ -83,9 +81,14 @@ object Checker {
     extends ((CachingChannel[SeekableByteChannel]) ⇒ C)
       with Serializable
 
-  implicit class SuccessfulReads(val n: Int) extends AnyVal
+  trait IntWrapper extends Any {
+    def n: Int
+    override def toString: String = n.toString
+  }
 
-  implicit class BGZFBlocksToCheck(val n: Int) extends AnyVal
+  implicit class SuccessfulReads(val n: Int) extends AnyVal with IntWrapper
+
+  implicit class BGZFBlocksToCheck(val n: Int) extends AnyVal with IntWrapper
   object BGZFBlocksToCheck {
     implicit val parser: ArgParser[BGZFBlocksToCheck] =
       instance("bgzf-blocks-to-check") {
@@ -96,7 +99,7 @@ object Checker {
       Default.instance(5)
   }
 
-  implicit class ReadsToCheck(val n: Int) extends AnyVal
+  implicit class ReadsToCheck(val n: Int) extends AnyVal with IntWrapper
   object ReadsToCheck {
     implicit val parser: ArgParser[ReadsToCheck] =
       instance("reads-to-check") {
@@ -107,7 +110,7 @@ object Checker {
       Default.instance(10)
   }
 
-  implicit class MaxReadSize(val n: Int) extends AnyVal
+  implicit class MaxReadSize(val n: Int) extends AnyVal with IntWrapper
   object MaxReadSize {
     implicit val parser: ArgParser[MaxReadSize] =
       instance[MaxReadSize]("max-read-size") {

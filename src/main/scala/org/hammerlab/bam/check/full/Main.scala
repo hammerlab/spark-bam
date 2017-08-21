@@ -30,7 +30,7 @@ case class Args(@Recurse blocks: Blocks.Args,
                 @Recurse logging: LogArgs,
                 @Recurse output: OutputArgs,
                 @Recurse partitioning: PostPartitionArgs,
-                @Recurse checkReadArgs: FindReadArgs
+                @Recurse findReadArgs: FindReadArgs
                )
   extends SparkPathAppArgs
 

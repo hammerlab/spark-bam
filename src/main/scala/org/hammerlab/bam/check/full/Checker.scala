@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check.full
 
-import java.io.IOException
+import java.io.{ EOFException, IOException }
 
 import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check
@@ -19,8 +19,9 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
                    readsToCheck: ReadsToCheck)
   extends CheckerBase[Result] {
 
-  override def apply(implicit
-                     successfulReads: SuccessfulReads
+  override protected def apply(startPos: Long)(
+      implicit
+      successfulReads: SuccessfulReads
   ): Result = {
 
     if (successfulReads.n == readsToCheck.n)
@@ -30,6 +31,10 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
     try {
       uncompressedBytes.readFully(buf)
     } catch {
+      case _: EOFException
+        if uncompressedBytes.position() == startPos &&
+          successfulReads.n > 0 ⇒
+        return Success(successfulReads.n)
       case _: IOException ⇒
         return Flags(
           tooFewFixedBlockBytes = true,
@@ -45,11 +50,17 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
     buf.position(0)
     val remainingBytes = buf.getInt
 
+    implicit val nextOffset = startPos + 4 + remainingBytes
+
     val readPosError = getRefPosError()
 
     val readNameLength = buf.getInt & 0xff
 
-    val numCigarOps = buf.getInt & 0xffff
+    val flagsAndNumCigarOps = buf.getInt
+
+    val flags = flagsAndNumCigarOps >>> 16
+
+    val numCigarOps = flagsAndNumCigarOps & 0xffff
     val numCigarBytes = 4 * numCigarOps
 
     val seqLen = buf.getInt
@@ -108,7 +119,17 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
           )
             Some(InvalidCigarOp)
           else
-            None
+            ((flags & 4) == 0, seqLen == 0, numCigarOps == 0) match {
+              case (true, emptySeq, emptyCigar) if emptySeq || emptyCigar ⇒
+                Some(
+                  EmptyMapped(
+                    emptySeq,
+                    emptyCigar
+                  )
+                )
+              case _ ⇒
+                None
+            }
         } catch {
           case _: IOException ⇒
             Some(TooFewBytesForCigarOps)
@@ -139,10 +160,16 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
             readNameError: Option[ReadNameError] = None,
             cigarOpsError: Option[CigarOpsError] = None,
             tooFewRemainingBytesImplied: Boolean = false,
-            successfulReads: SuccessfulReads): Result =
+            successfulReads: SuccessfulReads,
+            nextOffset: Long): Result =
     (posErrors, readNameError, cigarOpsError, tooFewRemainingBytesImplied) match {
       case ((None, None), None, None, false) ⇒
-        Success(successfulReads.n)
+        val bytesToSkip = nextOffset - uncompressedBytes.position()
+
+        if (bytesToSkip > 0)
+          uncompressedBytes.skip(bytesToSkip)
+
+        apply(nextOffset)(successfulReads.n + 1)
       case _ ⇒
         Flags(
           tooFewFixedBlockBytes = false,

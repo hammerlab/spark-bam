@@ -50,10 +50,15 @@ object FindRecordStart {
     while (idx < maxReadSize.n) {
       uncompressedBytes.curPos match {
         case Some(pos) ⇒
-          if (checker()) {
+          if (checker(pos)) {
             return Some(pos → idx)
           }
+
           uncompressedBytes.seek(pos)  // go back to this failed position
+
+          if (!uncompressedBytes.hasNext)
+            return None
+          
           uncompressedBytes.next()     // move over by 1 byte
         case None ⇒
           return None

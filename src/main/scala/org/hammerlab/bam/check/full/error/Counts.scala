@@ -2,6 +2,7 @@ package org.hammerlab.bam.check.full.error
 
 import cats.Show
 import cats.Show.show
+import shapeless.labelled.FieldType
 
 case class Counts(tooFewFixedBlockBytes: Long,
                   negativeReadIdx: Long,
@@ -19,6 +20,8 @@ case class Counts(tooFewFixedBlockBytes: Long,
                   emptyReadName: Long,
                   tooFewBytesForCigarOps: Long,
                   invalidCigarOp: Long,
+                  emptyMappedCigar: Long,
+                  emptyMappedSeq: Long,
                   tooFewRemainingBytesImplied: Long,
                   readsBeforeError: Map[Int, Long]
                  )
@@ -46,40 +49,28 @@ object Counts {
   val lg = LabelledGeneric[Counts]
   val gen = Generic[Counts]
 
-  object longFields extends Poly1 {
-    implicit val longCase: Case.Aux[(Symbol, Long), (Symbol, Long)] =
-      at(x ⇒ x)
+  object longFields extends FieldPoly {
+    implicit def longCase[K](implicit witness: Witness.Aux[K]): Case.Aux[FieldType[K, Long], FieldType[K, Long]] =
+      atField(witness)(x ⇒ x)
   }
 
   implicit class CountsWrapper(val counts: Counts)
     extends AnyVal {
 
-      /**
+    /**
      * Convert an [[Counts]] to a values-descending array of (key,value) pairs
      */
-    def descCounts: Array[(String, Long)] =
-      /*lg
+    def descCounts: List[(String, Long)] =
+      lg
         .to(counts)
         .collect(longFields)
-        .toMap
-        .toArray
+        .fields
+        .toList[(Symbol, Long)]
         .map {
           case (k, v) ⇒
             k.name → v
         }
-        .sortBy(-_._2)*/
-      ???
-
-    /**
-     * Count the number of non-zero fields in an [[Counts]]
-     */
-    def numNonZeroFields: Int =
-      /*gen
-        .to(counts)
-        .collect(longFields)
-        .toList[Long]
-        .count(_ > 0)*/
-      ???
+        .sortBy(-_._2)
   }
 
   /**
@@ -94,15 +85,41 @@ object Counts {
 
         val dc = counts.descCounts
 
-        val maxKeySize = dc.map(_._1.length).max
-        val maxValSize = dc.map(_._2.toString.length).max
+        val stringPairs =
+          (
+            for {
+              (k, v) ← dc
+              if (v > 0 || includeZeros) && (k != "tooFewFixedBlockBytes" || !hideTooFewFixedBlockBytes)
+            } yield
+              k → v.toString
+          ) ++
+          (
+            counts
+              .readsBeforeError
+              .toVector
+              .sorted match {
+                case Vector() ⇒ Nil
+                case readsBeforeError ⇒
+                  List(
+                    "readsBeforeError" →
+                      readsBeforeError
+                        .map {
+                          case (reads, num) ⇒
+                            s"${reads}ⅹ$num"
+                        }
+                        .mkString(" ")
+                  )
+              }
+          )
+
+        val maxKeySize = stringPairs.map(_._1.length).max
+        val maxValSize = stringPairs.map(_._2.length).max
 
         val lines =
-          for {
-            (k, v) ← dc
-            if (v > 0 || includeZeros) && (k != "tooFewFixedBlockBytes" || !hideTooFewFixedBlockBytes)
-          } yield
-            s"${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
+          stringPairs.map {
+            case (k, v) ⇒
+              s"\t${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
+          }
 
         if (wrapFields)
           lines

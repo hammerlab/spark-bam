@@ -21,7 +21,7 @@ import org.hammerlab.types.Monoid._
 @ProgName("… org.hammerlab.bam.spark.compare")
 case class Opts(@Recurse output: OutputArgs,
                 @Recurse splitSizeArgs: SplitSize.Args,
-                @Recurse checkReadArgs: FindReadArgs,
+                @Recurse findReadArgs: FindReadArgs,
                 @Recurse findBlockArgs: FindBlockArgs,
 
                 @O("n")
@@ -52,7 +52,7 @@ object Main
 
     implicit val splitSize: MaxSplitSize = opts.splitSizeArgs.maxSplitSize
 
-    implicit val FindReadArgs(maxReadSize, readsToCheck) = opts.checkReadArgs
+    implicit val FindReadArgs(maxReadSize, readsToCheck) = opts.findReadArgs
 
     implicit val bgzfBlocksToCheck = opts.findBlockArgs.bgzfBlocksToCheck
 

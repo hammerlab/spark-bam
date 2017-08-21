@@ -13,5 +13,9 @@ case class OutputArgs(
   @O("o")
   @ValueDescription("path")
   @M("Print output to this file, otherwise to stdout")
-  outputPath: Option[Path] = None
+  outputPath: Option[Path] = None,
+
+  @O("f")
+  @M("Whether to overwrite the output file, if it already exists")
+  overwrite: Boolean = false
 )

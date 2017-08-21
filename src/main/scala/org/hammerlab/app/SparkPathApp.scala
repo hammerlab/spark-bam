@@ -58,7 +58,14 @@ abstract class SparkPathApp[Args <: SparkPathAppArgs : Parser : Messages](overri
   @transient implicit var printLimit: SampleSize = _
 
   override def init(options: Args): Unit = {
-    printer = Printer(options.output.outputPath)
-    printLimit = options.output.printLimit
+    val OutputArgs(printLim, path, overwrite) = options.output
+
+    if (path.exists(_.exists) && !overwrite)
+      throw new IllegalArgumentException(
+        s"Output path $path exists and overwrite (-f) not set"
+      )
+
+    printer = Printer(path)
+    printLimit = printLim
   }
 }

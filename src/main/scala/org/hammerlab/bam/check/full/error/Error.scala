@@ -21,5 +21,7 @@ trait Error[T] {
   def emptyReadName: T
   def tooFewBytesForCigarOps: T
   def invalidCigarOp: T
+  def emptyMappedCigar: T
+  def emptyMappedSeq: T
   def tooFewRemainingBytesImplied: T
 }

@@ -24,25 +24,27 @@ No positions where only one check failed
 		2:	nonNullTerminatedReadName,invalidCigarOp
 
 	Per-flag totals:
-	             invalidCigarOp:	103
-	                 noReadName:	101
-	  nonNullTerminatedReadName:	  2
+		           invalidCigarOp:	103
+		               noReadName:	101
+		nonNullTerminatedReadName:	  2
 
 Total error counts:
-             invalidCigarOp:	63101
-        tooLargeNextReadIdx:	62661
-            tooLargeReadIdx:	62661
-  nonNullTerminatedReadName:	56947
-tooFewRemainingBytesImplied:	54837
-           nonASCIIReadName:	 3820
-                 noReadName:	 3696
-        negativeNextReadIdx:	 1425
-            negativeReadIdx:	 1425
-            negativeReadPos:	 1424
-        negativeNextReadPos:	 1424
-        tooLargeNextReadPos:	  290
-            tooLargeReadPos:	  289
-              emptyReadName:	  208
-     tooFewBytesForReadName:	    0
-     tooFewBytesForCigarOps:	    0
+	             invalidCigarOp:	63101
+	            tooLargeReadIdx:	62661
+	        tooLargeNextReadIdx:	62661
+	  nonNullTerminatedReadName:	56947
+	tooFewRemainingBytesImplied:	54837
+	           nonASCIIReadName:	 3820
+	                 noReadName:	 3696
+	            negativeReadIdx:	 1425
+	        negativeNextReadIdx:	 1425
+	            negativeReadPos:	 1424
+	        negativeNextReadPos:	 1424
+	             emptyMappedSeq:	 1345
+	        tooLargeNextReadPos:	  290
+	            tooLargeReadPos:	  289
+	              emptyReadName:	  208
+	           emptyMappedCigar:	    2
+	     tooFewBytesForReadName:	    0
+	     tooFewBytesForCigarOps:	    0
 

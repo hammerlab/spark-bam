@@ -2,6 +2,7 @@ package org.hammerlab.bam.check.full.error
 
 import cats.Show
 import cats.Show.show
+import shapeless.labelled.FieldType
 import shapeless.ops.hlist.{ Length, Mapper }
 
 import scala.collection.immutable.BitSet
@@ -33,6 +34,8 @@ case class Flags(tooFewFixedBlockBytes: Boolean,
                  emptyReadName: Boolean,
                  tooFewBytesForCigarOps: Boolean,
                  invalidCigarOp: Boolean,
+                 emptyMappedCigar: Boolean,
+                 emptyMappedSeq: Boolean,
                  tooFewRemainingBytesImplied: Boolean,
                  readsBeforeError: Int
                 )
@@ -44,6 +47,7 @@ case class Flags(tooFewFixedBlockBytes: Boolean,
 object Flags {
 
   import shapeless._
+  import record._
   import ops.record._
 
   object toCount extends Poly1 {
@@ -70,12 +74,23 @@ object Flags {
 
   val size: Int = Length[gen.Repr].apply().toInt
 
-  object nonZeroCountField extends Poly1 {
+  object isSet extends Poly1 {
     implicit val flagCase: Case.Aux[Boolean, Boolean] =
       at(b ⇒ b)
 
     implicit val readsBeforeErrorCase: Case.Aux[Int, Boolean] =
       at(_ > 0)
+  }
+
+  object labelledIsSet extends FieldPoly {
+    implicit def liftedCase[K, I, O](implicit
+                                     witness: Witness.Aux[K],
+                                     parentCase: isSet.Case.Aux[I, O]
+                                    ): Case.Aux[FieldType[K, I], FieldType[K, O]] = {
+      atField(witness) {
+        i ⇒ parentCase.value(i :: HNil)
+      }
+    }
   }
 
   object boolFields extends Poly1 {
@@ -89,49 +104,32 @@ object Flags {
      * Convert an [[Flags]] to an [[Counts]] by changing true/false to [[1L]]/[[0L]]
      */
     implicit def toCounts: Counts =
-      /*Counts
+      Counts
         .gen
         .from(
           gen
             .to(flags)
             .map(toCount)
-        )*/
-      ???
-
-//    implicitly[Mapper[nonZeroCountField.type, gen.Repr]]
-//    the[Mapper[nonZeroCountField.type, gen.Repr]]
+        )
 
     /**
      * Count the number of non-zero fields in an [[Counts]]
      */
     def numNonZeroFields: Int =
-      /*gen
+      gen
         .to(flags)
-        .map(nonZeroCountField)
+        .map(isSet)
         .toList[Boolean]
-        .count(x ⇒ x)*/
-    ???
+        .count(x ⇒ x)
 
     def trueFields: List[String] = {
-      /*val lgf = lg.to(flags)
-
-      val keys =
-        Keys[lg.Repr]
-          .apply()
-          .toList[Symbol]
-          .map(_.name)
-
-      val values =
-        Values[lg.Repr]
-          .apply(lgf)
-          .map(nonZeroCountField)
-          .toList[Boolean]
-
-      keys
-        .zip(values)
+      lg
+        .to(flags)
+        .map(labelledIsSet)
+        .fields
+        .toList[(Symbol, Boolean)]
         .filter(_._2)
-        .map(_._1)*/
-      ???
+        .map(_._1.name)
     }
   }
 
@@ -176,13 +174,15 @@ object Flags {
       tooFewBytesForCigarOps = cigarOpsError.exists(_.tooFewBytesForCigarOps),
       invalidCigarOp = cigarOpsError.exists(_.invalidCigarOp),
       tooFewRemainingBytesImplied = tooFewRemainingBytesImplied,
+      emptyMappedCigar = cigarOpsError.exists(_.emptyMappedCigar),
+      emptyMappedSeq = cigarOpsError.exists(_.emptyMappedSeq),
 
       readsBeforeError = readsBeforeError
     )
 
   /** Convert to and from a [[BitSet]] during serialization. */
   implicit def toBitSet(flags: Flags): (BitSet, Int) =
-    /*BitSet(
+    BitSet(
       Generic[Flags]
         .to(flags)
         .collect(boolFields)
@@ -196,7 +196,7 @@ object Flags {
               None
         }: _*
     ) →
-      flags.readsBeforeError*/ ???
+      flags.readsBeforeError
 
   implicit def fromBitSet(flags: (BitSet, Int)): Flags =
     Flags(
@@ -216,7 +216,9 @@ object Flags {
       emptyReadName               = flags._1(13),
       tooFewBytesForCigarOps      = flags._1(14),
       invalidCigarOp              = flags._1(15),
-      tooFewRemainingBytesImplied = flags._1(16),
+      emptyMappedCigar            = flags._1(16),
+      emptyMappedSeq              = flags._1(17),
+      tooFewRemainingBytesImplied = flags._1(18),
       readsBeforeError            = flags._2
     )
 

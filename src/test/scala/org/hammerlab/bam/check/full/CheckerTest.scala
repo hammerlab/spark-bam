@@ -1,7 +1,7 @@
 package org.hammerlab.bam.check.full
 
 import org.hammerlab.bam.check.Checker.{ ReadsToCheck, default }
-import org.hammerlab.bam.check.full.error.Flags
+import org.hammerlab.bam.check.full.error.{ Flags, Result, Success }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
@@ -14,7 +14,7 @@ import org.hammerlab.test.resources.File
 class CheckerTest
   extends Suite {
 
-  def check(file: File, pos: Pos, expected: Option[Flags]): Unit = {
+  def check(file: File, pos: Pos, expected: Result): Unit = {
     val path = file.path
     val uncompressedBytes =
       SeekableUncompressedBytes(
@@ -30,21 +30,35 @@ class CheckerTest
         default[ReadsToCheck]
       )
 
-    val actual = checker(pos)
-
-    import cats.syntax.all._
-    import org.hammerlab.io.show._
-
-    println(actual.show)
-
-    actual should be(expected)
+    checker(pos) should be(expected)
   }
 
-  test("fn") {
+  test("empty mapped seq / cigar") {
     check(
-      File("12896294.bam"),
+      File("prefix.bam"),
       Pos(12100265, 37092),
-      None
+      Flags(
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        emptyMappedCigar = true,
+        emptyMappedSeq = true,
+        false,
+        0
+      )
     )
   }
 
@@ -52,12 +66,10 @@ class CheckerTest
     check(
       bam5k,
       Pos(1006167, 15243),
-      Some(
-        Flags(
-          tooFewFixedBlockBytes = true,
-          None, None, None, None, false,
-          readsBeforeError = 0
-        )
+      Flags(
+        tooFewFixedBlockBytes = true,
+        None, None, None, None, false,
+        readsBeforeError = 0
       )
     )
   }

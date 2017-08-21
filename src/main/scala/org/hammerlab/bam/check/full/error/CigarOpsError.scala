@@ -6,6 +6,8 @@ package org.hammerlab.bam.check.full.error
 sealed trait CigarOpsError {
   def invalidCigarOp = false
   def tooFewBytesForCigarOps = false
+  def emptyMappedCigar = false
+  def emptyMappedSeq = false
 }
 
 case object InvalidCigarOp extends CigarOpsError {
@@ -16,3 +18,7 @@ case object TooFewBytesForCigarOps
   extends CigarOpsError {
   override def tooFewBytesForCigarOps = true
 }
+
+case class EmptyMapped(override val emptyMappedCigar: Boolean,
+                       override val emptyMappedSeq: Boolean)
+  extends CigarOpsError

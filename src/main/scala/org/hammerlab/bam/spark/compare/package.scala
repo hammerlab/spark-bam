@@ -98,7 +98,7 @@ package object compare {
 
     fileSplits
       .map {
-        case FileSplit(_, start, end, _) ⇒
+        case split @ FileSplit(_, start, _, _) ⇒
           val bgzfBlockStart =
             FindBlockStart(
               path,
@@ -107,7 +107,7 @@ package object compare {
               bgzfBlocksToCheck
             )
 
-          uncompressedBytes.stopAt(Pos(end, 0))
+          uncompressedBytes.stopAt(Pos(split.end, 0))
 
           FindRecordStart(
             path,
