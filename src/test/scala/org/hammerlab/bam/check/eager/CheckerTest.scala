@@ -32,20 +32,4 @@ class CheckerTest
       expected
     )
   }
-
-  test("check more than one read") {
-    check(
-      File("prefix.bam"),
-      Pos(12100265, 37092),
-      false
-    )
-  }
-
-  test("last read in file") {
-    check(
-      File("prefix.bam"),
-      Pos(12100265, 64814),
-      true
-    )
-  }
 }

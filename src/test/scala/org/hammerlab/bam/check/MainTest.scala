@@ -54,21 +54,6 @@ class MainTest
     )
   }
 
-  test("checks more than one read") {
-    compareStr(
-      File("prefix.bam"),
-      "-s",
-      "-i", "12100265"
-    )(
-      """65181 uncompressed positions
-        |19.6K compressed
-        |Compression ratio: 3.25
-        |171 reads
-        |All calls matched!
-        |"""
-    )
-  }
-
   test("tcga hadoop-bam") {
     val outputPath = tmpPath()
 
@@ -103,23 +88,6 @@ class MainTest
         |7976 reads
         |All calls matched!
         |"""
-      .stripMargin
-    )
-  }
-
-  test("exome unmapped") {
-    val outputPath = tmpPath()
-
-    Main.main(
-      Array[String](
-        "-m", "1m",
-        "-o", outputPath.toString,
-        File("HG00096.unmapped.ILLUMINA.bwa.GBR.exome.20120522.bam")
-      )
-    )
-
-    outputPath.read should be(
-      """"""
       .stripMargin
     )
   }

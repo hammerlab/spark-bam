@@ -33,35 +33,6 @@ class CheckerTest
     checker(pos) should be(expected)
   }
 
-  test("empty mapped seq / cigar") {
-    check(
-      File("prefix.bam"),
-      Pos(12100265, 37092),
-      Flags(
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        emptyMappedCigar = true,
-        emptyMappedSeq = true,
-        false,
-        0
-      )
-    )
-  }
-
   test("EoF") {
     check(
       bam5k,
