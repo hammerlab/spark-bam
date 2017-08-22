@@ -4,10 +4,12 @@ import caseapp.Parser
 import caseapp.core.Messages
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.serializer.KryoRegistrator
 import org.hammerlab.args.OutputArgs
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.io.{ Printer, SampleSize }
-import org.hammerlab.spark.{ Context, SparkConfBase, confs }
+import org.hammerlab.spark.{ SparkConfBase, confs }
 
 trait SparkPathAppArgs {
   def output: OutputArgs
@@ -35,7 +37,7 @@ trait SparkApp[Args]
     _sc
   }
 
-  implicit def ctx: Context = sc
+  implicit def conf: Configuration = sc.hadoopConfiguration
 
   override def done(): Unit = {
     if (_sc != null && !_sc.isStopped) {

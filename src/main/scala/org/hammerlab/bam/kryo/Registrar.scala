@@ -97,6 +97,11 @@ class Registrar extends KryoRegistrator {
     kryo.register(classOf[cats.kernel.instances.LongGroup])
 
     kryo.register(classOf[mutable.WrappedArray.ofInt])
+
+    // compare-splits performs a reduce on some Result-filtered HLists
+    import shapeless._
+    kryo.register(classOf[_ :: _])
+    kryo.register(HNil.getClass)
   }
 }
 

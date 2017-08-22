@@ -5,6 +5,7 @@ import java.lang.{ Long ⇒ JLong }
 import caseapp.{ Recurse, ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
 import cats.implicits.catsKernelStdGroupForLong
 import com.esotericsoftware.kryo.Kryo
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.{ ByteRanges, FindBlockArgs, SplitSize }
 import org.hammerlab.bgzf.block.{ FindBlockStart, Metadata, MetadataStream }
@@ -39,11 +40,9 @@ object Blocks {
     splits: SplitSize.Args
   )
 
-  //case class Bloc
-
   def apply()(
       implicit
-      sc: Context,
+      sc: SparkContext,
       path: Path,
       args: Args
   ): (RDD[Metadata], Bounds[Long]) = {
@@ -58,7 +57,7 @@ object Blocks {
     val splitSize =
       args
         .splits
-        .maxSplitSize(2.MB)
+        .maxSplitSize(2 MB)
         .size
 
     val rangeSetBroadcast = sc.broadcast(args.ranges)

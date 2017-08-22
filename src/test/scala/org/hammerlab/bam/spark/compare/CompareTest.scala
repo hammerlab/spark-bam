@@ -1,12 +1,15 @@
 package org.hammerlab.bam.spark.compare
 
+import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check.Checker.{ BGZFBlocksToCheck, MaxReadSize, ReadsToCheck, default }
 import org.hammerlab.bam.spark.Split
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes._
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.resources.tcgaBamExcerpt
 import org.hammerlab.spark.test.suite.SparkSuite
+import shapeless.LabelledGeneric
 
 class CompareTest
   extends SparkSuite {
@@ -15,9 +18,23 @@ class CompareTest
   implicit val maxReadSize = default[MaxReadSize]
   implicit val bgzfBlocksToCheck = default[BGZFBlocksToCheck]
 
+  val lg = LabelledGeneric[Result]
+
+  import shapeless._, record._
+
+  def check(actual: Result, expected: Result): Unit = {
+    actual.copy(hadoopBamMS = 0, sparkBamMS = 0) should be(
+      expected
+    )
+  }
+
+  implicit lazy val confBroadcast: Broadcast[Configuration] = sc.broadcast(ctx)
+
   test("470KB") {
     implicit val splitSize = MaxSplitSize(470.KB)
-    getPathResult(tcgaBamExcerpt) should be(
+    val actual = getPathResult(tcgaBamExcerpt)
+
+    val expected =
       Result(
         2,
         2,
@@ -36,14 +53,18 @@ class CompareTest
           )
         ),
         1,
-        1
+        1,
+        0,  // dummy value, timing values not checked
+        0   // dummy value, timing values not checked
       )
-    )
+
+    check(actual, expected)
   }
 
   test("235KB") {
     implicit val splitSize = MaxSplitSize(235.KB)
-    getPathResult(tcgaBamExcerpt) should be(
+    check(
+      getPathResult(tcgaBamExcerpt),
       Result(
         4,
         4,
@@ -62,7 +83,9 @@ class CompareTest
           )
         ),
         1,
-        1
+        1,
+        0,  // dummy value, timing values not checked
+        0   // dummy value, timing values not checked
       )
     )
   }

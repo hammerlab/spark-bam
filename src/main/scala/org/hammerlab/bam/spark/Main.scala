@@ -5,14 +5,16 @@ import cats.implicits.catsStdShowForInt
 import cats.syntax.all._
 import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.AsNewHadoopPartition
-import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.app.{ SparkApp, SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.args.{ OutputArgs, SplitSize }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark.Main.time
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.collection.canBuildVector
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.sorted.OrZipIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
@@ -48,7 +50,7 @@ case class Args(
   extends SparkPathAppArgs
 
 trait CanCompareSplits {
-  implicit def ctx: Context
+  self: SparkApp[_] ⇒
 
   def sparkBamLoad(
       implicit
@@ -56,7 +58,7 @@ trait CanCompareSplits {
       path: Path
   ): BAMRecordRDD =
     time("Get spark-bam splits") {
-      ctx.loadSplitsAndReads(
+      sc.loadSplitsAndReads(
         path,
         splitSize = args.maxSplitSize
       )
@@ -72,7 +74,7 @@ trait CanCompareSplits {
       args
         .splitSize
         .foreach(
-          ctx
+          conf
             .setLong(
               SPLIT_MAXSIZE,
               _
@@ -80,7 +82,7 @@ trait CanCompareSplits {
         )
 
       val rdd =
-        ctx.newAPIHadoopFile(
+        sc.newAPIHadoopFile(
           path.toString(),
           classOf[BAMInputFormat],
           classOf[LongWritable],
@@ -116,7 +118,7 @@ object Main
     args
       .gsBuffer
       .foreach(
-        ctx.setLong(
+        conf.setLong(
           "fs.gs.io.buffersize",
           _
         )
