@@ -91,7 +91,7 @@ class MainTest
         |        Print output to this file, otherwise to stdout
         |  --overwrite | -f  
         |        Whether to overwrite the output file, if it already exists
-        |  --results-per-partition | -p  <num=1000000>
+        |  --results-per-partition | -p  <num=100000>
         |        After running eager and/or seqdoop checkers over a BAM file and filtering to just the contested positions, repartition to have this many records per partition. Typically there are far fewer records at this stage, so it's useful to coalesce down to avoid 1,000's of empty partitions
         |  --max-read-size  <num=10000000>
         |        Maximum number of bases long for spark-bam checkers to allow a read to be
