@@ -1,12 +1,12 @@
 language: scala
-sudo: false
+sudo: required
 jdk:
   - oraclejdk8
 
 scala:
   - 2.11.8
 
-script: travis_wait sbt ++$TRAVIS_SCALA_VERSION clean test
+script: sbt ++$TRAVIS_SCALA_VERSION clean coverageTest
 
 cache:
   directories:
