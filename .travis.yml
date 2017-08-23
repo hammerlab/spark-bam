@@ -6,7 +6,16 @@ jdk:
 scala:
   - 2.11.8
 
-script: sbt ++$TRAVIS_SCALA_VERSION clean coverageTest
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION clean
+  # Split tests into separate commands ("jobs" in Travis parlance) to avoid any single one exceeding the 50minute timeout 😱
+  - sbt ++$TRAVIS_SCALA_VERSION 'test-only org.hammerlab.bgzf.*'
+  - sbt ++$TRAVIS_SCALA_VERSION 'test-only org.hammerlab.bam.check.eager.*'
+  - sbt ++$TRAVIS_SCALA_VERSION 'test-only org.hammerlab.bam.check.seqdoop.*'
+  - sbt ++$TRAVIS_SCALA_VERSION 'test-only org.hammerlab.bam.check.full.*'
+  - sbt ++$TRAVIS_SCALA_VERSION 'test-only org.hammerlab.bam.check.BlocksTest org.hammerlab.bam.check.MainTest'
+  - sbt ++$TRAVIS_SCALA_VERSION 'test-only org.hammerlab.bam.MainTest org.hammerlab.bam.header.* org.hammerlab.bam.index.* org.hammerlab.bam.iterator.* org.hammerlab.bam.rewrite.* org.hammerlab.bam.spark.*'
+  - sbt coverageReport
 
 cache:
   directories:

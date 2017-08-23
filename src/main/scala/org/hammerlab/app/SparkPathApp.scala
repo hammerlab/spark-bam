@@ -4,7 +4,6 @@ import caseapp.Parser
 import caseapp.core.Messages
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
-import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.serializer.KryoRegistrator
 import org.hammerlab.args.OutputArgs
 import org.hammerlab.hadoop.Configuration
