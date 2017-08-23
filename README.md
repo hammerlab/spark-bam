@@ -3,10 +3,10 @@
 [![Coverage Status](https://coveralls.io/repos/github/hammerlab/spark-bam/badge.svg?branch=master)](https://coveralls.io/github/hammerlab/spark-bam?branch=master)
 [![Maven Central](https://img.shields.io/maven-central/v/org.hammerlab/spark-bam_2.11.svg?maxAge=600)](http://search.maven.org/#search%7Cga%7C1%7Cspark-bam)
 
-Load [BAM files][SAM spec] using [Apache Spark][] and [HTSJDK][]; inspired by [HadoopGenomics/hadoop-bam][hadoop-bam].
+Process [BAM files][SAM spec] using [Apache Spark][] and [HTSJDK][]; inspired by [HadoopGenomics/hadoop-bam][hadoop-bam].
 
 ```scala
-$ spark-shell --jars target/scala-2.11/spark-bam-assembly-1.1.0-SNAPSHOT.jar
+$ spark-shell --jars $SPARK_BAM_JAR
 …
 
 import org.hammerlab.bam.spark._
@@ -44,10 +44,10 @@ val BAMRecordRDD(splits, rdd) = sc.loadSplitsAndReads(path, splitSize = 400 KB)
 
 ### Parallelization
 
-[hadoop-bam][] computes splits sequentially on one node.
-
-For BAMs in Google-Cloud Storage (GCS), it's been observed to take many minutes to compute splits for BAMs in the 10GB-100GB range. Two reasons for this slowness:
+[hadoop-bam][] computes splits sequentially on one node. Depending on the storage backend, this can take many minutes for modest-sized (10-100GB) BAMs, leaving a large cluster idling while the driver bottlenecks on an emminently-parallelizable task.
  
+For example, for on Google Cloud Storage (GCS), two factors causing high split-computation latency include:
+
 - GCS round-trips have high latency
 - file-seek/-access patterns foil attempts to buffer data in the NIO/HDFS adapters for GCS access
 

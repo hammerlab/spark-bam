@@ -1,6 +1,5 @@
 package org.hammerlab.bam.spark
 
-import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.check.eager.Checker
 import org.hammerlab.bam.header.ContigLengths
