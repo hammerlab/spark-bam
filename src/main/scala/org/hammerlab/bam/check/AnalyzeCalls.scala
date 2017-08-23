@@ -141,6 +141,8 @@ trait AnalyzeCalls {
               }
               .finish(uncompressedBytes.close())
         }
+        .setName("fpsWithMetadata")
+        .cache
 
     def printFalsePositives(): Unit = {
       val flagsHist =
