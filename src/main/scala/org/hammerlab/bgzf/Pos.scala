@@ -1,5 +1,6 @@
 package org.hammerlab.bgzf
 
+import caseapp.core.Default
 import cats.Show
 import cats.Show.show
 
@@ -39,7 +40,7 @@ object EstimatedCompressionRatio {
   implicit def unmakeEstimatedCompressionRatio(ratio: EstimatedCompressionRatio): Double =
     ratio.ratio
 
-  implicit val default = EstimatedCompressionRatio(3)
+  implicit val default: Default[EstimatedCompressionRatio] = Default.instance(3.0)
 }
 
 object Pos {

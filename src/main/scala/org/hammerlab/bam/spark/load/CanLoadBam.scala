@@ -32,6 +32,8 @@ import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFromStream
 import org.seqdoop.hadoop_bam.{ CRAMInputFormat, SAMRecordWritable }
 
 import scala.collection.JavaConverters._
+import org.hammerlab.bam.check.Checker.default
+
 
 /**
  * Add a `loadBam` method to [[SparkContext]] for loading [[SAMRecord]]s from a BAM file.
@@ -45,10 +47,21 @@ trait CanLoadBam
 
   implicit def conf: Configuration = sc.hadoopConfiguration
 
+  /**
+   * Load [[SAMRecord]]s that overlap specific genomic intervals from an indexed BAM file.
+   *
+   * @param path Indexed BAM file path
+   * @param intervals Genomic intervals to intersect with
+   * @param splitSize divide the loaded file-portions into partitions of approximately this (uncompressed) size
+   * @param estimatedCompressionRatio used for (approximately) sizing returned partitions: compressed sizes of BAI
+   *                                  "chunks" are scaled by this value so that returned partitions are –
+   *                                  theoretically/approximately – `splitSize` (uncompressed)
+   * @return [[RDD]] of [[SAMRecord]]s that overlap the provided [[LociSet]]
+   */
   def loadBamIntervals(path: Path,
                        intervals: LociSet,
                        splitSize: MaxSplitSize = MaxSplitSize(),
-                       estimatedCompressionRatio: EstimatedCompressionRatio = 3.0): RDD[SAMRecord] = {
+                       estimatedCompressionRatio: EstimatedCompressionRatio = default[EstimatedCompressionRatio]): RDD[SAMRecord] = {
 
     val intervalsBroadcast = sc.broadcast(intervals)
 
@@ -126,6 +139,9 @@ trait CanLoadBam
       }
   }
 
+  /**
+   * Load an [[RDD]] of [[SAMRecord]]s from a SAM-file [[Path]].
+   */
   def loadSam(path: Path,
               splitSize: MaxSplitSize = MaxSplitSize()): RDD[SAMRecord] = {
     val header =
@@ -155,8 +171,6 @@ trait CanLoadBam
           )
       }
   }
-
-  import org.hammerlab.bam.check.Checker.default
 
   def loadBam(path: Path,
               bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],
@@ -281,15 +295,16 @@ trait CanLoadBam
   }
 
   /**
-   * Load reads from a .sam or .bam file
+   * Load reads from a .sam, .bam, or .cram file
    *
    * @param path Path to a .sam or .bam file
-   * @param bgzfBlocksToCheck when searching for bgzf-block-boundaries, check this many blocks ahead before
-   *                                declaring a position to be a block-boundary
+   * @param bgzfBlocksToCheck when searching for bgzf-block-boundaries, check this many blocks ahead before declaring a
+   *                          position to be a block-boundary
+   * @param readsToCheck number of successive reads to verify before emitting a record-/split-boundary
    * @param maxReadSize when searching for BAM-record-boundaries, try up to this many consecutive positions before
    *                    giving up / throwing; reads taking up more than this many bytes on disk can result in
    *                    "false-negative" read-boundary calls
-   * @param splitSize maximum split size to pass to [[org.apache.hadoop.mapreduce.lib.input.FileInputFormat]].
+   * @param splitSize maximum (compressed) size of generated partitions
    */
   def loadReads(path: Path,
                 bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],

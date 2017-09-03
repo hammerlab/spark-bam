@@ -7,7 +7,8 @@ import cats.implicits.catsKernelStdGroupForLong
 import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.hammerlab.args.{ ByteRanges, FindBlockArgs, SplitSize }
+import org.hammerlab.args.ByteRanges
+import org.hammerlab.args.{ FindBlockArgs, SplitSize }
 import org.hammerlab.bgzf.block.{ FindBlockStart, Metadata, MetadataStream }
 import org.hammerlab.bytes._
 import org.hammerlab.channel.SeekableByteChannel
@@ -19,7 +20,6 @@ import org.hammerlab.magic.rdd.scan.ScanLeftValuesRDD._
 import org.hammerlab.magic.rdd.scan.ScanValuesRDD
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
-import org.hammerlab.spark.Context
 
 object Blocks {
 

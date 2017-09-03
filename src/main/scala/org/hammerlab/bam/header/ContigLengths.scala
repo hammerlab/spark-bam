@@ -4,6 +4,7 @@ import com.esotericsoftware.kryo.io.{ Input, Output }
 import com.esotericsoftware.kryo.{ Kryo, Serializer }
 import htsjdk.samtools.{ SAMFileHeader, SAMSequenceDictionary, SAMSequenceRecord }
 import org.hammerlab.bam.header.ContigLengths.ContigLengthsT
+import org.hammerlab.genomics.reference
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.paths.Path
@@ -39,6 +40,14 @@ object ContigLengths {
 
   implicit def wrapContigLengths(contigLengths: ContigLengthsT): ContigLengths = ContigLengths(contigLengths)
   implicit def unwrapContigLengths(contigLengths: ContigLengths): ContigLengthsT = contigLengths.map
+
+  implicit def toReferenceContigLengths(contigLengths: ContigLengths): reference.ContigLengths =
+    contigLengths
+      .map
+      .map {
+        case (_, (contigName, numLoci)) ⇒
+          contigName → numLoci
+      }
 
   implicit def htsjdkHeaderToContigLengths(contigLengths: ContigLengths): SAMFileHeader =
     new SAMFileHeader(

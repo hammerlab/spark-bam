@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/hammerlab/spark-bam/badge.svg?branch=master)](https://coveralls.io/github/hammerlab/spark-bam?branch=master)
 [![Maven Central](https://img.shields.io/maven-central/v/org.hammerlab/spark-bam_2.11.svg?maxAge=600)](http://search.maven.org/#search%7Cga%7C1%7Cspark-bam)
 
-Process [BAM files][SAM spec] using [Apache Spark][] and [HTSJDK][]; inspired by [HadoopGenomics/hadoop-bam][hadoop-bam].
+Process [BAM files][SAM spec] using [Apache Spark] and [HTSJDK]; inspired by [HadoopGenomics/hadoop-bam][hadoop-bam].
 
 ```scala
 $ spark-shell --jars $SPARK_BAM_JAR
@@ -16,11 +16,13 @@ val path = Path("src/test/resources/5k.bam")
 
 // Load an RDD[SAMRecord] from `path`; supports .bam, .sam, and .cram
 sc.loadReads(path)
+// RDD[SAMRecord]
 
 import org.hammerlab.bytes._
 
 // Configure split size
 sc.loadReads(path, splitSize = 16 MB)
+// RDD[SAMRecord]
 
 // Return computed splits as well as the RDD[SAMRecord]
 val BAMRecordRDD(splits, rdd) = sc.loadSplitsAndReads(path)
@@ -36,7 +38,7 @@ val BAMRecordRDD(splits, rdd) = sc.loadSplitsAndReads(path, splitSize = 400 KB)
 
 ## Features
 
-[spark-bam][] improves on [hadoop-bam][] in 3 ways:
+[spark-bam] improves on [hadoop-bam] in 3 ways:
 
 - [parallelization](#Parallelization)
 - [correctness](#Correctness)
@@ -44,30 +46,33 @@ val BAMRecordRDD(splits, rdd) = sc.loadSplitsAndReads(path, splitSize = 400 KB)
 
 ### Parallelization
 
-[hadoop-bam][] computes splits sequentially on one node. Depending on the storage backend, this can take many minutes for modest-sized (10-100GB) BAMs, leaving a large cluster idling while the driver bottlenecks on an emminently-parallelizable task.
+[hadoop-bam] computes splits sequentially on one node. Depending on the storage backend, this can take many minutes for modest-sized (10-100GB) BAMs, leaving a large cluster idling while the driver bottlenecks on an emminently-parallelizable task.
  
-For example, for on Google Cloud Storage (GCS), two factors causing high split-computation latency include:
+For example, on Google Cloud Storage (GCS), two factors causing high split-computation latency include:
 
-- GCS round-trips have high latency
-- file-seek/-access patterns foil attempts to buffer data in the NIO/HDFS adapters for GCS access
+- high GCS round-trip latency
+- file-seek/-access patterns that nullify buffering in GCS NIO/HDFS adapters
 
-[spark-bam][] identifies record-boundaries in each underlying file-split in the same Spark job that streams through the records, eliminating the driver-only bottleneck and maximally parallelizing the split-computation.
+[spark-bam] identifies record-boundaries in each underlying file-split in the same Spark job that streams through the records, eliminating the driver-only bottleneck and maximally parallelizing split-computation.
 
 ### Correctness
 
-An important impetus for the creation of [spark-bam][] was the discovery of two TCGA lung-cancer BAMs for which [hadoop-bam][] produces invalid splits: [64-1681-01A-11D-2063-08.1.bam][1.bam] and [85-A512-01A-11D-A26M-08.6.bam][2.bam].
+An important impetus for the creation of [spark-bam] was the discovery of two TCGA lung-cancer BAMs for which [hadoop-bam] produces invalid splits:
 
-HTSJDK threw an error when trying to parse reads from essentially random data fed to it by [hadoop-bam][]:
+- [19155553-8199-4c4d-a35d-9a2f94dd2e7d][1.bam]
+- [b7ee4c39-1185-4301-a160-669dea90e192][2.bam]
+
+HTSJDK threw an error when trying to parse reads from essentially random data fed to it by [hadoop-bam]:
 
 ```
 MRNM should not be set for unpaired read
 ```
 
-These BAMs were rendered unusable, and questions remained around whether such invalid splits could silently corrupt analyses.
+These BAMs were rendered unusable, and questions remain around whether such invalid splits could silently corrupt analyses.
  
 #### Improved record-boundary-detection robustness
 
-[spark-bam][] fixes these record-boundary-detection "false-positives" by adding additional checks:
+[spark-bam] fixes these record-boundary-detection "false-positives" by adding additional checks:
   
 | Validation check | spark-bam | hadoop-bam |
 | --- | --- | --- |
@@ -81,30 +86,31 @@ These BAMs were rendered unusable, and questions remained around whether such in
 | invalid read-name chars | ✅ | 🚫 |
 | record length consistent w/ #{bases, cigar ops} | ✅ | ✅ |
 | cigar ops valid | ✅ | 🌓* |
-| valid subsequent reads | 🚫† | ✅ |
+| valid subsequent reads | ✅ | ✅ |
+| non-empty cigar/seq in mapped reads | ✅ | 🚫 |
 | cigar consistent w/ seq len | 🚫 | 🚫 |
 
 
 \* Cigar-op validity is not verified for the "record" that anchors a record-boundary candidate BAM position, but it is verified for the *subsequent* records that hadoop-bam checks
 
-† Omitting this check has not resulted in any known spark-bam false-positives, but will likely be added at some point in the future anyway, as a precaution
-
 #### Checking correctness
 
-[spark-bam][] detects BAM-record boundaries using the pluggable [`Checker`][] interface.
+[spark-bam] detects BAM-record boundaries using the pluggable [`Checker`] interface.
 
 Four implementations are provided:
 
-##### [`eager`][]
+##### [`eager`][eager/Checker]
 
 Default/Production-worthy record-boundary-detection algorithm:
 
 - includes [all the checks listed above][checks table]
 - rules out a position as soon as any check fails
+- can be compared against [hadoop-bam]'s checking logic (represented by the [`seqdoop`] checker) using the [`check-bam`], [`compute-splits`], and [`compare-splits`] commands
+- used in BAM-loading APIs exposed to downstream libraries
 
-##### [`full`][]
+##### [`full`][full/Checker]
 
-Debugging-oriented [`Checker`][]:
+Debugging-oriented [`Checker`]:
 
 - runs [all the checks listed above][checks table]
 - emits information on all checks that passed or failed at each position
@@ -112,31 +118,31 @@ Debugging-oriented [`Checker`][]:
     - see [the `full-check` command][`full-check`] or its stand-alone "main" app at [`org.hammerlab.bam.check.full.Main`][full/Main]
     - see [sample output in tests](src/test/scala/org/hammerlab/bam/check/full/MainTest.scala#L276-L328)
 
-##### [`seqdoop`][]
+##### [`seqdoop`]
 
-[`Checker`][] that mimicks [hadoop-bam][]'s [`BAMSplitGuesser`][] as closely as possible.
+[`Checker`] that mimicks [hadoop-bam]'s [`BAMSplitGuesser`] as closely as possible.
 
-- Useful for analyzing [hadoop-bam][]'s correctness
-- Uses the [hammerlab/hadoop-bam][] fork, which exposes [`BAMSplitGuesser`][] logic more efficiently/directly
+- Useful for analyzing [hadoop-bam]'s correctness
+- Uses the [hammerlab/hadoop-bam] fork, which exposes [`BAMSplitGuesser`] logic more efficiently/directly
 
-##### [`indexed`][]
+##### [`indexed`][indexed/Checker]
 
-This [`Checker`][] simply reads from a `.records` file (as output by [`index-records`][]) and reflects the read-positions listed there.
+This [`Checker`] simply reads from a `.records` file (as output by [`index-records`]) and reflects the read-positions listed there.
  
-It can serve as a "ground truth" against which to check either the [`eager`][eager] or [`seqdoop`][seqdoop] checkers (using the `-s` or `-u` flags to [`check-bam`][], resp.).
+It can serve as a "ground truth" against which to check either the [`eager`] or [`seqdoop`] checkers (using the `-s` or `-u` flags to [`check-bam`], resp.).
 
 #### Future-proofing
 
-Some assumptions in [hadoop-bam][] are likely to break when processing long reads.
+Some assumptions in [hadoop-bam] are likely to break when processing long reads.
  
-For example, a 100kbp-long read is likely to span multiple BGZF blocks, likely causing [hadoop-bam][] to reject it as valid.
+For example, a 100kbp-long read is likely to span multiple BGZF blocks, likely causing [hadoop-bam] to reject it as valid.
 
-It is believed that [spark-bam][] will be robust to such situations, related to [its agnosticity about buffer-sizes / reads' relative positions with respect to BGZF-block boundaries][api-clarity], though this has not been tested.
+It is believed that [spark-bam] will be robust to such situations, related to [its agnosticity about buffer-sizes / reads' relative positions with respect to BGZF-block boundaries][api-clarity], though this has not been tested.
 
 
 ### Algorithm/API clarity
 
-Analyzing [hadoop-bam][]'s correctness ([as discussed above](#seqdoop)) proved quite difficult due to subtleties in its implementation. 
+Analyzing [hadoop-bam]'s correctness ([as discussed above](#seqdoop)) proved quite difficult due to subtleties in its implementation. 
 
 Its record-boundary-detection is sensitive, in terms of both output and runtime, to:
 
@@ -144,7 +150,7 @@ Its record-boundary-detection is sensitive, in terms of both output and runtime,
 - arbitrary (256KB) buffer size
 - [_JVM heap size_](https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMSplitGuesser.java#L212) (!!! 😱)
 
-[spark-bam][]'s accuracy is dramatically easier to reason about:
+[spark-bam]'s accuracy is dramatically easier to reason about:
 
 - buffer sizes are irrelevant
 - OOMs are neither expected nor depended on for correctness
@@ -154,7 +160,7 @@ This allows for greater confidence in the correctness of computed splits and dow
   
 #### Case study: counting on OOMs
 
-While evaluating [hadoop-bam][]'s correctness, BAM positions were discovered that [`BAMSplitGuesser`][] would correctly deem as invalid *iff the JVM heap size was **below** a certain threshold*; larger heaps would avoid an OOM and mark an invalid position as valid.
+While evaluating [hadoop-bam]'s correctness, BAM positions were discovered that [`BAMSplitGuesser`] would correctly deem as invalid *iff the JVM heap size was **below** a certain threshold*; larger heaps would avoid an OOM and mark an invalid position as valid.
 
 An overview of this failure mode:
 
@@ -173,13 +179,105 @@ An overview of this failure mode:
 
 This resulted in positions that hadoop-bam correctly ruled out in sufficiently-memory-constrained test-contexts, but false-positived on in more-generously-provisioned settings, which is obviously an undesirable relationship to correctness.
 
-## Using [spark-bam][]
+## Using [spark-bam]
+
+A `SparkContext` can be "enriched" with relevant methods for loading BAM files by importing:
+   
+```scala
+import org.hammerlab.bam.spark._
+```
+
+### [`loadReads`]
+
+The primary method exposed is `loadReads`, which will load an `RDD` of [HTSJDK `SAMRecord`s][`SAMRecord`] from a `.sam`, `.bam`, or `.cram` file:
+
+```scala
+sc.loadReads(path)
+// RDD[SAMRecord]
+```
+
+Arguments:
+
+- `path` (required)
+	- an [`org.hammerlab.paths.Path`]
+	- can be constructed [from a `URI`][Path URI ctor], [`String` (representing a `URI`)][Path String ctor], [or `java.nio.file.Path`][Path NIO ctor]:
+
+		```scala
+		import org.hammerlab.paths.Path
+		val path = Path("src/test/resources/5k.bam")
+		```
+- `bgzfBlocksToCheck`: optional; default: 5
+- `readsToCheck`: 
+	- optional; default: 10
+	- number of consecutive reads to verify when determining a record/split boundary 
+- `maxReadSize`: 
+	- optional; default: 10000000
+	- throw an exception if a record boundary is not found in this many (uncompressed) positions
+- `splitSize`: 
+	- optional; default: taken from underlying Hadoop filesystem APIs
+	- 
+
+### [`loadBamIntervals`]
+
+When the `path` is known to be an indexed `.bam` file, reads can be loaded that from only specified genomic-loci regions:
+
+```scala
+import org.hammerlab.genomics.loci.parsing.ParsedLoci
+import org.hammerlab.genomics.loci.set.LociSet
+import org.hammerlab.bam.header.ContigLengths
+import org.hammerlab.hadoop.Configuration
+
+implicit val conf: Configuration = sc.hadoopConfiguration
+
+val parsedLoci = ParsedLoci("1:11000-12000,1:60000-")
+val contigLengths = ContigLengths(path)
+
+// "Join" `parsedLoci` with `contigLengths to e.g. resolve open-ended intervals
+val loci = LociSet(parsedLoci, contigLengths)
+
+sc.loadBamIntervals(
+	path, 
+	loci
+)
+// RDD[SAMRecord] with only reads overlapping [11000-12000) and [60000,∞) on chromosome 1
+```
+
+Arguments:
+
+- `path` (required)
+- `loci` (required): [`LociSet`] indicating genomic intervals to load
+- `splitSize`: optional; default: taken from underlying Hadoop filesystem APIs
+- `estimatedCompressionRatio`
+	- optional; default: `3.0`
+	- minor parameter used for approximately balancing Spark partitions; shouldn't be necessary to change
+
+### [`loadReadsAndPositions`]
+
+Implementation of [`loadReads`]: takes the same arguments, but returns [`SAMRecord`]s keyed by BGZF position ([`Pos`]).
+
+Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`] command.
+
+### [`loadSplitsAndReads`]
+
+Similar to [`loadReads`], but also returns computed [`Split`]s alongside the `RDD[SAMRecord]`.
+
+Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`] command.
+
+## Linking against [spark-bam]
 
 ### From `spark-shell`
 
-After [getting an assembly JAR][]:
+#### After [getting an assembly JAR]
 
-#### Locally
+```bash
+spark-shell --jars $SPARK_BAM_JAR
+```
+
+#### Using Spark packages
+
+```bash
+spark-shell --packages=org.hammerlab:spark-bam:1.1.0-SNAPSHOT  // TODO
+```
 
 ```scala
 spark-shell --jars $SPARK_BAM_JAR
@@ -192,9 +290,9 @@ reads.count  // Long: 4910
 
 #### On Google Cloud
 
-[spark-bam][] uses Java NIO APIs to read files, and needs the [google-cloud-nio][] connector in order to read from Google Cloud Storage (GCS).
+[spark-bam] uses Java NIO APIs to read files, and needs the [google-cloud-nio] connector in order to read from Google Cloud Storage (`gs://` URLs).
 
-Download a shaded [google-cloud-nio][] JAR:
+Download a shaded [google-cloud-nio] JAR:
 
 ```bash
 GOOGLE_CLOUD_NIO_JAR=google-cloud-nio-0.20.0-alpha-shaded.jar
@@ -213,18 +311,18 @@ val reads = sc.loadBam(Path("gs://bucket/my.bam"))
 
 ### Command-line interface
 
-[spark-bam][] includes several standalone apps as subcommands:
+[spark-bam] includes several standalone apps as subcommands:
 
 #### Spark apps
-- [`check-bam`][]
-- [`full-check`][]
-- [`compute-splits`][]
-- [`compare-splits`][]
+- [`check-bam`]
+- [`full-check`]
+- [`compute-splits`]
+- [`compare-splits`]
 
 #### Single-node / Non-Spark apps
-- [`index-blocks`][]
-- [`index-records`][]
-- [`htsjdk-rewrite`][]
+- [`index-blocks`]
+- [`index-records`]
+- [`htsjdk-rewrite`]
 
 #### Running a subcommand
 ```bash
@@ -268,7 +366,7 @@ Usage: default-base-command compare-splits
 ###### Required argument: `<path>`
 Most commands require exactly one argument: a path to operate on in some way.
 
-This is usually a BAM file, but in the case of [`compare-splits`][] is a file with lists of BAM-file paths.
+This is usually a BAM file, but in the case of [`compare-splits`] is a file with lists of BAM-file paths.
 
 ###### Output path
 They also take an optional "output path" via `--output-path` or `-o`, which they write their meaningful output to; if not set, stdout is used.
@@ -281,7 +379,7 @@ They also take an optional "output path" via `--output-path` or `-o`, which they
 ###### Print limit
 Commands' output is also governed by the "print-limit" (`--print-limit` / `-l`) option.
 
-Various portions of output data will be capped to this number of records/lines to avoid overloading the Spark driver with large `collect` jobs in cases where a prodigious amount of records match some criteria (e.g. false-positive positions in a [`check-bam`][] run).
+Various portions of output data will be capped to this number of records/lines to avoid overloading the Spark driver with large `collect` jobs in cases where a prodigious amount of records match some criteria (e.g. false-positive positions in a [`check-bam`] run).
 
 ```
 --print-limit | -l  <num=1000000>
@@ -298,7 +396,7 @@ Many commands are sensitive to the split-size. Default is often taken from the u
 
 #### [`check-bam`][check/Main]
 
-- Run [spark-bam][] and [hadoop-bam][] [`Checker`s][`Checker`] over every (uncompressed) position in a BAM file
+- Run [spark-bam] and [hadoop-bam][] [`Checker`s][`Checker`] over every (uncompressed) position in a BAM file
 - Print statistics about their concordance.
 
 See [example test output files][output/check-bam].
@@ -331,8 +429,8 @@ False positives with succeeding read info:
 
 #### [`full-check`][full/Main]
 
-- Run the [`full`][] checker over every (uncompressed) position in a BAM file
-- Print statistics about the frequency with which [the record-validity-checks][checks table] used by [spark-bam][] correctly ruled out non-record-boundary positions. 
+- Run the [`full`] checker over every (uncompressed) position in a BAM file
+- Print statistics about the frequency with which [the record-validity-checks][checks table] used by [spark-bam] correctly ruled out non-record-boundary positions. 
 
 In particular, positions where only one or two checks ruled out a "true negative" can be useful for developing a sense of whether the current battery of checks is sufficient.
 
@@ -394,7 +492,11 @@ tooFewRemainingBytesImplied:	1965625
 
 #### [`compute-splits`][spark/Main]
 
-Test and time split computation on a given BAM using [spark-bam][] and/or [hadoop-bam][].
+Test computation on a given BAM using [spark-bam] and/or [hadoop-bam].
+
+By default, compare them and output any differences.
+
+Some timing information is also output for each, though for spark-bam it is usually dominated by Spark-job-setup overhead that doesn't accurately reflect the time spark-bam spends computing splits
 
 ##### Example
 Highlighting a hadoop-bam false-positive on a local test BAM:
@@ -413,15 +515,15 @@ The 470KB split-size used above drops hadoop-bam into the same position in the e
 
 #### [`compare-splits`][compare/Main]
 
-Compare [spark-bam][] and [hadoop-bam][] splits on multiple/many BAMs.
+Compare [spark-bam] and [hadoop-bam] splits on multiple/many BAMs.
 
-Similar to [`compute-splits`][], but [the {sole,required} path argument][required path arg] points to a file with many BAM paths, one per line. 
+Similar to [`compute-splits`], but [the {sole,required} path argument][required path arg] points to a file with many BAM paths, one per line. 
 
 Statistics and diffs about spark-bam's and hadoop-bam's computed splits on all of these (or a subset given by `-s`/`-n` flags) are output.
 
 ##### Example
 
-[`src/test/resources/test-bams`][] contains the 4 test BAM files in this repo:
+[`src/test/resources/test-bams`] contains the 4 test BAM files in this repo:
 
 ```bash
 $ spark-submit $SPARK_BAM_JAR compare-splits -m 470k src/test/resources/test-bams
@@ -441,7 +543,7 @@ $ spark-submit $SPARK_BAM_JAR compare-splits -m 470k src/test/resources/test-bam
 
 #### [`index-records`][IndexRecords]
 
-Outputs a `.bam.records` file with "virtual offsets" of all BAM records in a `.bam` file; see [the test data][str] or [`IndexRecordsTest`][] for example output:
+Outputs a `.bam.records` file with "virtual offsets" of all BAM records in a `.bam` file; see [the test data][str] or [`IndexRecordsTest`] for example output:
 
 ```
 2454,0
@@ -458,7 +560,7 @@ Outputs a `.bam.records` file with "virtual offsets" of all BAM records in a `.b
 
 This runs in one thread on one node and doesn't use Spark, which can take a long time, but is the only/best way to be certain of BAM-record-boundaries.
 
-[`check-bam`][]'s default mode doesn't consult a `.records` file, but rather compares spark-bam's and hadoop-bam's read-position calls; as long as they're not both incorrect at the same position, that is an easier way to evaluate them (there are no known positions where spark-bam is incorrect).
+[`check-bam`]'s default mode doesn't consult a `.records` file, but rather compares spark-bam's and hadoop-bam's read-position calls; as long as they're not both incorrect at the same position, that is an easier way to evaluate them (there are no known positions where spark-bam is incorrect).
 
 ##### Example usage
 
@@ -468,7 +570,7 @@ spark-submit $SPARK_BAM_JAR index-records <input.bam>
 
 #### [`index-blocks`][IndexBlocks]
 
-Outputs a `.bam.blocks` file with {start position, compressed size, and uncompressed size} for each BGZF block in an input `.bam` file; see [the test data][str] or [`IndexBlocksTest`][] for example output:
+Outputs a `.bam.blocks` file with {start position, compressed size, and uncompressed size} for each BGZF block in an input `.bam` file; see [the test data][str] or [`IndexBlocksTest`] for example output:
 
 ```
 0,2454,5650
@@ -496,9 +598,9 @@ spark-submit $SPARK_BAM_JAR index-blocks <input.bam>
 #### [`htsjdk-rewrite`][rewrite/Main]
 
 - Round-trips a BAM file through HTSJDK, which writes it out without aligning BAM records to BGZF-block starts
-- Useful for creating BAMs with which to test [hadoop-bam][]'s correctness
+- Useful for creating BAMs with which to test [hadoop-bam]'s correctness
 	- Some tools (e.g. `samtools`) align reads to BGZF-block boundaries
-	- [spark-bam][] and [hadoop-bam][] are both always correct in such cases
+	- [spark-bam] and [hadoop-bam] are both always correct in such cases
 
 ##### Example
 
@@ -515,7 +617,7 @@ spark-submit $SPARK_BAM_JAR \
 
 ### As a library
 
-#### Depend on [spark-bam][] using Maven
+#### Depend on [spark-bam] using Maven
 
 ```xml
 <dependency>
@@ -525,7 +627,7 @@ spark-submit $SPARK_BAM_JAR \
 </dependency>
 ```
 
-#### Depend on [spark-bam][] using SBT
+#### Depend on [spark-bam] using SBT
 
 ```scala
 libraryDependencies += "org.hammerlab" %% "spark-bam" % "1.1.0-SNAPSHOT"
@@ -552,13 +654,13 @@ export SPARK_BAM_JAR=target/scala-2.11/spark-bam-assembly-1.1.0-SNAPSHOT.jar
 
 ### Accuracy
 
-#### [spark-bam][]
+#### [spark-bam]
 
-There are no known situations where [spark-bam][] returns an invalid split-start.
+There are no known situations where [spark-bam] incorrectly classifies a BAM-record-boundary.
 
-#### [hadoop-bam][]
+#### [hadoop-bam]
 
-[hadoop-bam][] seems to have a false-positive rate of about 1 in every TODO uncompressed BAM positions.
+[hadoop-bam] seems to have a false-positive rate of about 1 in every TODO uncompressed BAM positions.
  
 In all such false-positives:
 - the true start of a read is one byte further. That read is:
@@ -577,22 +679,23 @@ Some descriptions of BAMs that have been used for benchmarking:
 
 ### Speed
 
+TODO
 
 <!-- Intra-page links -->
 [checks table]: #improved-record-boundary-detection-robustness
 [getting an assembly JAR]: #get-an-assembly-JAR
 [required path arg]: #required-argument-path
-[eager]: #eager
-[seqdoop]: #seqdoop
-[full]: #full
-[indexed]: #indexed
+[`eager`]: #eager
+[`seqdoop`]: #seqdoop
+[`full`]: #full
+[`indexed`]: #indexed
 [api-clarity]: #algorithm-api-clarity
 
 <!-- Checkers -->
-[`eager`]: src/main/scala/org/hammerlab/bam/check/eager/Checker.scala
-[`full`]: src/main/scala/org/hammerlab/bam/check/full/Checker.scala
-[`seqdoop`]: src/main/scala/org/hammerlab/bam/check/seqdoop/Checker.scala
-[`indexed`]: src/main/scala/org/hammerlab/bam/check/indexed/Checker.scala
+[eager/Checker]: src/main/scala/org/hammerlab/bam/check/eager/Checker.scala
+[full/Checker]: src/main/scala/org/hammerlab/bam/check/full/Checker.scala
+[seqdoop/Checker]: src/main/scala/org/hammerlab/bam/check/seqdoop/Checker.scala
+[indexed/Checker]: src/main/scala/org/hammerlab/bam/check/indexed/Checker.scala
 
 [`Checker`]: src/main/scala/org/hammerlab/bam/check/Checker.scala
 
@@ -644,7 +747,25 @@ Some descriptions of BAMs that have been used for benchmarking:
 [rewrite/Main]: src/main/scala/org/hammerlab/bam/rewrite/Main.scala
 
 <!-- External BAM links -->
-[1.bam]: https://portal.gdc.cancer.gov/cases/c583fdd1-8cd2-4c15-a23e-0644261f65da?bioId=3813c301-9622-4567-bc72-d17acbeb236f
-[2.bam]: https://portal.gdc.cancer.gov/cases/bcb6447f-3e4c-44fe-afc3-100d5dbe9ba2?bioId=f62f6ba1-59a7-4b16-b69f-15fa3dabfbc1
+[1.bam]: https://portal.gdc.cancer.gov/legacy-archive/files/19155553-8199-4c4d-a35d-9a2f94dd2e7d
+[2.bam]: https://portal.gdc.cancer.gov/legacy-archive/files/b7ee4c39-1185-4301-a160-669dea90e192
 
 [str/5k.100-3000]: src/test/resources/5k.100-3000
+
+[`org.hammerlab.paths.Path`]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala
+[Path NIO ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L14
+[Path URI ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L157
+[Path String ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L145-L155
+
+[`SAMRecord`]: https://github.com/samtools/htsjdk/blob/2.9.1/src/main/java/htsjdk/samtools/SAMRecord.java
+
+[`CanLoadBam`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala
+[`loadReads`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadBamIntervals`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadReadsAndPositions`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadSplitsAndReads`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+
+[`LociSet`]: https://github.com/hammerlab/genomic-loci/blob/2.0.1/src/main/scala/org/hammerlab/genomics/loci/set/LociSet.scala
+
+[`Pos`]: src/main/scala/org/hammerlab/bgzf/Pos.scala
+[`Split`]: src/main/scala/org/hammerlab/bam/spark/Split.scala

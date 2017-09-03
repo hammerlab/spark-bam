@@ -5,10 +5,11 @@ import cats.Show.show
 import cats.syntax.all._
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.seqdoop.hadoop_bam.FileVirtualSplit
+import org.hammerlab.bam.check.Checker.default
 
 case class Split(start: Pos,
                  end: Pos) {
-  def length(implicit estimatedCompressionRatio: EstimatedCompressionRatio): Double =
+  def length(implicit estimatedCompressionRatio: EstimatedCompressionRatio = default[EstimatedCompressionRatio]): Double =
     end - start
 }
 
