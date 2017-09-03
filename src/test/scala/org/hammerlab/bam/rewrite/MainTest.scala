@@ -1,6 +1,7 @@
 package org.hammerlab.bam.rewrite
 
 import caseapp.RemainingArgs
+import org.hammerlab.args.{ Endpoints, IntRanges }
 import org.hammerlab.resources.bam5k
 import org.hammerlab.test.Suite
 import org.hammerlab.test.matchers.files.DirMatcher.dirMatch
@@ -16,8 +17,14 @@ class MainTest
     val outDir = tmpDir()
     Main.run(
       Args(
-        start = Some(100),
-        end = Some(3000),
+        readRanges =
+          Some(
+            IntRanges(
+              Seq(
+                Endpoints(100, 3000)
+              )
+            )
+          ),
         indexBlocks = true,
         indexRecords = true
       ),

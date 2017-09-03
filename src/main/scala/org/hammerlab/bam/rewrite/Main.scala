@@ -1,8 +1,10 @@
 package org.hammerlab.bam.rewrite
 
+import caseapp.core.ArgParser
 import caseapp.{ ExtraName ⇒ O, _ }
 import grizzled.slf4j.Logging
 import htsjdk.samtools.{ SAMFileWriterFactory, SamReaderFactory }
+import org.hammerlab.args.IntRanges
 import org.hammerlab.bam.index.IndexRecords
 import org.hammerlab.bgzf.index.IndexBlocks
 import org.hammerlab.paths.Path
@@ -11,8 +13,7 @@ import org.hammerlab.{ bam, bgzf }
 import scala.collection.JavaConverters._
 
 /**
- * @param start if set, skip this many reads at the start of the input BAM
- * @param end if set, stop after this many reads from the start of the input BAM
+ * @param readRanges if set, only output ranges in these intervals / at these positions
  * @param overwrite if set, overwrite an existing file at the specified output path
  * @param indexBlocks if set, compute a ".blocks" file with positions and sizes of BGZF blocks in the output BAM; see
  *                    [[IndexBlocks]]
@@ -21,11 +22,10 @@ import scala.collection.JavaConverters._
  */
 @AppName("Rewrite BAM file with HTSJDK; records not aligned to BGZF-block boundaries")
 @ProgName("… org.hammerlab.bam.rewrite.Main")
-case class Args(@O("s") start: Option[Int] = None,
-                @O("e") end: Option[Int] = None,
+case class Args(@O("r") readRanges: Option[IntRanges] = None,
                 @O("f") overwrite: Boolean = false,
                 @O("b") indexBlocks: Boolean = false,
-                @O("r") indexRecords: Boolean = false)
+                @O("i") indexRecords: Boolean = false)
 
 /**
  * App that reads a BAM file and rewrites it after a trip through HTSJDK's BAM-reading/-writing machinery.
@@ -54,24 +54,30 @@ object Main
 
         val header = reader.getFileHeader
 
-        val records = reader.iterator().asScala
+        val records = {
+          val records =
+            reader
+              .iterator()
+              .asScala
 
-        args.start.foreach(records.drop)
-
-        val slice =
-          args
-            .end
-            .map(
-              end ⇒
-                records.take(end - args.start.getOrElse(0))
-            )
-            .getOrElse(records)
+          args.readRanges match {
+            case Some(ranges) ⇒
+              records
+                .zipWithIndex
+                .collect {
+                  case (record, idx) if ranges.contains(idx) ⇒
+                    record
+                }
+            case _ ⇒
+              records
+          }
+        }
 
         val writer =
           new SAMFileWriterFactory()
             .makeBAMWriter(header, true, outPath.outputStream)
 
-        slice.foreach(writer.addAlignment)
+        records.foreach(writer.addAlignment)
 
         reader.close()
         writer.close()

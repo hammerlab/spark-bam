@@ -20,3 +20,8 @@ case class LongRanges(ranges: Seq[Range[Long]])
 
 case class IntRanges(ranges: Seq[Range[Int]])
   extends Ranges[Int, Integer](ranges)
+
+object IntRanges {
+  implicit val parser: ArgParser[IntRanges] =
+    Ranges.parser[IntRanges, Int, Integer]
+}
