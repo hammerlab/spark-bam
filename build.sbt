@@ -89,23 +89,31 @@ lazy val load = project.settings(
   name := "load",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
+    "org.hammerlab.bam" ^^ "check" ^ "1.0.0-SNAPSHOT",
+    "org.hammerlab" ^^ "bgzf" ^ "1.0.0-SNAPSHOT",
 //    bytes % "1.0.2",
 //    case_app,
 //    cats,
-//    channel % "1.0.0",
+    channel % "1.1.0-SNAPSHOT",
 //    hadoop_bam % "7.9.0",
 //    io % "1.2.0",
-//    iterators % "1.4.0",
+    htsjdk,
+    iterators % "1.4.0",
 //    magic_rdds % "3.0.0-SNAPSHOT",
-//    math % "2.0.0",
-//    paths % "1.2.0",
-//    reference % "1.4.0",
-//    slf4j % "1.3.1",
-//    spark_util % "1.3.0",
+    math % "2.0.0",
+    paths % "1.2.1-SNAPSHOT",
+    reference % "1.4.0",
+    slf4j % "1.3.1",
+    spark_util % "1.3.0",
+    ("org.seqdoop" ^ "hadoop-bam" ^ "7.8.0") - hadoop
 //    stats % "1.0.1"
   ),
-//  compileAndTestDeps += loci % "2.0.1",
-  addSparkDeps
+  compileAndTestDeps += loci % "2.0.1",
+  addSparkDeps,
+  testDeps ++= Seq(
+    "org.hammerlab.bam" ^^ "test-bams" ^ "1.0.0-SNAPSHOT",
+    magic_rdds % "3.0.0-SNAPSHOT"
+  )
 )
 
 lazy val cli = project.settings(

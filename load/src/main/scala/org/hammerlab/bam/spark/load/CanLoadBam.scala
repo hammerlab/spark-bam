@@ -7,12 +7,13 @@ import htsjdk.samtools.{ QueryInterval, SAMLineParser, SAMRecord, SamReaderFacto
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.hammerlab.bam.check.Checker.{ BGZFBlocksToCheck, MaxReadSize, ReadsToCheck }
+import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck, default }
+import org.hammerlab.bam.header.ContigLengths.readSAMHeaderFromStream
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.index.Index.Chunk
 import org.hammerlab.bam.iterator.{ RecordStream, SeekableRecordStream }
 import org.hammerlab.bam.spark.{ BAMRecordRDD, FindRecordStart, Split }
-import org.hammerlab.bgzf.block.{ FindBlockStart, SeekableUncompressedBytes }
+import org.hammerlab.bgzf.block.{ BGZFBlocksToCheck, FindBlockStart, SeekableUncompressedBytes }
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel.ChannelByteChannel
@@ -28,11 +29,9 @@ import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.iterator.sliding.Sliding2Iterator._
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
-import org.seqdoop.hadoop_bam.util.SAMHeaderReader.readSAMHeaderFromStream
 import org.seqdoop.hadoop_bam.{ CRAMInputFormat, SAMRecordWritable }
 
 import scala.collection.JavaConverters._
-import org.hammerlab.bam.check.Checker.default
 
 
 /**
@@ -70,11 +69,12 @@ trait CanLoadBam
       return loadSam(path, splitSize)
              .filter {
                record ⇒
-                 region(record).exists(
-                   intervalsBroadcast
-                     .value
-                     .intersects
-                 )
+                 region(record)
+                   .exists(
+                     intervalsBroadcast
+                       .value
+                       .intersects
+                   )
              }
     }
 

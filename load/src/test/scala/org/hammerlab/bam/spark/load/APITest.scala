@@ -1,6 +1,6 @@
 package org.hammerlab.bam.spark.load
 
-import org.hammerlab.resources.bam5k
+import org.hammerlab.bam.test.resources.bam5k
 import org.hammerlab.spark.test.suite.SparkSuite
 
 /**
@@ -13,7 +13,7 @@ class APITest
 
     import org.hammerlab.bam.spark._
 
-    val path = bam5k.path
+    val path = bam5k
 
     sc.loadBam(path)
 

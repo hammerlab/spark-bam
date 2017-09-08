@@ -5,10 +5,10 @@ import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.index.Index.Chunk
 import org.hammerlab.bam.spark._
 import org.hammerlab.bam.spark.load.CanLoadBam.getIntevalChunks
+import org.hammerlab.bam.test.resources.tcgaBamExcerpt
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.hadoop.splits.MaxSplitSize
-import org.hammerlab.resources.tcgaBamExcerpt
 
 class LoadBAMTest
   extends LoadBAMChecks {
