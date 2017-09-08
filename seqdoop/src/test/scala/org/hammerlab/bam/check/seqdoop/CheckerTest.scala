@@ -1,12 +1,12 @@
 package org.hammerlab.bam.check.seqdoop
 
 import org.hammerlab.bam.header.ContigLengths
+import org.hammerlab.bam.test.resources.tcgaBamExcerpt
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.test.Suite
-import org.hammerlab.resources.tcgaBamExcerpt
-import org.hammerlab.channel.CachingChannel._
 
 class CheckerTest
   extends Suite {

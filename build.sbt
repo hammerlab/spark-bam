@@ -50,15 +50,27 @@ lazy val check = project.settings(
     slf4j % "1.3.1",
     spark_util % "1.3.0"
   ),
+  fork := true,  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
   addSparkDeps,
   compileAndTestDeps += loci % "2.0.1",
+  testUtilsVersion := "1.3.2-SNAPSHOT",
   testDeps += "org.hammerlab.bam" ^^ "test-bams" ^ "1.0.0-SNAPSHOT"
 )
 
 lazy val seqdoop = project.settings(
   organization := "org.hammerlab.bam",
   name := "seqdoop",
-  version := "1.0.0-SNAPSHOT"
+  version := "1.0.0-SNAPSHOT",
+  deps ++= Seq(
+    ("org.hammerlab.bam" ^^ "check" ^ "1.0.0-SNAPSHOT") - ("org.seqdoop" ^ "hadoop-bam"),
+    hadoop_bam % "7.9.0",
+    htsjdk,
+    paths % "1.2.1-SNAPSHOT",
+    channel % "1.1.0-SNAPSHOT",
+    "org.hammerlab" ^^ "bgzf" ^ "1.0.0-SNAPSHOT"
+  ),
+  addSparkDeps,
+  testDeps += "org.hammerlab.bam" ^^ "test-bams" ^ "1.0.0-SNAPSHOT"
 )
 
 lazy val test_bams = project.settings(

@@ -1,0 +1,35 @@
+5650 uncompressed positions
+2.4K compressed
+Compression ratio: 2.30
+0 reads
+All calls matched!
+
+No positions where only one check failed
+
+1 positions where exactly two checks failed:
+	0:5649:	1 before HWI-ST807:461:C2P0JACXX:4:2115:8592:79724 2/2 101b aligned read @ 1:10001. Failing checks: noReadName,invalidCigarOp
+
+	Per-flag totals:
+		    noReadName:	1
+		invalidCigarOp:	1
+
+Total error counts:
+	            tooLargeReadIdx:	5457
+	        tooLargeNextReadIdx:	5452
+	             invalidCigarOp:	5402
+	  nonNullTerminatedReadName:	4829
+	tooFewRemainingBytesImplied:	3203
+	                 noReadName:	 438
+	           nonASCIIReadName:	 368
+	             emptyMappedSeq:	 143
+	        negativeNextReadIdx:	 107
+	        negativeNextReadPos:	 107
+	            negativeReadIdx:	 106
+	            negativeReadPos:	 106
+	        tooLargeNextReadPos:	  76
+	            tooLargeReadPos:	  74
+	              emptyReadName:	   7
+	     tooFewBytesForReadName:	   0
+	     tooFewBytesForCigarOps:	   0
+	           emptyMappedCigar:	   0
+

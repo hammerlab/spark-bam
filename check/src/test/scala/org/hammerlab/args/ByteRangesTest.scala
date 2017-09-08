@@ -1,9 +1,5 @@
 package org.hammerlab.args
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream }
-
-import java.lang.{ Long ⇒ JLong }
-
 import org.apache.spark.serializer.KryoSerializer
 import org.hammerlab.bytes._
 import org.hammerlab.spark.confs
@@ -29,5 +25,4 @@ class ByteRangesTest
     val byteRanges = ByteRanges(Seq(Endpoints(10.MB, 20.MB)))
     javaRead[ByteRanges](javaBytes(byteRanges)) should be(byteRanges)
   }
-
 }

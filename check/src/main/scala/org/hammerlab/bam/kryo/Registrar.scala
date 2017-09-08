@@ -15,6 +15,7 @@ import org.hammerlab.bam.spark.Split
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.genomics.reference
+import org.hammerlab.kryo.serializeAs
 import org.hammerlab.paths.Path
 
 import scala.collection.mutable
@@ -30,9 +31,6 @@ class Registrar extends KryoRegistrator {
 
     /** [[org.hammerlab.bam.check.full.Main]] has a .collect */
     kryo.register(classOf[mutable.WrappedArray.ofRef[_]])
-
-    /** [[org.hammerlab.bam.check.AnalyzeCalls]] broadcasts a [[Path]] */
-    kryo.register(classOf[Path])
 
     /**
      * [[org.hammerlab.bam.spark.LoadBamContext.loadBamIntervals()]] parallelizes a [[Vector]] of [[Vector]]s of
@@ -81,7 +79,11 @@ class Registrar extends KryoRegistrator {
 
     kryo.register(classOf[Header])
 
-//    compare.Main.register(kryo)
+    /** [[org.hammerlab.bam.check.AnalyzeCalls]] broadcasts a [[Path]] */
+    kryo.register(
+      classOf[Path],
+      serializeAs[Path, String](_.toString, Path(_))
+    )
 
     Blocks.register
 
