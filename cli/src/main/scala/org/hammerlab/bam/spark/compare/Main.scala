@@ -127,7 +127,7 @@ object Main
       if (timingRatios.size > 1)
         echo(
           "Ratios:",
-          Stats(timingRatios),
+          Stats(timingRatios, onlySampleSorted = true),
           ""
         )
       else if (timingRatios.size == 1)

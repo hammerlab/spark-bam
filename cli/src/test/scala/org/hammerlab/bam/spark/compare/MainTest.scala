@@ -11,6 +11,7 @@ class MainTest
   extends MainSuite(classOf[Registrar]) {
 
   val ratio = Chars("0123456789.")
+  val elemsOrSorted = Chars(" delmorst")
 
   test("470KB, 2 bams") {
     val outPath = tmpPath()
@@ -38,7 +39,7 @@ class MainTest
       "",
       "Ratios:",
       "N: 2, μ/σ: " ++ ratio ++ "/" ++ ratio,
-      " elems: " ++ ratio ++ " " ++ ratio,
+      elemsOrSorted ++ ": " ++ ratio ++ " " ++ ratio,
       "",
       "	1.2203053-2211029.bam: 2 splits differ (totals: 2, 2; mismatched: 1, 1):",
       "				486847:6-963864:65535",
