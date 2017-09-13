@@ -118,11 +118,10 @@ class MainTest
         |        Print usage and exit
         |  --help | -h  
         |        Print help message and exit
-        |  --start | -s  <value>
-        |  --end | -e  <value>
+        |  --read-ranges | -r  <value>
         |  --overwrite | -f  
         |  --index-blocks | -b  
-        |  --index-records | -r  
+        |  --index-records | -i  
         |
         |"""
     )
@@ -134,11 +133,10 @@ class MainTest
     )(
       """Command: htsjdk-rewrite
         |Usage: default-base-command htsjdk-rewrite 
-        |  --start | -s  <value>
-        |  --end | -e  <value>
+        |  --read-ranges | -r  <value>
         |  --overwrite | -f  
         |  --index-blocks | -b  
-        |  --index-records | -r  
+        |  --index-records | -i  
         |
         |"""
     )

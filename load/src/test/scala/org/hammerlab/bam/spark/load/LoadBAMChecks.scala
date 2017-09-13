@@ -2,15 +2,17 @@ package org.hammerlab.bam.spark.load
 
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
+import org.hammerlab.bam.test.resources.TestBams
 import org.hammerlab.genomics.loci.set.test.LociSetUtil
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
+import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.KryoSparkSuite
-import org.hammerlab.test.resources.File
 
 trait LoadBAMChecks
   extends KryoSparkSuite
-    with LociSetUtil {
+    with LociSetUtil
+    with TestBams {
 
   register(
     new Registrar,
@@ -21,10 +23,6 @@ trait LoadBAMChecks
     /** We [[RDD.take]] some read-names below */
     classOf[Array[String]]
   )
-
-  def file: String
-
-  def path = File(file).path
 
   def load(maxSplitSize: MaxSplitSize): RDD[SAMRecord]
 

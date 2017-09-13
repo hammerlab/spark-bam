@@ -32,19 +32,6 @@ class Registrar extends KryoRegistrator {
     /** [[org.hammerlab.bam.check.full.Main]] has a .collect */
     kryo.register(classOf[mutable.WrappedArray.ofRef[_]])
 
-    /**
-     * [[org.hammerlab.bam.spark.LoadBamContext.loadBamIntervals()]] parallelizes a [[Vector]] of [[Vector]]s of
-     * [[Chunk]]s
-     */
-//    kryo.register(classOf[Chunk])
-//    kryo.register(classOf[Pos])
-//    kryo.register(classOf[Array[Vector[_]]])
-
-    /**
-     * [[org.hammerlab.bam.spark.LoadBamContext.loadBam]] parallelizes an [[Array[Long]]] of file-split start-positions.
-     */
-//    kryo.register(classOf[mutable.WrappedArray.ofLong])
-
     /** It also collects an [[Array[Split]]] in [[org.hammerlab.bam.spark.Spark]] mode */
     kryo.register(classOf[Array[Split]])
     kryo.register(classOf[Split])
@@ -59,17 +46,13 @@ class Registrar extends KryoRegistrator {
     kryo.register(Class.forName("scala.collection.convert.Wrappers$"))
     kryo.register(classOf[SAMSequenceRecord])
     kryo.register(classOf[SAMProgramRecord])
+    kryo.register(classOf[SAMFileHeader.GroupOrder])
+    kryo.register(classOf[SAMFileHeader.SortOrder])
 
     /** Backs [[org.hammerlab.bam.header.ContigLengths]] */
     kryo.register(classOf[ContigLengths], ContigLengthsSerializer)
 
     new reference.Registrar().registerClasses(kryo)
-
-    /**
-     * [[org.hammerlab.bam.spark.load.CanLoadBam.loadBamIntervals]] broadcasts a
-     * [[org.hammerlab.genomics.loci.set.LociSet]]
-     */
-//    new loci.set.Registrar().registerClasses(kryo)
 
     kryo.register(classOf[Metadata])
     kryo.register(classOf[Array[Metadata]])
@@ -105,11 +88,6 @@ class Registrar extends KryoRegistrator {
 
     kryo.register(classOf[mutable.WrappedArray.ofInt])
 
-    // compare-splits performs a reduce on some Result-filtered HLists
-    import shapeless._
-    kryo.register(classOf[_ :: _])
-    kryo.register(HNil.getClass)
-
     import org.hammerlab.bytes._
     kryo.register(classOf[ B])
     kryo.register(classOf[KB])
@@ -119,11 +97,11 @@ class Registrar extends KryoRegistrator {
     kryo.register(classOf[PB])
     kryo.register(classOf[EB])
 
-    kryo.register(classOf[Endpoints[_]])
-    kryo.register(classOf[OffsetLength[_]])
-    kryo.register(classOf[Point[_]])
+//    kryo.register(classOf[Endpoints[_]])
+//    kryo.register(classOf[OffsetLength[_]])
+//    kryo.register(classOf[Point[_]])
 
-    kryo.register(Class.forName("org.hammerlab.args.Integral$$anon$1"))
+    //kryo.register(Class.forName("org.hammerlab.args.Integral$$anon$1"))
   }
 }
 

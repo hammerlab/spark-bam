@@ -1,13 +1,14 @@
 package org.hammerlab.bam.spark.compare
 
 import org.apache.spark.broadcast.Broadcast
-import org.hammerlab.bam.check.Checker.{ BGZFBlocksToCheck, MaxReadSize, ReadsToCheck, default }
+import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck, default }
 import org.hammerlab.bam.spark.Split
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.bgzf.block.BGZFBlocksToCheck
 import org.hammerlab.bytes._
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
-import org.hammerlab.resources.tcgaBamExcerpt
+import org.hammerlab.bam.test.resources.tcgaBamExcerpt
 import org.hammerlab.spark.test.suite.SparkSuite
 import shapeless.LabelledGeneric
 

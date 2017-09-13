@@ -9,9 +9,10 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.SparkContext
 import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, OutputArgs, SplitSize }
-import org.hammerlab.bam.check.Checker.{ BGZFBlocksToCheck, MaxReadSize, ReadsToCheck }
+import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark.CanCompareSplits
+import org.hammerlab.bgzf.block.BGZFBlocksToCheck
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.io.Printer._
@@ -19,6 +20,7 @@ import org.hammerlab.iterator.SliceIterator._
 import org.hammerlab.kryo.serializeAs
 import org.hammerlab.paths.Path
 import org.hammerlab.stats.Stats
+import shapeless._
 
 @AppName("Compare splits computed from many BAM files listed in a given file")
 @ProgName("… org.hammerlab.bam.spark.compare")
@@ -40,6 +42,17 @@ case class Opts(@Recurse output: OutputArgs,
 object Main
   extends SparkPathApp[Opts](classOf[Registrar])
     with CanCompareSplits {
+
+  sparkConf(
+    "spark.kryo.classesToRegister" →
+      Seq[Class[_]](
+        classOf[_ :: _],
+        HNil.getClass,
+        classOf[Result]
+      )
+      .map(_.getName)
+      .mkString(",")
+  )
 
   override protected def run(opts: Opts): Unit = {
 
@@ -65,11 +78,10 @@ object Main
       new PathChecks(lines, numBams)
         .results
 
+    import cats.implicits.catsKernelStdMonoidForVector
     import org.hammerlab.types.Monoid._
     import shapeless._
     import record._
-
-    import cats.implicits.catsKernelStdMonoidForVector
 
     val (
       timingRatios ::

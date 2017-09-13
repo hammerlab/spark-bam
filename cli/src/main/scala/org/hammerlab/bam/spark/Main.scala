@@ -5,7 +5,6 @@ import cats.implicits.catsStdShowForInt
 import cats.syntax.all._
 import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.AsNewHadoopPartition
 import org.hammerlab.app.{ SparkApp, SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.args.{ OutputArgs, SplitSize }
@@ -14,12 +13,10 @@ import org.hammerlab.bam.spark.Main.time
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.collection.canBuildVector
-import org.hammerlab.hadoop.Configuration
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.sorted.OrZipIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.paths.Path
-import org.hammerlab.spark.Context
 import org.hammerlab.stats.Stats
 import org.hammerlab.timing.Timer
 import org.hammerlab.types._

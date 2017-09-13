@@ -5,7 +5,6 @@ import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.index.Index.Chunk
 import org.hammerlab.bam.spark._
 import org.hammerlab.bam.spark.load.CanLoadBam.getIntevalChunks
-import org.hammerlab.bam.test.resources.tcgaBamExcerpt
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.hadoop.splits.MaxSplitSize
@@ -13,7 +12,7 @@ import org.hammerlab.hadoop.splits.MaxSplitSize
 class LoadBAMTest
   extends LoadBAMChecks {
 
-  override val file = "5k.bam"
+  val path = bam5k
 
   override def load(maxSplitSize: MaxSplitSize): RDD[SAMRecord] =
     sc

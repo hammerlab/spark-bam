@@ -1,11 +1,11 @@
 package org.hammerlab.bam.spark.compare
 
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.resources._
+import org.hammerlab.bam.test.resources._
 import org.hammerlab.spark.test.suite.MainSuite
 import org.hammerlab.test.linesMatch
-import org.hammerlab.test.matchers.lines.{ Chars, Digits }
 import org.hammerlab.test.matchers.lines.Line._
+import org.hammerlab.test.matchers.lines.{ Chars, Digits }
 
 class MainTest
   extends MainSuite(classOf[Registrar]) {
@@ -17,8 +17,8 @@ class MainTest
     val bamsPath = tmpPath()
     bamsPath.writeLines(
       Seq(
-        tcgaBamExcerpt,
-        bam5k
+        tcgaBamExcerpt.toString,
+        bam5k.toString
       )
     )
     Main.main(
@@ -51,7 +51,7 @@ class MainTest
   test("400KB, 1 bam, no errors") {
     val outPath = tmpPath()
     val bamsPath = tmpPath()
-    bamsPath.write(bam5k)
+    bamsPath.write(bam5k.toString)
     Main.main(
       Array(
         "-m", "400k",

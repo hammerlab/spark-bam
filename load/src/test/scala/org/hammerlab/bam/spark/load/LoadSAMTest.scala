@@ -9,7 +9,7 @@ import org.hammerlab.hadoop.splits.MaxSplitSize
 class LoadSAMTest
   extends LoadBAMChecks {
 
-  override val file = "5k.sam"
+  val path = sam5k
 
   override def load(maxSplitSize: MaxSplitSize): RDD[SAMRecord] =
     sc
@@ -39,7 +39,11 @@ class LoadSAMTest
     val intervals: LociSet = "1:13000-14000,1:60000-61000"
 
     {
-      val records = sc.loadBamIntervals(path, intervals)
+      val records = 
+        sc.loadBamIntervals(
+          path, 
+          intervals
+        )
 
       records.getNumPartitions should be(1)
       records.count should be(129)

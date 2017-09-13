@@ -1,14 +1,15 @@
 package org.hammerlab.bam.check.full
 
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bam.test.resources.{ bam5k, tcgaBamExcerpt, tcgaBamExcerptUnindexed }
+import org.hammerlab.bam.test.resources.{ TestBams, tcgaBamExcerptUnindexed }
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.MainSuite
 import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
 import org.hammerlab.test.resources.File
 
 class MainTest
-  extends MainSuite(classOf[Registrar]) {
+  extends MainSuite(classOf[Registrar])
+    with TestBams {
 
   def expected(basename: String) = File(s"output/full-check/$basename")
 
@@ -32,7 +33,7 @@ class MainTest
 
     outputPath should fileMatch(expected)
   }
-
+  
   test("tcga excerpt with indexed records") {
     check(
       tcgaBamExcerpt

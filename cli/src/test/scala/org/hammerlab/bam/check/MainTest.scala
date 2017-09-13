@@ -1,7 +1,8 @@
 package org.hammerlab.bam.check
 
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.resources.{ tcgaBamExcerpt, tcgaBamExcerptUnindexed }
+import org.hammerlab.bam.test.resources.{ tcgaBamExcerpt, tcgaBamExcerptUnindexed }
+import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.MainSuite
 import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
 import org.hammerlab.test.resources.File
@@ -9,14 +10,14 @@ import org.hammerlab.test.resources.File
 class MainTest
   extends MainSuite(classOf[Registrar]) {
 
-  def compare(path: String, expected: File): Unit = {
+  def compare(path: Path, expected: File): Unit = {
     val outputPath = tmpPath()
 
     Main.main(
       Array(
         "-m", "200k",
         "-o", outputPath.toString,
-        path
+        path.toString
       )
     )
 
@@ -62,7 +63,7 @@ class MainTest
         "-u",
         "-m", "200k",
         "-o", outputPath.toString,
-        tcgaBamExcerpt
+        tcgaBamExcerpt.toString
       )
     )
 
@@ -77,7 +78,7 @@ class MainTest
         "-s",
         "-m", "200k",
         "-o", outputPath.toString,
-        tcgaBamExcerpt
+        tcgaBamExcerpt.toString
       )
     )
 

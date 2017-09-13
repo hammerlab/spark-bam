@@ -1,13 +1,14 @@
 package org.hammerlab.bam.spark.load
 
-import org.hammerlab.bam.test.resources.bam5k
+import org.hammerlab.bam.test.resources.TestBams
 import org.hammerlab.spark.test.suite.SparkSuite
 
 /**
  * Simple examples calling the BAM-loading API
  */
 class APITest
-  extends SparkSuite {
+  extends SparkSuite 
+    with TestBams {
 
   test("sample load calls") {
 

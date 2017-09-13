@@ -1,23 +1,17 @@
 package org.hammerlab.bam.check
 
-import java.io.FileNotFoundException
-import java.net.URI
-
 import caseapp._
-import org.apache.hadoop.fs
-import org.apache.hadoop.fs.permission.FsPermission
-import org.apache.hadoop.fs.{ FSDataInputStream, FSDataOutputStream, FileStatus, FileSystem, Path ⇒ HPath }
-import org.apache.hadoop.util.Progressable
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bam.test.resources.{ tcgaBamExcerpt, tcgaBamExcerptUnindexed }
+import org.hammerlab.bam.test.resources.{ TestBams, tcgaBamExcerptUnindexed }
 import org.hammerlab.magic.rdd.collect.CollectPartitionsRDD._
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.KryoSparkSuite
 
-import scala.collection.mutable
-
 class BlocksTCGATest
-  extends BlocksTest()(tcgaBamExcerpt) {
+  extends BlocksTest
+    with TestBams {
+  
+  override implicit def path: Path = tcgaBamExcerpt
 
   override def boundariesCase: Array[Array[Int]] =
     Array(
@@ -45,7 +39,9 @@ class BlocksTCGATest
 }
 
 class UnindexedBlocksTCGATest
-  extends BlocksTest()(tcgaBamExcerptUnindexed) {
+  extends BlocksTest {
+  
+  override implicit def path: Path = tcgaBamExcerptUnindexed
 
   override def boundariesCase: Array[Array[Int]] =
     Array(
@@ -68,12 +64,10 @@ class UnindexedBlocksTCGATest
     )
 }
 
-abstract class BlocksTest(implicit path: Path)
+abstract class BlocksTest
   extends KryoSparkSuite {
 
-  sparkConf(
-    "spark.hadoop.fs.jar.impl" → classOf[JarFileSystem].getCanonicalName
-  )
+  implicit def path: Path
 
   register(Registrar)
 
@@ -113,34 +107,6 @@ abstract class BlocksTest(implicit path: Path)
 
   def boundariesCase: Array[Array[Int]]
   def boundariesCaseBounds: Seq[(Int, Option[Int])]
-
-/*
-  test("hpath") {
-    def exists(hpath: HPath, expected: Boolean = true): Unit = {
-      hpath.getFileSystem(sc.hadoopConfiguration).exists(hpath) should be(expected)
-    }
-
-    exists(new HPath(tcgaBamExcerpt.uri))
-    val blocksPath = tcgaBamExcerpt + ".blocks"
-    val blocksURI = blocksPath.uri
-    exists(new HPath(blocksURI))
-
-    val s2 = "jar:file:///Users/ryan/.m2/repository/org/hammerlab/bam/test-bams_2.11/1.0.0-SNAPSHOT/test-bams_2.11-1.0.0-SNAPSHOT.jar!/1.2203053-2211029.bam.blocks"
-    val u2 = new URI(s2)
-    exists(new HPath(u2))
-//    exists(new HPath(s2))
-
-    val s3 = "jar:/Users/ryan/.m2/repository/org/hammerlab/bam/test-bams_2.11/1.0.0-SNAPSHOT/test-bams_2.11-1.0.0-SNAPSHOT.jar!/1.2203053-2211029.bam.blocks"
-    val u3 = new URI(s3)
-    exists(new HPath(u3))
-    exists(new HPath(s3))
-
-    val str = "jar:file://Users/ryan/.m2/repository/org/hammerlab/bam/test-bams_2.11/1.0.0-SNAPSHOT/test-bams_2.11-1.0.0-SNAPSHOT.jar!/1.2203053-2211029.bam.blocks"
-    val uri = new URI(str)
-    exists(new HPath(uri))
-    exists(new HPath(str))
-  }
-*/
 
   test("all blocks") {
     check(
@@ -188,41 +154,4 @@ abstract class BlocksTest(implicit path: Path)
       boundariesCaseBounds: _*
     )
   }
-}
-
-class JarFileSystem
-  extends FileSystem {
-  override def getFileStatus(f: fs.Path): FileStatus = {
-    val uri = f.toUri
-    val path = Path(uri)
-    if (!path.exists)
-      throw new FileNotFoundException(s"$uri")
-
-    val ssp = uri.getRawSchemeSpecificPart
-    val jarUri = new URI(ssp.substring(0, ssp.indexOf("!/")))
-    val jarPath = new HPath(jarUri)
-    val status =
-      jarPath
-        .getFileSystem(getConf)
-        .getFileStatus(jarPath)
-
-    status.setPath(f)
-
-    status
-  }
-
-  override def open(f: fs.Path, bufferSize: Int): FSDataInputStream = {
-    val path = Path(f.toUri)
-    new FSDataInputStream(path.inputStream)
-  }
-
-  override def mkdirs(f: fs.Path, permission: FsPermission): Boolean = ???
-  override def rename(src: fs.Path, dst: fs.Path): Boolean = ???
-  override def listStatus(f: fs.Path): Array[FileStatus] = ???
-  override def create(f: fs.Path, permission: FsPermission, overwrite: Boolean, bufferSize: Int, replication: Short, blockSize: Long, progress: Progressable): FSDataOutputStream = ???
-  override def getWorkingDirectory: fs.Path = ???
-  override def setWorkingDirectory(new_dir: fs.Path): Unit = ???
-  override def getUri: URI = ???
-  override def delete(f: fs.Path, recursive: Boolean): Boolean = ???
-  override def append(f: fs.Path, bufferSize: Int, progress: Progressable): FSDataOutputStream = ???
 }
