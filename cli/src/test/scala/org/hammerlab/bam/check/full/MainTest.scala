@@ -7,7 +7,7 @@ import org.hammerlab.spark.test.suite.MainSuite
 import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
 import org.hammerlab.test.resources.File
 
-class MainTest
+abstract class MainTest
   extends MainSuite(classOf[Registrar])
     with TestBams {
 
