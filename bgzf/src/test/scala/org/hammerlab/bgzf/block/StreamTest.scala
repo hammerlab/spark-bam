@@ -5,7 +5,7 @@ import java.nio.channels.FileChannel
 
 import cats.implicits.catsStdShowForInt
 import cats.syntax.all._
-import org.hammerlab.bam.test.resources.bam5k
+import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.stats.Stats
 import org.hammerlab.test.Suite
 
@@ -29,32 +29,32 @@ class StreamTest
 
   test("seekable") {
 
-    val ch = FileChannel.open(bam5k.path)
+    val ch = FileChannel.open(bam2.path)
     val stream = SeekableStream(ch)
 
-    stream.next() should ===(Metadata(    0,  2454,  5650))
+    stream.next() should ===(Metadata(    0, 26169, 65498))
     stream.seek(0)
-    stream.next() should ===(Metadata(    0,  2454,  5650))
+    stream.next() should ===(Metadata(    0, 26169, 65498))
     stream.seek(0)
-    stream.next() should ===(Metadata(    0,  2454,  5650))
-    stream.next() should ===(Metadata( 2454, 25330, 65092))
+    stream.next() should ===(Metadata(    0, 26169, 65498))
+    stream.next() should ===(Metadata(26169, 24080, 65498))
 
     stream.seek(0)
-    stream.next() should ===(Metadata(    0,  2454,  5650))
+    stream.next() should ===(Metadata(    0, 26169, 65498))
 
-    stream.seek(27784)
-    stream.next() should ===(Metadata(27784, 23602, 64902))
+    stream.seek(75791)
+    stream.next() should ===(Metadata(75791, 22308, 65498))
   }
 
-  test("5k.bam") {
-    val is = bam5k.inputStream
+  test("2.bam") {
+    val is = bam2.inputStream
     val bgzfStream = Stream(is)
     val blocks = bgzfStream.toList
-    blocks.size should be(50)
+    blocks.size should be(30)
 
-    blocks(0) should ===(Metadata(     0,  2454,  5650))
-    blocks(1) should ===(Metadata(  2454, 25330, 65092))
-    blocks(2) should ===(Metadata( 27784, 23602, 64902))
+    blocks(0) should ===(Metadata(    0, 26169, 65498))
+    blocks(1) should ===(Metadata(26169, 24080, 65498))
+    blocks(2) should ===(Metadata(50249, 25542, 65498))
 
     val compressedStats =
       Stats(
@@ -63,17 +63,16 @@ class StreamTest
 
     check(
       compressedStats,
-      """N: 50, μ/σ: 20213.5/4072.1, med/mad: 20218/1497
-        | elems: 2454 25330 23602 25052 21680 20314 19775 20396 21533 19644 … 21329 19964 19443 18579 23331 23393 18792 17566 17847 4508
-        |sorted: 2454 4508 17566 17733 17847 18038 18216 18271 18579 18632 … 22670 23236 23331 23393 23602 25052 25060 25330 26259 26290
-        |   5:	11689.9
-        |  10:	17866.1
-        |  25:	18986.5
-        |  50:	20218
-        |  75:	22338
-        |  90:	24907
-        |  95:	25748.1
-      """
+      """N: 30, μ/σ: 21141.4/3411.4, med/mad: 20825.5/1499
+        | elems: 26169 24080 25542 22308 20688 19943 20818 21957 19888 20517 … 17812 19769 20223 20833 22341 23036 22645 24380 26254 7821
+        |sorted: 7821 17812 18340 18636 18685 19368 19673 19769 19888 19943 … 22341 22645 22709 23036 24080 24380 25542 26169 26240 26254
+        |   5:	13316.1
+        |  10:	18369.6
+        |  25:	19745
+        |  50:	20825.5
+        |  75:	22790.8
+        |  90:	26106.3
+        |  95:	26246.3"""
     )
 
     val prunedCompressedStats =
@@ -86,17 +85,16 @@ class StreamTest
 
     check(
       prunedCompressedStats,
-      """N: 48, μ/σ: 20910.7/2253.3, med/mad: 20271.5/1450
-        | elems: 25330 23602 25052 21680 20314 19775 20396 21533 19644 20207 … 25060 21329 19964 19443 18579 23331 23393 18792 17566 17847
-        |sorted: 17566 17733 17847 18038 18216 18271 18579 18632 18792 18850 … 22670 23236 23331 23393 23602 25052 25060 25330 26259 26290
-        |   5:	17784.3
-        |  10:	18198.2
-        |  25:	19309.8
-        |  50:	20271.5
-        |  75:	22382
-        |  90:	25052.8
-        |  95:	25841.0
-      """
+      """N: 28, μ/σ: 21437.6/2267.5, med/mad: 20825.5/1470
+        | elems: 24080 25542 22308 20688 19943 20818 21957 19888 20517 21636 … 18685 17812 19769 20223 20833 22341 23036 22645 24380 26254
+        |sorted: 17812 18340 18636 18685 19368 19673 19769 19888 19943 20223 … 22308 22341 22645 22709 23036 24080 24380 25542 26240 26254
+        |   5:	18049.6
+        |  10:	18606.4
+        |  25:	19798.8
+        |  50:	20825.5
+        |  75:	22693
+        |  90:	25611.8
+        |  95:	26247.7"""
     )
 
     val uncompressedStats =
@@ -106,17 +104,16 @@ class StreamTest
 
     check(
       uncompressedStats,
-      """N: 50, μ/σ: 62788.1/10728.4, med/mad: 64958.5/178
-        | elems: 5650 65092 64902 65248 64839 64643 65187 64752 64893 64960 … 64729 65049 64666 64957 64792 65057 64992 64989 64803 15247
-        |sorted: 5650 15247 64630 64643 64666 64677 64685 64704×2 64729 64752 … 65170 65171 65187 65195 65227 65243 65245 65248 65249 65275
-        |   5:	42407.7
-        |  10:	64667.1
-        |  25:	64779.8
-        |  50:	64958.5
-        |  75:	65139.8
-        |  90:	65241.4
-        |  95:	65248.5
-      """
+      """N: 30, μ/σ: 64053.8/7777.3, med/mad: 65498/0
+        | elems: 65498×29 22172
+        |sorted: 22172 65498×29
+        |   5:	46001.3
+        |  10:	65498
+        |  25:	65498
+        |  50:	65498
+        |  75:	65498
+        |  90:	65498
+        |  95:	65498"""
     )
 
     val prunedUncompressedStats =
@@ -129,17 +126,15 @@ class StreamTest
 
     check(
       prunedUncompressedStats,
-      """N: 48, μ/σ: 64968.9/191.8, med/mad: 64963/173.5
-        | elems: 65092 64902 65248 64839 64643 65187 64752 64893 64960 64966 … 64704 64729 65049 64666 64957 64792 65057 64992 64989 64803
-        |sorted: 64630 64643 64666 64677 64685 64704×2 64729 64752 64758 64787 … 65170 65171 65187 65195 65227 65243 65245 65248 65249 65275
-        |   5:	64653.4
-        |  10:	64684.2
-        |  25:	64794.8
-        |  50:	64963
-        |  75:	65141.3
-        |  90:	65243.2
-        |  95:	65248.6
-      """
+      """N: 28, μ/σ: 65498/0, med/mad: 65498/0
+        | elems: 65498×28
+        |   5:	65498
+        |  10:	65498
+        |  25:	65498
+        |  50:	65498
+        |  75:	65498
+        |  90:	65498
+        |  95:	65498"""
     )
   }
 

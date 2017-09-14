@@ -2,7 +2,7 @@ package org.hammerlab.bam.spark
 
 import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck, default }
 import org.hammerlab.bam.header.ContigLengths
-import org.hammerlab.bam.test.resources.tcgaBamExcerpt
+import org.hammerlab.bam.test.resources.bam1
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.channel.SeekableByteChannel
@@ -13,7 +13,7 @@ class FindRecordStartTest
   extends Suite {
 
   test("470kb") {
-    val path = tcgaBamExcerpt
+    val path = bam1
     val ch = SeekableByteChannel(path)
     implicit val uncompressedBytes = SeekableUncompressedBytes(ch)
     implicit val conf = Configuration()

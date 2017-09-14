@@ -8,7 +8,7 @@ import org.hammerlab.bgzf.block.BGZFBlocksToCheck
 import org.hammerlab.bytes._
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
-import org.hammerlab.bam.test.resources.tcgaBamExcerpt
+import org.hammerlab.bam.test.resources.bam1
 import org.hammerlab.spark.test.suite.SparkSuite
 import shapeless.LabelledGeneric
 
@@ -33,7 +33,7 @@ class CompareTest
 
   test("470KB") {
     implicit val splitSize = MaxSplitSize(470.KB)
-    val actual = getPathResult(tcgaBamExcerpt)
+    val actual = getPathResult(bam1)
 
     val expected =
       Result(
@@ -65,7 +65,7 @@ class CompareTest
   test("235KB") {
     implicit val splitSize = MaxSplitSize(235.KB)
     check(
-      getPathResult(tcgaBamExcerpt),
+      getPathResult(bam1),
       Result(
         4,
         4,

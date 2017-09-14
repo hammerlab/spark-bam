@@ -9,7 +9,7 @@ import org.hammerlab.hadoop.splits.MaxSplitSize
 class LoadSAMTest
   extends LoadBAMChecks {
 
-  val path = sam5k
+  val path = sam2
 
   override def load(maxSplitSize: MaxSplitSize): RDD[SAMRecord] =
     sc

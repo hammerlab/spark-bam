@@ -1,7 +1,7 @@
-package org.hammerlab.bam.check
+package org.hammerlab.bam.check.eager
 
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bam.test.resources.{ tcgaBamExcerpt, tcgaBamExcerptUnindexed }
+import org.hammerlab.bam.test.resources.{ bam1, bam1Unindexed }
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.MainSuite
 import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
@@ -43,14 +43,14 @@ class MainTest
 
   test("tcga compare") {
     compare(
-      tcgaBamExcerpt,
+      bam1,
       seqdoopTCGAExpectedOutput
     )
   }
 
   test("tcga compare no .blocks file") {
     compare(
-      tcgaBamExcerptUnindexed,
+      bam1Unindexed,
       seqdoopTCGAExpectedOutput
     )
   }
@@ -63,7 +63,7 @@ class MainTest
         "-u",
         "-m", "200k",
         "-o", outputPath.toString,
-        tcgaBamExcerpt.toString
+        bam1.toString
       )
     )
 
@@ -78,7 +78,7 @@ class MainTest
         "-s",
         "-m", "200k",
         "-o", outputPath.toString,
-        tcgaBamExcerpt.toString
+        bam1.toString
       )
     )
 

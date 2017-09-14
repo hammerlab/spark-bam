@@ -72,7 +72,7 @@ lazy val cli = project.settings(
   ),
 
   // Bits that depend on the seqdoop module use org.hammerlab:hadoop-bam; make sure we don't get the org.seqdoop one.
-  excludeDependencies += SbtExclusionRule("org.seqdoop", "hadoop-bam"),
+  excludes += seqdoop_hadoop_bam,
   
   addSparkDeps,
 
@@ -132,7 +132,7 @@ lazy val seqdoop = project.settings(
     hammerlab_hadoop_bam % "7.9.0"
   ),
   // Make sure we get org.hammerlab:hadoop-bam, not org.seqdoop
-  excludeDependencies += SbtExclusionRule("org.seqdoop", "hadoop-bam"),
+  excludes += seqdoop_hadoop_bam,
   addSparkDeps
 ).dependsOn(
   bgzf,

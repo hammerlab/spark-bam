@@ -1,6 +1,6 @@
 package org.hammerlab.bam.iterator
 
-import org.hammerlab.bam.test.resources.bam5k
+import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.test.Suite
 
@@ -25,7 +25,7 @@ class PosStreamTest
     )
   }
 
-  val path = bam5k
+  val path = bam2
 
   test("PosStream") {
     implicit val stream = PosStream(path.inputStream)

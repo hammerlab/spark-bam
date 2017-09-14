@@ -14,7 +14,7 @@ class APITest
 
     import org.hammerlab.bam.spark._
 
-    val path = bam5k
+    val path = bam2
 
     sc.loadBam(path)
 

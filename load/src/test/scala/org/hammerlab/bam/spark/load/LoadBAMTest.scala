@@ -12,7 +12,7 @@ import org.hammerlab.hadoop.splits.MaxSplitSize
 class LoadBAMTest
   extends LoadBAMChecks {
 
-  val path = bam5k
+  val path = bam2
 
   override def load(maxSplitSize: MaxSplitSize): RDD[SAMRecord] =
     sc
@@ -118,7 +118,7 @@ class LoadBAMTest
 
     sc
       .loadBam(
-        tcgaBamExcerpt,
+        bam1,
         splitSize = 400 KB
       )
       .count should be(7976)

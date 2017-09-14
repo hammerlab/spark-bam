@@ -38,7 +38,7 @@ class MainTest
 /*
   test("tcga excerpt with indexed records") {
     check(
-      tcgaBamExcerpt
+      bam1
     )(
       "-m", "200k"
     )(
@@ -48,7 +48,7 @@ class MainTest
 
   test("tcga excerpt without indexed records") {
     check(
-      tcgaBamExcerptUnindexed
+      bam1Unindexed
     )(
       "-m", "200k"
     )(
@@ -59,7 +59,7 @@ class MainTest
 
   test("5k.bam header block") {
     check(
-      bam5k
+      bam2
     )(
       "-i", "0"
     )(
@@ -69,7 +69,7 @@ class MainTest
 
   test("5k.bam second block, with reads") {
     check(
-      bam5k
+      bam2
     )(
       "-i", "27784"
     )(
@@ -79,7 +79,7 @@ class MainTest
 
   test("5k.bam 200k") {
     check(
-      bam5k
+      bam2
     )(
       "-i", "0-200k",
       "-m", "100k"
@@ -91,7 +91,7 @@ class MainTest
 /*
   test("5k.bam all") {
     check(
-      bam5k
+      bam2
     )(
       // All default args
     )(

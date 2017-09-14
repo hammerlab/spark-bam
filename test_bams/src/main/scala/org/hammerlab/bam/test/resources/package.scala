@@ -10,10 +10,11 @@ package object resources {
   
   def path(name: String): Path = Path(Url(name).toURI)  
   
-  val bam5k = path("5k.bam")
-  val sam5k = path("5k.sam")
-  val tcgaBamExcerpt = path("1.2203053-2211029.bam")
-  val tcgaBamExcerptUnindexed = path("1.2203053-2211029.noblocks.bam")
+  val bam1 = path("1.bam")
+  val bam1Unindexed = path("1.noblocks.bam")
+
+  val bam2 = path("2.bam")
+  val sam2 = path("2.sam")
 
   trait TestBams {
     self: Suite ⇒
@@ -69,9 +70,8 @@ package object resources {
      * 
      * Hadoop Paths don't deal with URIs correctly, so relative paths inside JARs can't be resolved.
      */
-    lazy val bam5k = copyBamAndMetadata(resources.bam5k)
-    lazy val sam5k = sam(bam5k)
-    lazy val tcgaBamExcerpt = copyBamAndMetadata(resources.tcgaBamExcerpt)
-    
+    lazy val bam1 = copyBamAndMetadata(resources.bam1)
+    lazy val bam2 = copyBamAndMetadata(resources.bam2)
+    lazy val sam2 = sam(bam2)
   }
 }

@@ -2,7 +2,7 @@ package org.hammerlab.bgzf.block
 
 import java.nio.channels.FileChannel
 
-import org.hammerlab.bam.test.resources.bam5k
+import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.channel.SeekableByteChannel._
 import org.hammerlab.test.Suite
 
@@ -10,29 +10,29 @@ class MetadataStreamTest
   extends Suite {
 
   test("metadata") {
-    val ch = FileChannel.open(bam5k)
+    val ch = FileChannel.open(bam2)
 
     MetadataStream(ch)
       .take(10)
       .toList should be(
       List(
-        Metadata(     0,  2454,  5650),
-        Metadata(  2454, 25330, 65092),
-        Metadata( 27784, 23602, 64902),
-        Metadata( 51386, 25052, 65248),
-        Metadata( 76438, 21680, 64839),
-        Metadata( 98118, 20314, 64643),
-        Metadata(118432, 19775, 65187),
-        Metadata(138207, 20396, 64752),
-        Metadata(158603, 21533, 64893),
-        Metadata(180136, 19644, 64960)
+        Metadata(     0, 26169, 65498),
+        Metadata( 26169, 24080, 65498),
+        Metadata( 50249, 25542, 65498),
+        Metadata( 75791, 22308, 65498),
+        Metadata( 98099, 20688, 65498),
+        Metadata(118787, 19943, 65498),
+        Metadata(138730, 20818, 65498),
+        Metadata(159548, 21957, 65498),
+        Metadata(181505, 19888, 65498),
+        Metadata(201393, 20517, 65498)
       )
     )
 
     ch.position(0)
     val stream = MetadataStream(ch)
 
-    stream.size should be(50)
+    stream.size should be(30)
 
     ch.isOpen should be(true)
     stream.close()

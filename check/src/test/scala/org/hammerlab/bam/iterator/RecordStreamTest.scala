@@ -1,7 +1,7 @@
 package org.hammerlab.bam.iterator
 
 import htsjdk.samtools.SAMRecord
-import org.hammerlab.bam.test.resources.bam5k
+import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.channel.SeekableByteChannel.ChannelByteChannel
 import org.hammerlab.test.Suite
@@ -68,7 +68,7 @@ class RecordStreamTest
     )
   }
 
-  val path = bam5k
+  val path = bam2
 
   test("RecordStream") {
     implicit val rs = RecordStream(path.inputStream)

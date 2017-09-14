@@ -1,7 +1,7 @@
 package org.hammerlab.bam
 
 import caseapp._
-import check.full
+import org.hammerlab.bam.check.{ eager, full }
 import org.hammerlab.bam.spark.compare
 import org.hammerlab.bgzf
 
@@ -11,7 +11,7 @@ sealed abstract class Command[A](val main: CaseApp[A]) {
   def args: A
 }
 
-case class      CheckBam(@Recurse args:      check.Args) extends Command(             check.Main)
+case class      CheckBam(@Recurse args:      eager.Args) extends Command(             eager.Main)
 case class     FullCheck(@Recurse args:       full.Args) extends Command(              full.Main)
 case class CompareSplits(@Recurse args:    compare.Opts) extends Command(           compare.Main)
 case class ComputeSplits(@Recurse args:      spark.Args) extends Command(             spark.Main)

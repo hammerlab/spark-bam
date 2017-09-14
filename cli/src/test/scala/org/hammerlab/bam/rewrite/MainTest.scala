@@ -2,7 +2,7 @@ package org.hammerlab.bam.rewrite
 
 import caseapp.RemainingArgs
 import org.hammerlab.args.{ Endpoints, IntRanges }
-import org.hammerlab.bam.test.resources.bam5k
+import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.test.Suite
 import org.hammerlab.test.matchers.files.DirMatcher.dirMatch
 import org.hammerlab.test.resources.File
@@ -30,7 +30,7 @@ class MainTest
       ),
       RemainingArgs(
         Seq(
-          bam5k.toString,
+          bam2.toString,
           s"$outDir/5k.100-3000.bam"
         ),
         Nil

@@ -2,7 +2,7 @@ package org.hammerlab.bam.check
 
 import caseapp._
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bam.test.resources.{ TestBams, tcgaBamExcerptUnindexed }
+import org.hammerlab.bam.test.resources.{ TestBams, bam1Unindexed }
 import org.hammerlab.magic.rdd.collect.CollectPartitionsRDD._
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.KryoSparkSuite
@@ -11,7 +11,7 @@ class BlocksTCGATest
   extends BlocksTest
     with TestBams {
   
-  override implicit def path: Path = tcgaBamExcerpt
+  override implicit def path: Path = bam1
 
   override def boundariesCase: Array[Array[Int]] =
     Array(
@@ -41,7 +41,7 @@ class BlocksTCGATest
 class UnindexedBlocksTCGATest
   extends BlocksTest {
   
-  override implicit def path: Path = tcgaBamExcerptUnindexed
+  override implicit def path: Path = bam1Unindexed
 
   override def boundariesCase: Array[Array[Int]] =
     Array(

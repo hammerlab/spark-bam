@@ -4,7 +4,7 @@ import java.nio.channels.FileChannel
 
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.channel.ByteChannel
-import org.hammerlab.bam.test.resources.bam5k
+import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.test.Suite
 
 class ByteStreamTest
@@ -19,7 +19,7 @@ class ByteStreamTest
     val headerStr = byteChannel.readString(headerTextLength)
 
     headerStr.take(100) should be(
-      """@HD	VN:1.4	GO:none	SO:coordinate
+      """@HD	VN:1.5	GO:none	SO:coordinate
         |@SQ	SN:1	LN:249250621
         |@SQ	SN:2	LN:243199373
         |@SQ	SN:3	LN:198022430
@@ -35,23 +35,28 @@ class ByteStreamTest
 
     byteStream.curPos should be(Some(Pos(0, 5646)))
 
-    byteChannel.getInt should be(547496)
+    byteChannel.getInt should be(547496)  // Last reference sequence length
 
-    byteStream.curPos should be(Some(Pos(2454, 0)))
+    byteStream.curPos should be(Some(Pos(0, 5650)))
 
-    byteChannel.getInt should be(620)
-    byteStream.curPos should be(Some(Pos(2454, 4)))
+    byteChannel.getInt should be(620)  // First record length, in (uncompressed) bytes
+    byteStream.curPos should be(Some(Pos(0, 5654)))
+
+    val firstBlockLength = 65498
 
     // Skip to 4 bytes from the end of this block
-    byteChannel.skip(5650 + 65092 - 4 - byteChannel.position().toInt)
+    byteChannel.skip(firstBlockLength - 4 - byteChannel.position().toInt)
     byteStream.clear()
-    byteStream.curPos should be(Some(Pos(2454, 65092 - 4)))
+    byteStream.curPos should be(Some(Pos(0, firstBlockLength - 4)))
+
+    byteChannel.getInt
+    byteStream.curPos should be(Some(Pos(26169, 0)))
   }
 
   test("ByteStream") {
     implicit val byteStream =
       UncompressedBytes(
-        bam5k.inputStream
+        bam2.inputStream
       )
 
     implicit val byteChannel: ByteChannel = byteStream
@@ -61,16 +66,14 @@ class ByteStreamTest
 
   test("SeekableByteStream") {
     implicit val byteStream =
-      SeekableUncompressedBytes(
-        FileChannel.open(bam5k.path)
-      )
+      SeekableUncompressedBytes(bam2)
 
     implicit val byteChannel: ByteChannel = byteStream
 
     checkHeader
 
     def checkRead(): Unit = {
-      byteStream.seek(Pos(27784, 11033))
+      byteStream.seek(Pos(26169, 16277))
       byteChannel.getInt should be(642)
       byteChannel.getInt should be(0)
       byteChannel.getInt should be(12815)

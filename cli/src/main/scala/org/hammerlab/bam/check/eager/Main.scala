@@ -1,12 +1,13 @@
-package org.hammerlab.bam.check
+package org.hammerlab.bam.check.eager
 
-import caseapp.core.ArgParser
 import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.LongAccumulator
-import org.hammerlab.args.{ ByteRanges, FindReadArgs, LogArgs, PostPartitionArgs }
+import org.hammerlab.args.{ FindReadArgs, LogArgs, PostPartitionArgs }
+import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
+import org.hammerlab.bam.check.{ AnalyzeCalls, Blocks, CheckerMain, eager, seqdoop }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.PosIterator
@@ -54,28 +55,6 @@ case class Args(
 )
   extends SparkPathAppArgs
 
-object Foo {
-//  val i = implicitly[ArgParser[ByteRanges]]
-//  val g = implicitly[ArgParser[Path]]
-//
-//  import java.lang.{ Long ⇒ JLong }
-//
-//  implicit def bytesToJLong(bytes: Bytes): JLong = bytes.bytes
-//  implicit val byteRangesParser: ArgParser[ByteRanges] = Ranges.parser[Bytes, JLong]
-
-//  implicitly[Parser[FindBlockArgs]]
-  implicitly[ArgParser[ByteRanges]]
-  implicitly[ArgParser[Path]]
-
-//  implicitly[Parser[Blocks.Args]]
-//  implicitly[Parser[IndexedRecordPositions.Args]]
-//  implicitly[Parser[LogArgs]]
-//  implicitly[Parser[OutputArgs]]
-
-}
-
-//import Foo.byteRangesParser
-
 object Main
   extends SparkPathApp[Args](classOf[Registrar])
     with AnalyzeCalls {
@@ -107,7 +86,7 @@ object Main
     }
   }
 
-  def compare[C1 <: Checker[Boolean], C2 <: Checker[Boolean]](
+  def compare[C1 <: check.Checker[Boolean], C2 <: check.Checker[Boolean]](
       implicit
       path: Path,
       args: Blocks.Args,

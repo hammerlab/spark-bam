@@ -18,8 +18,8 @@ class MainTest
     val bamsPath = tmpPath()
     bamsPath.writeLines(
       Seq(
-        tcgaBamExcerpt.toString,
-        bam5k.toString
+        bam1.toString,
+        bam2.toString
       )
     )
     Main.main(
@@ -52,7 +52,7 @@ class MainTest
   test("400KB, 1 bam, no errors") {
     val outPath = tmpPath()
     val bamsPath = tmpPath()
-    bamsPath.write(bam5k.toString)
+    bamsPath.write(bam2.toString)
     Main.main(
       Array(
         "-m", "400k",

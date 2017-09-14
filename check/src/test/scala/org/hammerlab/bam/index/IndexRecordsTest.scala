@@ -1,7 +1,7 @@
 package org.hammerlab.bam.index
 
 import caseapp.RemainingArgs
-import org.hammerlab.bam.test.resources.bam5k
+import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.test.Suite
 import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
 
@@ -15,7 +15,7 @@ class IndexRecordsTest
         out = Some(outPath)
       ),
       RemainingArgs(
-        Seq(bam5k.toString),
+        Seq(bam2.toString),
         Nil
       )
     )

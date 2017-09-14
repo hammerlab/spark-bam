@@ -1,7 +1,7 @@
 package org.hammerlab.bam.spark
 
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bam.test.resources.tcgaBamExcerpt
+import org.hammerlab.bam.test.resources.bam1
 import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.spark.test.suite.MainSuite
 
@@ -15,7 +15,7 @@ class MainTest
       args.toArray ++
         Array(
           "-o", outPath.toString,
-          tcgaBamExcerpt.toString
+          bam1.toString
         )
     )
 
@@ -32,7 +32,7 @@ class MainTest
           )
       ),
       Seq(
-        tcgaBamExcerpt.toString
+        bam1.toString
       )
     )
 
