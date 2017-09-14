@@ -1,9 +1,9 @@
 package org.hammerlab.bgzf.index
 
 import caseapp.{ AppName, ProgName, ExtraName ⇒ O }
-import org.hammerlab.app.{ IndexingApp, OutPathArgs }
 import org.hammerlab.bgzf.block.{ Metadata, MetadataStream }
-import org.hammerlab.channel.{ ByteChannel, SeekableByteChannel }
+import org.hammerlab.channel.ByteChannel
+import org.hammerlab.cli.app.{ IndexingApp, OutPathArgs }
 import org.hammerlab.io.Printer._
 import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat

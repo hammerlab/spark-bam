@@ -6,12 +6,13 @@ import cats.syntax.all._
 import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.rdd.AsNewHadoopPartition
-import org.hammerlab.app.{ SparkApp, SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.args.{ OutputArgs, SplitSize }
+import org.hammerlab.args.SplitSize
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark.Main.time
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
+import org.hammerlab.cli.app.{ SparkApp, SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.collection.canBuildVector
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.sorted.OrZipIterator._

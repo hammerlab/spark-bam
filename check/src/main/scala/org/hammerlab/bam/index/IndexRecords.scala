@@ -4,9 +4,9 @@ import java.io.IOException
 
 import caseapp.{ AppName, ProgName, ExtraName ⇒ O }
 import htsjdk.samtools.util.{ RuntimeEOFException, RuntimeIOException }
-import org.hammerlab.app.{ IndexingApp, OutPathArgs }
 import org.hammerlab.bam.iterator.{ PosStream, RecordStream, SeekablePosStream, SeekableRecordStream }
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.cli.app.{ IndexingApp, OutPathArgs }
 import org.hammerlab.io.Printer._
 import org.hammerlab.paths.Path
 import org.hammerlab.timing.Interval.heartbeat

@@ -5,7 +5,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.LongAccumulator
-import org.hammerlab.app.SparkPathApp
+import org.hammerlab.cli.app.SparkPathApp
 import org.hammerlab.args.ByteRanges
 import org.hammerlab.bam.check.Checker.{ MakeChecker, MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.check.full.error.{ Flags, Success }

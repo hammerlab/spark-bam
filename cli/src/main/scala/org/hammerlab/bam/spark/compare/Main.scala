@@ -7,12 +7,13 @@ import cats.syntax.all._
 import com.esotericsoftware.kryo.Kryo
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.SparkContext
-import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, OutputArgs, SplitSize }
+import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, SplitSize }
 import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark.CanCompareSplits
 import org.hammerlab.bgzf.block.BGZFBlocksToCheck
+import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.io.Printer._

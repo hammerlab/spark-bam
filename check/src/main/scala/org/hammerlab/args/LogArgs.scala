@@ -1,6 +1,6 @@
 package org.hammerlab.args
 
-import caseapp.{ ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ HelpMessage ⇒ M }
 
 case class LogArgs(
     @M("Set the root logging level to WARN; useful for making Spark display the console progress-bar in client-mode")

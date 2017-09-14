@@ -1,7 +1,6 @@
 
 lazy val spark_bam =
   rootProject(
-    app,
     bgzf,
     check,
     cli,
@@ -10,22 +9,11 @@ lazy val spark_bam =
     test_bams
   )
 
-lazy val app = project.settings(
-  version := "1.0.0-SNAPSHOT",
-  deps ++= Seq(
-    case_app,
-    io % "1.2.0",
-    paths % "1.2.0",
-    slf4j % "1.3.1",
-    spark_util % "1.3.0"
-  ),
-  addSparkDeps
-)
-
 lazy val bgzf = project.settings(
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
     case_app,
+    case_cli ^ "1.0.0-SNAPSHOT",
     cats,
     channel % "1.1.0-SNAPSHOT",
     io % "1.2.0",
@@ -39,7 +27,6 @@ lazy val bgzf = project.settings(
   addSparkDeps,
   testUtilsVersion := "1.3.2-SNAPSHOT"
 ).dependsOn(
-  app,
   test_bams % "test"
 )
 
@@ -73,6 +60,7 @@ lazy val cli = project.settings(
   deps ++= Seq(
     hammerlab_hadoop_bam ^ "7.9.0",
     case_app,
+    case_cli ^ "1.0.0-SNAPSHOT",
     cats,
     channel % "1.1.0-SNAPSHOT",
     iterators % "1.4.0",
@@ -83,6 +71,7 @@ lazy val cli = project.settings(
     stats % "1.0.1"
   ),
 
+  // Bits that depend on the seqdoop module use org.hammerlab:hadoop-bam; make sure we don't get the org.seqdoop one.
   excludeDependencies += SbtExclusionRule("org.seqdoop", "hadoop-bam"),
   
   addSparkDeps,
@@ -103,7 +92,6 @@ lazy val cli = project.settings(
   // google-cloud-nio).
   assemblyExcludeLib
 ).dependsOn(
-  app,
   bgzf,
   check,
   load,
@@ -143,6 +131,7 @@ lazy val seqdoop = project.settings(
     paths % "1.2.1-SNAPSHOT",
     hammerlab_hadoop_bam % "7.9.0"
   ),
+  // Make sure we get org.hammerlab:hadoop-bam, not org.seqdoop
   excludeDependencies += SbtExclusionRule("org.seqdoop", "hadoop-bam"),
   addSparkDeps
 ).dependsOn(

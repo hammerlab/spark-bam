@@ -1,8 +1,8 @@
 package org.hammerlab.bam.spark
 
-import org.hammerlab.args.OutputArgs
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.test.resources.tcgaBamExcerpt
+import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.spark.test.suite.MainSuite
 
 class MainTest

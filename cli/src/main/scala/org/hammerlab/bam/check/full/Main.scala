@@ -4,8 +4,7 @@ import caseapp.{ AppName, ProgName, Recurse }
 import cats.instances.long._
 import cats.syntax.all._
 import org.apache.spark.rdd.RDD
-import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.args.{ FindReadArgs, LogArgs, OutputArgs, PostPartitionArgs }
+import org.hammerlab.args.{ FindReadArgs, LogArgs, PostPartitionArgs }
 import org.hammerlab.bam.check.PosMetadata.showRecord
 import org.hammerlab.bam.check.full.error.Flags.TooFewFixedBlockBytes
 import org.hammerlab.bam.check.full.error.{ Counts, Flags, Result }
@@ -16,6 +15,8 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
+import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.SampleRDD._

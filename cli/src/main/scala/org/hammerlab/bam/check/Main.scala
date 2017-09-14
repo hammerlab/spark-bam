@@ -1,20 +1,19 @@
 package org.hammerlab.bam.check
 
 import caseapp.core.ArgParser
-import caseapp.{ AppName, Parser, ProgName, Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.LongAccumulator
-import org.hammerlab.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.args.ByteRanges
-import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, LogArgs, OutputArgs, PostPartitionArgs, Ranges }
+import org.hammerlab.args.{ ByteRanges, FindReadArgs, LogArgs, PostPartitionArgs }
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.PosIterator
-import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
+import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
+import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.paths.Path
 
