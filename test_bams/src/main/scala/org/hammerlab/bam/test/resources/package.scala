@@ -26,14 +26,6 @@ package object resources {
       out
     }
 
-    def fileCopy(path: Path): Path = {
-      val out = tmpPath(suffix = s".${path.extension}")
-      val in = path.inputStream
-      Files.copy(in, out)
-      in.close()
-      out
-    }
-
     def sam(bam: Path): Path =
       Path(bam.toString.dropRight(3) + "sam")
     

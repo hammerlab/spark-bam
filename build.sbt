@@ -24,15 +24,13 @@ lazy val bgzf = project.settings(
     spark_util % "1.3.0",
     stats % "1.0.1"
   ),
-  addSparkDeps,
-  testUtilsVersion := "1.3.2-SNAPSHOT"
+  addSparkDeps
 ).dependsOn(
   test_bams % "test"
 )
 
 lazy val check = project.settings(
   organization := "org.hammerlab.bam",
-  name := "check",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
     case_app,
@@ -40,14 +38,14 @@ lazy val check = project.settings(
     channel % "1.1.0-SNAPSHOT",
     htsjdk,
     magic_rdds % "3.0.0-SNAPSHOT",
+    paths % "1.2.1-SNAPSHOT",
     seqdoop_hadoop_bam,
     slf4j % "1.3.1",
     spark_util % "1.3.0"
   ),
   fork := true,  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
   addSparkDeps,
-  compileAndTestDeps += loci % "2.0.1",
-  testUtilsVersion := "1.3.2-SNAPSHOT"
+  compileAndTestDeps += loci % "2.0.1"
 ).dependsOn(
   bgzf,
   test_bams % "test"
@@ -90,7 +88,9 @@ lazy val cli = project.settings(
   // git. However, we exclude them from the assembly JAR by default, on the assumption that they'll be provided otherwise
   // at runtime (by Dataproc in the case of gcs-connector, and by manually adding to the classpath in the case of
   // google-cloud-nio).
-  assemblyExcludeLib
+  assemblyExcludeLib,
+
+  publishAssemblyJar
 ).dependsOn(
   bgzf,
   check,
@@ -146,7 +146,7 @@ lazy val test_bams = project.settings(
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
     paths ^ "1.2.1-SNAPSHOT",
-    testUtils ^ "1.3.2-SNAPSHOT"
+    testUtils
   ),
   testDeps := Nil
 )

@@ -10,7 +10,7 @@ $ spark-shell --jars $SPARK_BAM_JAR
 import org.hammerlab.bam.spark._
 import org.hammerlab.paths.Path
 
-val path = Path("src/test/resources/5k.bam")
+val path = Path("test_bams/src/main/resources/2.bam")
 
 // Load an RDD[SAMRecord] from `path`; supports .bam, .sam, and .cram
 sc.loadReads(path)
@@ -28,9 +28,9 @@ val BAMRecordRDD(splits, rdd) = sc.loadSplitsAndReads(path)
 // rdd: org.apache.spark.rdd.RDD[htsjdk.samtools.SAMRecord] = MapPartitionsRDD[6] at values at CanLoadBam.scala:200
 
 // Example with multiple splits on a different BAM
-val path = Path("src/test/resources/1.2203053-2211029.bam")
+val path = Path("test_bams/src/main/resources/1.bam")
 val BAMRecordRDD(splits, rdd) = sc.loadSplitsAndReads(path, splitSize = 400 KB)
-// splits: … = Vector(Split(2454:0,416185:156), Split(416185:156,830784:124), Split(830784:124,963864:0))
+// splits: … = Vector(Split(0:45846,410905:270), Split(410905:270,597482:0))
 // rdd: …
 ```
 
@@ -133,7 +133,7 @@ It can serve as a "ground truth" against which to check either the [`eager`] or 
 
 Some assumptions in [hadoop-bam] are likely to break when processing long reads.
  
-For example, a 100kbp-long read is likely to span multiple BGZF blocks, likely causing [hadoop-bam] to reject it as valid.
+For example, a 100kbp-long read is likely to span multiple BGZF blocks, likely causing [hadoop-bam] to reject it as invalid.
 
 It is believed that [spark-bam] will be robust to such situations, related to [its agnosticity about buffer-sizes / reads' relative positions with respect to BGZF-block boundaries][api-clarity], though this has not been tested.
 
@@ -179,7 +179,7 @@ This resulted in positions that hadoop-bam correctly ruled out in sufficiently-m
 
 ## Using [spark-bam]
 
-A `SparkContext` can be "enriched" with relevant methods for loading BAM files by importing:
+With [spark-bam on the classpath][linking], a `SparkContext` can be "enriched" with relevant methods for loading BAM files by importing:
    
 ```scala
 import org.hammerlab.bam.spark._
@@ -202,7 +202,7 @@ Arguments:
 
 		```scala
 		import org.hammerlab.paths.Path
-		val path = Path("src/test/resources/5k.bam")
+		val path = Path("test_bams/src/main/resources/2.bam")
 		```
 - `bgzfBlocksToCheck`: optional; default: 5
 - `readsToCheck`: 
@@ -263,6 +263,24 @@ Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`]
 
 ## Linking against [spark-bam]
 
+### As a library
+
+#### Depend on [spark-bam] using Maven
+
+```xml
+<dependency>
+	<groupId>org.hammerlab.bam</groupId>
+	<artifactId>load_2.11</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+#### Depend on [spark-bam] using SBT
+
+```scala
+libraryDependencies += "org.hammerlab.bam" %% "load" % "1.0.0-SNAPSHOT"
+```
+
 ### From `spark-shell`
 
 #### After [getting an assembly JAR]
@@ -274,7 +292,7 @@ spark-shell --jars $SPARK_BAM_JAR
 #### Using Spark packages
 
 ```bash
-spark-shell --packages=org.hammerlab:spark-bam:1.1.0-SNAPSHOT  // TODO
+spark-shell --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
 ```
 
 ```scala
@@ -282,7 +300,7 @@ spark-shell --jars $SPARK_BAM_JAR
 …
 import org.hammerlab.bam.spark._
 import org.hammerlab.paths.Path
-val reads = sc.loadBam(Path("src/test/resources/5k.bam"))  // RDD[SAMRecord]
+val reads = sc.loadBam(Path("test_bams/src/main/resources/2.bam"))  // RDD[SAMRecord]
 reads.count  // Long: 4910
 ```
 
@@ -309,7 +327,7 @@ val reads = sc.loadBam(Path("gs://bucket/my.bam"))
 
 ### Command-line interface
 
-[spark-bam] includes several standalone apps as subcommands:
+[spark-bam's cli module][cli] includes several standalone apps as subcommands:
 
 #### Spark apps
 - [`check-bam`]
@@ -322,21 +340,38 @@ val reads = sc.loadBam(Path("gs://bucket/my.bam"))
 - [`index-records`]
 - [`htsjdk-rewrite`]
 
-#### Running a subcommand
+#### Setup
+
+Download a CLI assembly JAR from Maven Central:
+
 ```bash
-spark-submit <spark confs> $SPARK_BAM_JAR <subcommand> <options>
+wget -O spark-bam-cli.jar https://oss.sonatype.org/content/repositories/snapshots/org/hammerlab/bam/cli_2.11/1.0.0-SNAPSHOT/cli_2.11-1.0.0-SNAPSHOT-assembly.jar
+export CLI_JAR=spark-bam-cli.jar
+```
+
+Or build one from source:
+
+```bash
+sbt cli/assembly
+export CLI_JAR=cli/target/scala-2.11/cli-assembly-1.0.0-SNAPSHOT.jar
+```
+
+#### Running a subcommand
+
+```bash
+spark-submit <spark confs> $CLI_JAR <subcommand> <options>
 ```
 
 ##### Example
-To compare spark-bam and hadoop-bam on all positions in a local BAM:
+Run [`check-bam`] to compare spark-bam and hadoop-bam on all positions in a local BAM:
 
 ```bash
-spark-submit $SPARK_BAM_JAR check-bam src/test/resources/5k.bam
+spark-submit $CLI_JAR check-bam test_bams/src/main/resources/2.bam
 …
-3139404 uncompressed positions
-987K compressed
-Compression ratio: 3.11
-4910 reads
+1606522 uncompressed positions
+519K compressed
+Compression ratio: 3.02
+2500 reads
 All calls matched!
 ```
 
@@ -344,7 +379,7 @@ All calls matched!
 All commands support running with `-h`/`--help`, for example:
 
 ```bash
-$ spark-submit $SPARK_BAM_JAR compare-splits -h
+$ spark-submit $CLI_JAR compare-splits -h
 Command: compare-splits
 Usage: default-base-command compare-splits
   --print-limit | -l  <num=1000000>
@@ -402,27 +437,23 @@ See [example test output files][output/check-bam].
 ##### Example
 
 ```bash
-$ spark-submit $SPARK_BAM_JAR check-bam src/test/resources/1.2203053-2211029.bam
+$ spark-submit $CLI_JAR check-bam test_bams/src/main/resources/1.bam
 …
-2580596 uncompressed positions
-941K compressed
-Compression ratio: 2.68
-7976 reads
-9 false positives, 0 false negatives
+1608257 uncompressed positions
+583K compressed
+Compression ratio: 2.69
+4917 reads
+5 false positives, 0 false negatives
 
 False-positive-site flags histogram:
-	9:	tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
+	5:	tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
 
 False positives with succeeding read info:
 	39374:30965:	1 before D0N7FACXX120305:6:2301:3845:171905 2/2 76b unmapped read (placed at 1:24795617). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
-	366151:51533:	1 before C0FR5ACXX120302:4:1204:6790:58160 2/2 76b unmapped read (placed at 1:24932215). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
-	391261:35390:	1 before C0FR5ACXX120302:4:1106:5132:48894 2/2 76b unmapped read (placed at 1:24969786). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
-	463275:65228:	1 before D0N7FACXX120305:4:1102:8753:123279 2/2 76b unmapped read (placed at 1:24973169). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
-	486847:6:	1 before D0N7FACXX120305:7:1206:9262:21623 2/2 76b unmapped read (placed at 1:24973169). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
-	731617:46202:	1 before D0N7FACXX120305:7:2107:8337:34383 2/2 76b unmapped read (placed at 1:24981330). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
-	755781:56269:	1 before C0FR5ACXX120302:4:2202:2280:16832 2/2 76b unmapped read (placed at 1:24981398). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
-	780685:49167:	1 before D0N7FACXX120305:5:1204:3428:52534 2/2 76b unmapped read (placed at 1:24981468). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
-	855668:64691:	1 before D0N7FACXX120305:5:1308:8464:128307 1/2 76b unmapped read (placed at 1:24987247). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
+	239479:311:	1 before D0N7FACXX120305:7:1206:9262:21623 2/2 76b unmapped read (placed at 1:24973169). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
+	484396:46507:	1 before D0N7FACXX120305:7:2107:8337:34383 2/2 76b unmapped read (placed at 1:24981330). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
+	508565:56574:	1 before C0FR5ACXX120302:4:2202:2280:16832 2/2 76b unmapped read (placed at 1:24981398). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
+	533464:49472:	1 before D0N7FACXX120305:5:1204:3428:52534 2/2 76b unmapped read (placed at 1:24981468). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
 ```
 
 #### [`full-check`][full/Main]
@@ -437,17 +468,17 @@ In particular, positions where only one or two checks ruled out a "true negative
 ##### Example
 
 ```bash
-spark-submit $SPARK_BAM_JAR full-check src/test/resources/1.2203053-2211029.bam
+spark-submit $CLI_JAR full-check -l 10 test_bams/src/main/resources/1.bam
 …
-2580596 uncompressed positions
-941K compressed
-Compression ratio: 2.68
-7976 reads
+1608257 uncompressed positions
+583K compressed
+Compression ratio: 2.69
+4917 reads
 All calls matched!
 
 No positions where only one check failed
 
-10 of 1208 positions where exactly two checks failed:
+637 positions where exactly two checks failed:
 	14146:8327:	296 before D0N7FACXX120305:2:2107:10453:199544 1/2 76b aligned read @ 1:24795498. Failing checks: tooLargeNextReadIdx,invalidCigarOp
 	39374:60226:	2 before C0FR5ACXX120302:8:1303:16442:188614 2/2 76b aligned read @ 1:24838240. Failing checks: nonNullTerminatedReadName,invalidCigarOp
 	39374:60544:	2 before C0FR5ACXX120302:8:1303:16442:188614 1/2 76b aligned read @ 1:24838417. Failing checks: nonNullTerminatedReadName,invalidCigarOp
@@ -461,31 +492,33 @@ No positions where only one check failed
 	…
 
 	Histogram:
-		1193:	nonNullTerminatedReadName,invalidCigarOp
-		15:	tooLargeNextReadIdx,invalidCigarOp
+		626:	nonNullTerminatedReadName,invalidCigarOp
+		11:	tooLargeNextReadIdx,invalidCigarOp
 
 	Per-flag totals:
-	             invalidCigarOp:	1208
-	  nonNullTerminatedReadName:	1193
-	        tooLargeNextReadIdx:	  15
+		           invalidCigarOp:	637
+		nonNullTerminatedReadName:	626
+		      tooLargeNextReadIdx:	 11
 
 Total error counts:
-             invalidCigarOp:	2454770
-        tooLargeNextReadIdx:	2391574
-            tooLargeReadIdx:	2391574
-  nonNullTerminatedReadName:	2113790
-tooFewRemainingBytesImplied:	1965625
-           nonASCIIReadName:	 221393
-                 noReadName:	 202320
-        negativeNextReadIdx:	 116369
-            negativeReadIdx:	 116369
-            negativeReadPos:	 116369
-        negativeNextReadPos:	 116369
-        tooLargeNextReadPos:	  37496
-            tooLargeReadPos:	  37496
-              emptyReadName:	  32276
-     tooFewBytesForReadName:	     77
-     tooFewBytesForCigarOps:	      9
+	             invalidCigarOp:	1530730
+	            tooLargeReadIdx:	1492210
+	        tooLargeNextReadIdx:	1492210
+	  nonNullTerminatedReadName:	1320219
+	tooFewRemainingBytesImplied:	1218351
+	           nonASCIIReadName:	 136637
+	                 noReadName:	 124817
+	            negativeReadIdx:	  71206
+	            negativeReadPos:	  71206
+	        negativeNextReadIdx:	  71206
+	        negativeNextReadPos:	  71206
+	             emptyMappedSeq:	  57182
+	            tooLargeReadPos:	  23548
+	        tooLargeNextReadPos:	  23548
+	              emptyReadName:	  19866
+	     tooFewBytesForReadName:	     76
+	           emptyMappedCigar:	     26
+	     tooFewBytesForCigarOps:	     14
 ```
 
 #### [`compute-splits`][spark/Main]
@@ -500,16 +533,16 @@ Some timing information is also output for each, though for spark-bam it is usua
 Highlighting a hadoop-bam false-positive on a local test BAM:
  
 ```bash
-$ spark-submit $SPARK_BAM_JAR compute-splits -m 470k src/test/resources/1.2203053-2211029.bam
+$ spark-submit $CLI_JAR compute-splits -m 210k test_bams/src/main/resources/1.bam
 …
-2 splits differ (totals: 2, 2):
-		486847:6-963864:65535
-	486847:7-963864:0
+2 splits differ (totals: 3, 3):
+		239479:311-430080:65535
+	239479:312-435247:181
 ```
 
-The BAM `1.2203053-2211029.bam` is a ≈1MB excerpt from the TCGA BAM [64-1681-01A-11D-2063-08.1.bam][1.bam], where hadoop-bam picks an invalid split from offset 64MB.
+The BAM `1.bam` is a ≈600KB excerpt from the TCGA BAM [64-1681-01A-11D-2063-08.1.bam][1.bam], where hadoop-bam picks an invalid split from offset 64MB.
  
-The 470KB split-size used above drops hadoop-bam into the same position in the excerpted BAM, reproducing the bug in a smaller test-case. 
+The 105KB split-size used above drops hadoop-bam into the same position in the excerpted BAM, reproducing the bug in a smaller test-case. 
 
 #### [`compare-splits`][compare/Main]
 
@@ -521,27 +554,35 @@ Statistics and diffs about spark-bam's and hadoop-bam's computed splits on all o
 
 ##### Example
 
-[`src/test/resources/test-bams`] contains the 4 test BAM files in this repo:
+[`cli/src/test/resources/test-bams`] contains the 2 test BAM files in this repo, each listed twice:
 
 ```bash
-$ spark-submit $SPARK_BAM_JAR compare-splits -m 470k src/test/resources/test-bams
+$ spark-submit $CLI_JAR compare-splits -m 105k cli/src/test/resources/test-bams
 …
-2 of 4 BAMs' splits didn't match (totals: 9, 9; 2, 2 unmatched):
+2 of 4 BAMs' splits didn't match (totals: 22, 22; 2, 2 unmatched)
 
-	1.2203053-2211029.bam: 2 splits differ (totals: 2, 2; mismatched: 1, 1):
-				Split(486847:6,963864:65535)
-			Split(486847:7,963864:0)
-	1.2203053-2211029.noblocks.bam: 2 splits differ (totals: 2, 2; mismatched: 1, 1):
-				Split(486847:6,963864:65535)
-			Split(486847:7,963864:0)
+Total split-computation time:
+	hadoop-bam:	630
+	spark-bam:	8359
+
+Ratios:
+N: 4, μ/σ: 13.4/1.6, med/mad: 12.8/0.6
+sorted: 11.8 12.7 12.9 16.1
+
+	1.bam: 2 splits differ (totals: 6, 6; mismatched: 1, 1):
+			239479:311-322560:65535
+		239479:312-336825:304
+	1.noblocks.bam: 2 splits differ (totals: 6, 6; mismatched: 1, 1):
+			239479:311-322560:65535
+		239479:312-336825:304
 ```
 
-- As [above][`compute-splits`], the 470KB split size is chosen to illustrate a hadoop-bam false-positive that's been isolated/reproduced here.
-- `1.2203053-2211029.noblocks.bam` and `1.2203053-2211029.bam` are identical; the former is a symlink to the latter used for testing in the (apparent) absence of `.bam.blocks` and `.bam.records` files.
+- As [above][`compute-splits`], the 105KB split size is chosen to illustrate a hadoop-bam false-positive that's been isolated/reproduced here.
+- `1.noblocks.bam` and `1.bam` are identical; the former is a symlink to the latter used for testing in the (apparent) absence of `.bam.blocks` and `.bam.records` files.
 
 #### [`index-records`][IndexRecords]
 
-Outputs a `.bam.records` file with "virtual offsets" of all BAM records in a `.bam` file; see [the test data][str] or [`IndexRecordsTest`] for example output:
+Outputs a `.bam.records` file with "virtual offsets" of all BAM records in a `.bam` file; see [the test data][test_bams] or [`IndexRecordsTest`] for example output:
 
 ```
 2454,0
@@ -563,12 +604,12 @@ This runs in one thread on one node and doesn't use Spark, which can take a long
 ##### Example usage
 
 ```bash
-spark-submit $SPARK_BAM_JAR index-records <input.bam>
+spark-submit $CLI_JAR index-records <input.bam>
 ```
 
 #### [`index-blocks`][IndexBlocks]
 
-Outputs a `.bam.blocks` file with {start position, compressed size, and uncompressed size} for each BGZF block in an input `.bam` file; see [the test data][str] or [`IndexBlocksTest`] for example output:
+Outputs a `.bam.blocks` file with {start position, compressed size, and uncompressed size} for each BGZF block in an input `.bam` file; see [the test data][test_bams] or [`IndexBlocksTest`] for example output:
 
 ```
 0,2454,5650
@@ -590,7 +631,7 @@ BGZF-block-splitting is a much more straightforward task than BAM-record-boundar
 ##### Example usage
 
 ```bash
-spark-submit $SPARK_BAM_JAR index-blocks <input.bam>
+spark-submit $CLI_JAR index-blocks <input.bam>
 ```
 
 #### [`htsjdk-rewrite`][rewrite/Main]
@@ -602,50 +643,14 @@ spark-submit $SPARK_BAM_JAR index-blocks <input.bam>
 
 ##### Example
 
-This command was used to generate the test file [`src/test/resources/5k.100-3000/5k.100-3000.bam`][str/5k.100-3000], which contains the reads from [`src/test/resources/5k.bam`][str] with indices in the range [100, 3000):
+This command was used to generate the test file [`cli/src/test/resources/slice/2.100-1000.bam`][cli/str/slice], which contains the reads from [`test_bams/src/main/resources/2.bam`][test_bams] with indices in the range [100, 1000):
 
 ```bash
-spark-submit $SPARK_BAM_JAR \
+spark-submit $CLI_JAR \
 	htsjdk-rewrite \
-	-s 100 -e 3000 \
-	src/test/resources/5k.bam \
-	src/test/resources/5k.100-3000/5k.100-3000.bam
-```
-
-
-### As a library
-
-#### Depend on [spark-bam] using Maven
-
-```xml
-<dependency>
-	<groupId>org.hammerlab</groupId>
-	<artifactId>spark-bam_2.11</artifactId>
-	<version>1.1.0-SNAPSHOT</version>
-</dependency>
-```
-
-#### Depend on [spark-bam] using SBT
-
-```scala
-libraryDependencies += "org.hammerlab" %% "spark-bam" % "1.1.0-SNAPSHOT"
-```
-
-### Get an assembly JAR
-
-#### From Maven Central:
-
-```
-wget TODO
-```
-
-#### From source
-
-```
-git clone git@github.com:hammerlab/spark-bam.git
-cd spark-bam
-sbt assembly
-export SPARK_BAM_JAR=target/scala-2.11/spark-bam-assembly-1.1.0-SNAPSHOT.jar
+	-r 100-3000 \
+	test_bams/src/main/resources/2.bam \
+	cli/src/test/resources/slice/2.100-1000.bam
 ```
 
 ## Benchmarks
@@ -690,18 +695,17 @@ TODO
 [api-clarity]: #algorithm-api-clarity
 
 <!-- Checkers -->
-[eager/Checker]: src/main/scala/org/hammerlab/bam/check/eager/Checker.scala
-[full/Checker]: src/main/scala/org/hammerlab/bam/check/full/Checker.scala
-[seqdoop/Checker]: src/main/scala/org/hammerlab/bam/check/seqdoop/Checker.scala
-[indexed/Checker]: src/main/scala/org/hammerlab/bam/check/indexed/Checker.scala
+[eager/Checker]: check/src/main/scala/org/hammerlab/bam/check/eager/Checker.scala
+[full/Checker]: check/src/main/scala/org/hammerlab/bam/check/full/Checker.scala
+[seqdoop/Checker]: seqdoop/src/main/scala/org/hammerlab/bam/check/seqdoop/Checker.scala
+[indexed/Checker]: check/src/main/scala/org/hammerlab/bam/check/indexed/Checker.scala
 
 [`Checker`]: src/main/scala/org/hammerlab/bam/check/Checker.scala
 
 <!-- test/resources links -->
-[str]: src/test/resources
-[`src/test/resources/test-bams`]: src/test/resources/test-bams
-[output/check-bam]: src/test/resources/output/check-bam
-[output/full-check]: src/test/resources/output/full-check
+[`cli/src/test/resources/test-bams`]: cli/src/test/resources/test-bams
+[output/check-bam]: cli/src/test/resources/output/check-bam
+[output/full-check]: cli/src/test/resources/output/full-check
 
 <!-- External project links -->
 [Apache Spark]: https://spark.apache.org/
@@ -719,36 +723,34 @@ TODO
 [`BAMSplitGuesser`]: https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMSplitGuesser.java
 
 <!-- Command/Subcommand links -->
-[Main]: src/main/scala/org/hammerlab/bam/Main.scala
+[Main]: cli/src/main/scala/org/hammerlab/bam/Main.scala
 
 [`check-bam`]: #check
-[check/Main]: src/main/scala/org/hammerlab/bam/check/Main.scala
+[check/Main]: cli/src/main/scala/org/hammerlab/bam/check/Main.scala
 
 [`full-check`]: #full-check
-[full/Main]: src/main/scala/org/hammerlab/bam/check/full/Main.scala
+[full/Main]: cli/src/main/scala/org/hammerlab/bam/check/full/Main.scala
 
 [`compute-splits`]: #compute-splits
-[spark/Main]: src/main/scala/org/hammerlab/bam/spark/Main.scala
+[spark/Main]: cli/src/main/scala/org/hammerlab/bam/spark/Main.scala
 
 [`compare-splits`]: #compare-splits
-[compare/Main]: src/main/scala/org/hammerlab/bam/compare/Main.scala
+[compare/Main]: cli/src/main/scala/org/hammerlab/bam/compare/Main.scala
 
 [`index-blocks`]: #index-blocks
-[IndexBlocks]: src/main/scala/org/hammerlab/bgzf/index/IndexBlocks.scala
-[`IndexBlocksTest`]: src/test/scala/org/hammerlab/bgzf/index/IndexBlocksTest.scala
+[IndexBlocks]: cli/src/main/scala/org/hammerlab/bgzf/index/IndexBlocks.scala
+[`IndexBlocksTest`]: cli/src/test/scala/org/hammerlab/bgzf/index/IndexBlocksTest.scala
 
 [`index-records`]: #index-records
-[IndexRecords]: src/main/scala/org/hammerlab/bam/index/IndexRecords.scala
-[`IndexRecordsTest`]: src/test/scala/org/hammerlab/bam/index/IndexRecordsTest.scala
+[IndexRecords]: cli/src/main/scala/org/hammerlab/bam/index/IndexRecords.scala
+[`IndexRecordsTest`]: cli/src/test/scala/org/hammerlab/bam/index/IndexRecordsTest.scala
 
 [`htsjdk-rewrite`]: #htsjdk-rewrite
-[rewrite/Main]: src/main/scala/org/hammerlab/bam/rewrite/Main.scala
+[rewrite/Main]: cli/src/main/scala/org/hammerlab/bam/rewrite/Main.scala
 
 <!-- External BAM links -->
 [1.bam]: https://portal.gdc.cancer.gov/legacy-archive/files/19155553-8199-4c4d-a35d-9a2f94dd2e7d
 [2.bam]: https://portal.gdc.cancer.gov/legacy-archive/files/b7ee4c39-1185-4301-a160-669dea90e192
-
-[str/5k.100-3000]: src/test/resources/5k.100-3000
 
 [`org.hammerlab.paths.Path`]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala
 [Path NIO ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L14
@@ -757,13 +759,20 @@ TODO
 
 [`SAMRecord`]: https://github.com/samtools/htsjdk/blob/2.9.1/src/main/java/htsjdk/samtools/SAMRecord.java
 
-[`CanLoadBam`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala
-[`loadReads`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadBamIntervals`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadReadsAndPositions`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadSplitsAndReads`]: src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`CanLoadBam`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala
+[`loadReads`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadBamIntervals`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadReadsAndPositions`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadSplitsAndReads`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
 
 [`LociSet`]: https://github.com/hammerlab/genomic-loci/blob/2.0.1/src/main/scala/org/hammerlab/genomics/loci/set/LociSet.scala
 
-[`Pos`]: src/main/scala/org/hammerlab/bgzf/Pos.scala
-[`Split`]: src/main/scala/org/hammerlab/bam/spark/Split.scala
+[`Pos`]: bgzf/src/main/scala/org/hammerlab/bgzf/Pos.scala
+[`Split`]: check/src/main/scala/org/hammerlab/bam/spark/Split.scala
+
+[linking]: #linking-against-spark-bam
+
+[test_bams]: test_bams/src/main/resources
+[cli/str/slice]: cli/src/test/resources/slice
+
+[cli]: cli
