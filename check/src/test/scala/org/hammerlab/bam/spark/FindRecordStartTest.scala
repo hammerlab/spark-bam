@@ -12,7 +12,7 @@ import org.hammerlab.test.Suite
 class FindRecordStartTest
   extends Suite {
 
-  test("470kb") {
+  test("210kb") {
     val path = bam1
     val ch = SeekableByteChannel(path)
     implicit val uncompressedBytes = SeekableUncompressedBytes(ch)
@@ -21,6 +21,6 @@ class FindRecordStartTest
     implicit val maxReadSize = default[MaxReadSize]
     implicit val readsToCheck = default[ReadsToCheck]
 
-    FindRecordStart(path, 486847) should be(Pos(486847, 7))
+    FindRecordStart(path, 239479) should be(Pos(239479, 312))
   }
 }

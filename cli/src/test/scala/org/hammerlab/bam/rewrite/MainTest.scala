@@ -11,9 +11,9 @@ class MainTest
   extends Suite {
 
   /**
-   * Use [[Main]] to pull records [100,3000) out of 5k.bam, test that the results are as expected.
+   * Use [[Main]] to pull records [100,1000) out of 2.bam, test that the results are as expected.
    */
-  test("slice 5k.bam") {
+  test("slice 2.bam") {
     val outDir = tmpDir()
     Main.run(
       Args(
@@ -21,7 +21,7 @@ class MainTest
           Some(
             IntRanges(
               Seq(
-                Endpoints(100, 3000)
+                Endpoints(100, 10000)
               )
             )
           ),
@@ -31,12 +31,12 @@ class MainTest
       RemainingArgs(
         Seq(
           bam2.toString,
-          s"$outDir/5k.100-3000.bam"
+          s"$outDir/2.100-1000.bam"
         ),
         Nil
       )
     )
 
-    outDir should dirMatch(File("5k.100-3000"))
+    outDir should dirMatch(File("2.100-1000"))
   }
 }

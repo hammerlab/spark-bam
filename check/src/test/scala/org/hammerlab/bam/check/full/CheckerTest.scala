@@ -37,7 +37,7 @@ class CheckerTest
   test("true positive") {
     check(
       bam2,
-      Pos(886659, 43388),
+      Pos(439897, 52186),
       Success(10)
     )
   }

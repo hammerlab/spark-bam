@@ -8,19 +8,19 @@ class PosStreamTest
   extends Suite {
 
   def checkFirstPositions(implicit stream: PosStreamI[_]): Unit = {
-    stream.header.endPos should be(Pos(2454, 0))
+    stream.header.endPos should be(Pos(0, 5650))
     stream.take(10).toList should be(
       Seq(
-        Pos(2454,    0),
-        Pos(2454,  624),
-        Pos(2454, 1244),
-        Pos(2454, 1883),
-        Pos(2454, 2520),
-        Pos(2454, 3088),
-        Pos(2454, 3734),
-        Pos(2454, 4368),
-        Pos(2454, 4987),
-        Pos(2454, 5668)
+        Pos(0,  5650),
+        Pos(0,  6274),
+        Pos(0,  6894),
+        Pos(0,  7533),
+        Pos(0,  8170),
+        Pos(0,  8738),
+        Pos(0,  9384),
+        Pos(0, 10018),
+        Pos(0, 10637),
+        Pos(0, 11318)
       )
     )
   }
@@ -38,38 +38,38 @@ class PosStreamTest
 
     checkFirstPositions
 
-    stream.seek(Pos(970754, 61671))
+    stream.seek(Pos(485781, 62305))
 
     stream.take(10).toList should be(
       Seq(
-        Pos(970754, 61671),
-        Pos(970754, 62334),
-        Pos(970754, 62999),
-        Pos(970754, 63664),
-        Pos(970754, 64326),
-        Pos(988320,     0),
-        Pos(988320,   664),
-        Pos(988320,  1326),
-        Pos(988320,  1987),
-        Pos(988320,  2652)
+        Pos(485781, 62305),
+        Pos(485781, 62968),
+        Pos(485781, 63631),
+        Pos(485781, 64294),
+        Pos(485781, 64957),
+        Pos(503981,   122),
+        Pos(503981,   785),
+        Pos(503981,  1447),
+        Pos(503981,  2111),
+        Pos(503981,  2774)
       )
     )
 
-    stream.seek(Pos(988320, 64141))
+    stream.seek(Pos(503981, 65010))
 
     stream.take(3).toList should be(
       Seq(
-        Pos( 988320, 64141),
-        Pos(1006167,     0),
-        Pos(1006167,   663)
+        Pos(503981, 65010),
+        Pos(521796,   177),
+        Pos(521796,   840)
       )
     )
 
-    stream.seek(Pos(1006167, 1325))
-    stream.next should be(Pos(1006167, 1325))
+    stream.seek(Pos(521796, 1510))
+    stream.next should be(Pos(521796, 1510))
 
-    stream.seek(Pos(1006167, 1325))
-    stream.next should be(Pos(1006167, 1325))
+    stream.seek(Pos(521796, 1510))
+    stream.next should be(Pos(521796, 1510))
 
     stream.seek(Pos(0, 0))
     checkFirstPositions

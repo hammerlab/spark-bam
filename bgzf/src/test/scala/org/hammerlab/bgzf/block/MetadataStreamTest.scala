@@ -32,7 +32,7 @@ class MetadataStreamTest
     ch.position(0)
     val stream = MetadataStream(ch)
 
-    stream.size should be(30)
+    stream.size should be(25)
 
     ch.isOpen should be(true)
     stream.close()

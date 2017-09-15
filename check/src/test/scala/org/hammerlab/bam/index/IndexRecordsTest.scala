@@ -8,7 +8,7 @@ import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
 class IndexRecordsTest
   extends Suite {
 
-  test("5k.bam") {
+  test("2.bam") {
     val outPath = tmpPath()
     IndexRecords.run(
       Args(
@@ -20,6 +20,6 @@ class IndexRecordsTest
       )
     )
 
-    outPath should fileMatch("5k.bam.records")
+    outPath should fileMatch("2.bam.records")
   }
 }

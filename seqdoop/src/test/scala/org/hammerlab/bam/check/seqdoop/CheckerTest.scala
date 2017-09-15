@@ -17,8 +17,8 @@ class CheckerTest
   val contigLengths = ContigLengths(path)
   val checker = Checker(path, ch, contigLengths)
 
-  test("486847:6") {
-    checker(Pos(486847, 6)) should be(true)  // false positive
+  test("239479:311") {
+    checker(Pos(239479, 311)) should be(true)  // false positive
   }
 
   override def afterAll(): Unit = {

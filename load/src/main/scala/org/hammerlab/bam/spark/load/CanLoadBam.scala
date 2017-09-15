@@ -347,9 +347,9 @@ object CanLoadBam {
 
   def getIntevalChunks(path: Path,
                        intervals: LociSet)(
-                          implicit
-                          conf: Configuration
-                      ): Seq[Chunk] = {
+      implicit
+      conf: Configuration
+  ): Seq[Chunk] = {
 
     val readerFactory =
       SamReaderFactory

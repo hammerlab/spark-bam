@@ -24,28 +24,23 @@ class LoadBAMTest
   test("1e6") {
     check(
       MaxSplitSize(1000000),
-      4910
+      2500
     )
   }
 
   test("1e5") {
     check(
       MaxSplitSize(100000),
-      507, 515, 409, 507, 501,
-      510, 517, 420, 509, 492,
-      23
+      503, 414, 518, 421, 493, 151
     )
   }
 
   test("2e4") {
     check(
       MaxSplitSize(20000),
-      104, 101, 104, 100,  98, 101, 100, 105,   0, 209,
-      101,   0, 102, 102, 104, 105, 105, 104,  97,  96,
-       96,  97,  99, 104, 105, 102, 101, 100, 104, 103,
-      105,  99, 103, 105, 105, 105, 105, 105, 105,   0,
-      103, 104, 105, 101,  96,  99,  99,  98,  98,  98,
-      23
+       96, 102, 105, 101,  99, 102, 101, 106,   0, 105,
+      105, 102, 104, 103, 104, 106, 104, 106,   0, 105,
+      195, 101,   0,  99,  98,  99,  52
     )
   }
 
@@ -58,8 +53,8 @@ class LoadBAMTest
     ) should be(
       Seq(
         Chunk(
-          Pos(   2454,     0),
-          Pos(1010675,     0)
+          Pos(     0, 5650),
+          Pos(531725,    0)
         )
       )
     )
@@ -67,7 +62,7 @@ class LoadBAMTest
     val records =
       sc.loadBamIntervals(path, intervals)
 
-    records.count should be(4787)  // 4910 reads, 23 unmapped
+    records.count should be(2450)  // 2500 reads, 50 unmapped
   }
 
   test("indexed disjoint regions") {
@@ -78,14 +73,8 @@ class LoadBAMTest
       intervals
     ) should be(
       Seq(
-        Chunk(
-          Pos(  2454,     0),
-          Pos(284685, 33959)
-        ),
-        Chunk(
-          Pos(905238, 63468),
-          Pos(928569, 18303)
-        )
+        Chunk(Pos(0, 5650),Pos(314028, 45444)),
+        Chunk(Pos(439897, 20150),Pos(439897, 39777))
       )
     )
 
@@ -113,15 +102,15 @@ class LoadBAMTest
     }
   }
 
-  test("tcga bam") {
+  test("1.bam") {
     import org.hammerlab.bytes._
 
     sc
       .loadBam(
         bam1,
-        splitSize = 400 KB
+        splitSize = 300 KB
       )
-      .count should be(7976)
+      .count should be(4917)
   }
 }
 

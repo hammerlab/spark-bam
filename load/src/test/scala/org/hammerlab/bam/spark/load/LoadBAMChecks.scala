@@ -30,7 +30,7 @@ trait LoadBAMChecks
     val records = load(maxSplitSize)
 
     records.partitionSizes should be(sizes)
-    records.count should be(4910)
+    records.count should be(2500)
     records.map(_.getReadName).take(10) should be(
       Array(
         "HWI-ST807:461:C2P0JACXX:4:2115:8592:79724",

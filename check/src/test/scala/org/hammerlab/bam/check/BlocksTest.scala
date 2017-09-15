@@ -7,22 +7,19 @@ import org.hammerlab.magic.rdd.collect.CollectPartitionsRDD._
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.KryoSparkSuite
 
-class BlocksTCGATest
+class IndexedBlocksTest
   extends BlocksTest
     with TestBams {
   
   override implicit def path: Path = bam1
 
-  override def boundariesCase: Array[Array[Int]] =
+  override def boundariesCaseBlocks: Array[Array[Int]] =
     Array(
       Array( 14146),
       Array(),
-      Array(289818),
+      Array(287709),
       Array(),
-      Array(315322),
-      Array(),
-      Array(),
-      Array()
+      Array(312794)
     )
 
   override def boundariesCaseBounds: Seq[(Int, Option[Int])] =
@@ -31,26 +28,23 @@ class BlocksTCGATest
       10240 → Some(20480),
       20480 → Some(30720),
       30720 → Some(40960),
-      40960 → Some(51200),
-      51200 → Some(61440),
-      61440 → Some(71680),
-      71680 → Some(81920)
+      40960 → Some(51200)
     )
 }
 
-class UnindexedBlocksTCGATest
+class UnindexedBlocksTest
   extends BlocksTest {
-  
+
   override implicit def path: Path = bam1Unindexed
 
-  override def boundariesCase: Array[Array[Int]] =
+  override def boundariesCaseBlocks: Array[Array[Int]] =
     Array(
-      Array(14146),
+      Array( 14146),
       Array(),
       Array(),
-      Array(289818),
+      Array(287709),
       Array(),
-      Array(315322)
+      Array(312794)
     )
 
   override def boundariesCaseBounds: Seq[(Int, Option[Int])] =
@@ -105,25 +99,27 @@ abstract class BlocksTest
     )
   }
 
-  def boundariesCase: Array[Array[Int]]
+  def boundariesCaseBlocks: Array[Array[Int]]
   def boundariesCaseBounds: Seq[(Int, Option[Int])]
 
   test("all blocks") {
     check(
-      "-m", "200k"
+      "-m", "100k"
     )(
       Array(
-        Array(     0,  14146,  39374,  65429,  89707, 113583, 138333, 163285, 188181),
-        Array(213608, 239479, 264771, 289818, 315322, 340348, 366151, 391261),
-        Array(416185, 440006, 463275, 486847, 510891, 534950, 559983, 584037, 608466),
-        Array(633617, 658113, 682505, 707074, 731617, 755781, 780685, 805727),
-        Array(830784, 855668, 879910, 904062, 929182, 953497)
+        Array(0, 14146, 39374, 65429, 89707),
+        Array(113583, 138333, 163285, 188181),
+        Array(213608, 239479, 263656, 287709),
+        Array(312794, 336825, 361204, 386382),
+        Array(410905, 435247, 459832, 484396, 508565),
+        Array(533464, 558458, 583574)
       ),
-           0 → Some( 204800),
-      204800 → Some( 409600),
-      409600 → Some( 614400),
-      614400 → Some( 819200),
-      819200 → Some(1024000)
+           0 → Some( 102400),
+      102400 → Some( 204800),
+      204800 → Some( 307200),
+      307200 → Some( 409600),
+      409600 → Some( 512000),
+      512000 → Some( 614400)
     )
   }
 
@@ -147,10 +143,10 @@ abstract class BlocksTest
 
   test("block boundaries") {
     check(
-      "-i", "10k-39374,289818-315323",
+      "-i", "10k-39374,287709-312795",
       "-m", "10k"
     )(
-      boundariesCase,
+      boundariesCaseBlocks,
       boundariesCaseBounds: _*
     )
   }

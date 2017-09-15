@@ -1,7 +1,7 @@
 package org.hammerlab.bam.check.full
 
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bam.test.resources.TestBams
+import org.hammerlab.bam.test.resources.{ TestBams, bam1Unindexed }
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.MainSuite
 import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
@@ -34,9 +34,7 @@ class MainTest
     outputPath should fileMatch(expected)
   }
 
-
-/*
-  test("tcga excerpt with indexed records") {
+  test("1.bam with indexed records") {
     check(
       bam1
     )(
@@ -46,7 +44,7 @@ class MainTest
     )
   }
 
-  test("tcga excerpt without indexed records") {
+  test("1.bam without indexed records") {
     check(
       bam1Unindexed
     )(
@@ -55,48 +53,45 @@ class MainTest
       expected("tcga-unindexed")
     )
   }
-*/
 
-  test("5k.bam header block") {
+  test("2.bam header block") {
     check(
       bam2
     )(
       "-i", "0"
     )(
-      expected("5k.bam.header")
+      expected("2.bam.header")
     )
   }
 
-  test("5k.bam second block, with reads") {
+  test("2.bam second block, with reads") {
     check(
       bam2
     )(
       "-i", "27784"
     )(
-      expected("5k.bam.2nd-block")
+      expected("2.bam.2nd-block")
     )
   }
 
-  test("5k.bam 200k") {
+  test("2.bam 200k") {
     check(
       bam2
     )(
       "-i", "0-200k",
       "-m", "100k"
     )(
-      expected("5k.bam.200k")
+      expected("2.bam.200k")
     )
   }
 
-/*
-  test("5k.bam all") {
+  test("2.bam all") {
     check(
       bam2
     )(
       // All default args
     )(
-      expected("5k.bam")
+      expected("2.bam")
     )
   }
-*/
 }
