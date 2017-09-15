@@ -6,15 +6,16 @@ jdk:
 scala:
   - 2.11.8
 
-script: sbt -J-Xmx2g ++$TRAVIS_SCALA_VERSION clean coverageTest
+# Skip collecting+reporting coverage data because full.MainTest takes extremely long when collecting coverage data
+# (30mins for full-bam test cases), and because scoverage doesn't have a way to count a downstream module's tests as
+# providing coverage for its dependencies, which artificially deflates reported coverage numbers.
+script: sbt ++$TRAVIS_SCALA_VERSION -Dcoveralls.disable clean test
 
 cache:
   directories:
   - $HOME/.ivy2/cache
   - $HOME/.sbt/boot/
   - $HOME/.zinc
-
-after_success: sbt ++$TRAVIS_SCALA_VERSION travis-report
 
 before_cache:
   # Tricks to avoid unnecessary cache updates
