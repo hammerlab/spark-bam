@@ -1,7 +1,5 @@
 # spark-bam
 [![Build Status](https://travis-ci.org/hammerlab/spark-bam.svg?branch=master)](https://travis-ci.org/hammerlab/spark-bam)
-[![Coverage Status](https://coveralls.io/repos/github/hammerlab/spark-bam/badge.svg?branch=master)](https://coveralls.io/github/hammerlab/spark-bam?branch=master)
-[![Maven Central](https://img.shields.io/maven-central/v/org.hammerlab/spark-bam_2.11.svg?maxAge=600)](http://search.maven.org/#search%7Cga%7C1%7Cspark-bam)
 
 Process [BAM files][SAM spec] using [Apache Spark] and [HTSJDK]; inspired by [HadoopGenomics/hadoop-bam][hadoop-bam].
 
