@@ -21,7 +21,7 @@ class MainTest
           Some(
             IntRanges(
               Seq(
-                Endpoints(100, 10000)
+                Endpoints(100, 1000)
               )
             )
           ),
@@ -37,6 +37,6 @@ class MainTest
       )
     )
 
-    outDir should dirMatch(File("2.100-1000"))
+    outDir should dirMatch(File("slice"))
   }
 }

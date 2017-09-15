@@ -171,9 +171,9 @@ object Main
             diffs
               .map {
                 case Left(ours) ⇒
-                  show"\t\t$ours"
+                  show"\t$ours"
                 case Right(theirs) ⇒
-                  show"\t\t\t$theirs"
+                  show"\t\t$theirs"
               },
             s"\t${path.basename}: ${diffs.length} splits differ ($totalsMsg):",
             n ⇒ s"\t${path.basename}: first $n of ${diffs.length} splits that differ ($totalsMsg):"

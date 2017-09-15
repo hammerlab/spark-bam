@@ -13,7 +13,7 @@ class MainTest
   val ratio = Chars("0123456789.")
   val elemsOrSorted = Chars(" delmorst")
 
-  test("470KB, 2 bams") {
+  test("230KB, 2 bams") {
     val outPath = tmpPath()
     val bamsPath = tmpPath()
     bamsPath.writeLines(
@@ -24,14 +24,14 @@ class MainTest
     )
     Main.main(
       Array(
-        "-m", "470k",
+        "-m", "230k",
         "-o", outPath.toString,
         bamsPath.toString
       )
     )
 
     outPath.read should linesMatch(
-      "1 of 2 BAMs' splits didn't match (totals: 5, 5; 1, 1 unmatched)",
+      "1 of 2 BAMs' splits didn't match (totals: 6, 6; 1, 1 unmatched)",
       "",
       "Total split-computation time:",
       "	hadoop-bam:	" ++ Digits,
@@ -41,28 +41,28 @@ class MainTest
       "N: 2, μ/σ: " ++ ratio ++ "/" ++ ratio,
       elemsOrSorted ++ ": " ++ ratio ++ " " ++ ratio,
       "",
-      "	1.2203053-2211029.bam: 2 splits differ (totals: 2, 2; mismatched: 1, 1):",
-      "				486847:6-963864:65535",
-      "			486847:7-963864:0",
+      "	1.bam: 2 splits differ (totals: 3, 3; mismatched: 1, 1):",
+      "			239479:311-471040:65535",
+      "		239479:312-484396:25",
       "",
       ""
     )
   }
 
-  test("400KB, 1 bam, no errors") {
+  test("100KB, 1 bam, no errors") {
     val outPath = tmpPath()
     val bamsPath = tmpPath()
     bamsPath.write(bam2.toString)
     Main.main(
       Array(
-        "-m", "400k",
+        "-m", "100k",
         "-o", outPath.toString,
         bamsPath.toString
       )
     )
 
     outPath.read should linesMatch(
-      "All 1 BAMs' splits (totals: 3, 3) matched!",
+      "All 1 BAMs' splits (totals: 6, 6) matched!",
       "",
       "Total split-computation time:",
       "	hadoop-bam:	" ++ Digits,

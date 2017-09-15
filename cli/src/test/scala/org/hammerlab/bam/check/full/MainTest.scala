@@ -40,7 +40,7 @@ class MainTest
     )(
       "-m", "200k"
     )(
-      expected("tcga-indexed")
+      expected("1.bam")
     )
   }
 
@@ -50,27 +50,27 @@ class MainTest
     )(
       "-m", "200k"
     )(
-      expected("tcga-unindexed")
+      expected("1.noblocks.bam")
     )
   }
 
-  test("2.bam header block") {
+  test("2.bam first block") {
     check(
       bam2
     )(
       "-i", "0"
     )(
-      expected("2.bam.header")
+      expected("2.bam.first")
     )
   }
 
-  test("2.bam second block, with reads") {
+  test("2.bam second block") {
     check(
       bam2
     )(
-      "-i", "27784"
+      "-i", "26169"
     )(
-      expected("2.bam.2nd-block")
+      expected("2.bam.second")
     )
   }
 

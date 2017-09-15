@@ -31,25 +31,25 @@ class CompareTest
 
   implicit lazy val confBroadcast: Broadcast[Configuration] = sc.broadcast(ctx)
 
-  test("470KB") {
-    implicit val splitSize = MaxSplitSize(470.KB)
+  test("230kb") {
+    implicit val splitSize = MaxSplitSize(230.KB)
     val actual = getPathResult(bam1)
 
     val expected =
       Result(
-        2,
-        2,
+        3,
+        3,
         Vector(
           Right(
             Split(
-              Pos(486847,     6),
-              Pos(963864, 65535)
+              Pos(239479,   311),
+              Pos(471040, 65535)
             )
           ),
           Left(
             Split(
-              Pos(486847,     7),
-              Pos(963864,     0)
+              Pos(239479,   312),
+              Pos(484396,    25)
             )
           )
         ),
@@ -62,24 +62,24 @@ class CompareTest
     check(actual, expected)
   }
 
-  test("235KB") {
-    implicit val splitSize = MaxSplitSize(235.KB)
+  test("115KB") {
+    implicit val splitSize = MaxSplitSize(115.KB)
     check(
       getPathResult(bam1),
       Result(
-        4,
-        4,
+        5,
+        5,
         Vector(
           Right(
             Split(
-              Pos(486847,     6),
-              Pos(721920, 65535)
+              Pos(239479,   311),
+              Pos(353280, 65535)
             )
           ),
           Left(
             Split(
-              Pos(486847,     7),
-              Pos(731617,    36)
+              Pos(239479,   312),
+              Pos(361204,    42)
             )
           )
         ),

@@ -1,0 +1,50 @@
+65498 uncompressed positions
+25.6K compressed
+Compression ratio: 2.50
+96 reads
+All calls matched!
+
+No positions where only one check failed
+
+10 of 97 positions where exactly two checks failed:
+	0:5649:	1 before HWI-ST807:461:C2P0JACXX:4:2115:8592:79724 2/2 101b aligned read @ 1:10001. Failing checks: noReadName,invalidCigarOp
+	0:6273:	1 before HWI-ST807:461:C2P0JACXX:4:2115:8592:79724 1/2 101b aligned read @ 1:10009. Failing checks: noReadName,invalidCigarOp
+	0:6893:	1 before HWI-ST807:461:C2P0JACXX:4:1304:9505:89866 2/2 101b aligned read @ 1:10048. Failing checks: noReadName,invalidCigarOp
+	0:7532:	1 before HWI-ST807:461:C2P0JACXX:4:2311:6431:65669 2/2 101b aligned read @ 1:10335. Failing checks: noReadName,invalidCigarOp
+	0:8169:	1 before HWI-ST807:461:C2P0JACXX:4:1305:2342:51860 1/2 101b unmapped read (placed at 1:10363). Failing checks: noReadName,invalidCigarOp
+	0:8737:	1 before HWI-ST807:461:C2P0JACXX:4:1305:2342:51860 2/2 101b aligned read @ 1:10363. Failing checks: noReadName,invalidCigarOp
+	0:9383:	1 before HWI-ST807:461:C2P0JACXX:4:1304:9505:89866 1/2 101b aligned read @ 1:10368. Failing checks: noReadName,invalidCigarOp
+	0:10017:	1 before HWI-ST807:461:C2P0JACXX:4:2311:6431:65669 1/2 101b aligned read @ 1:10458. Failing checks: noReadName,invalidCigarOp
+	0:10636:	1 before HWI-ST807:461:C2P0JACXX:4:1107:13461:64844 1/2 101b aligned read @ 1:11648. Failing checks: noReadName,invalidCigarOp
+	0:11317:	1 before HWI-ST807:461:C2P0JACXX:4:2203:17157:59976 2/2 101b aligned read @ 1:11687. Failing checks: noReadName,invalidCigarOp
+	…
+
+	Histogram:
+		96:	noReadName,invalidCigarOp
+		1:	nonNullTerminatedReadName,invalidCigarOp
+
+	Per-flag totals:
+		           invalidCigarOp:	97
+		               noReadName:	96
+		nonNullTerminatedReadName:	 1
+
+Total error counts:
+	             invalidCigarOp:	63529
+	            tooLargeReadIdx:	62868
+	        tooLargeNextReadIdx:	62868
+	  nonNullTerminatedReadName:	57356
+	tooFewRemainingBytesImplied:	53939
+	                 noReadName:	 3917
+	           nonASCIIReadName:	 3790
+	            negativeReadIdx:	 1720
+	            negativeReadPos:	 1720
+	        negativeNextReadIdx:	 1720
+	        negativeNextReadPos:	 1720
+	             emptyMappedSeq:	 1429
+	            tooLargeReadPos:	  377
+	        tooLargeNextReadPos:	  377
+	              emptyReadName:	  197
+	           emptyMappedCigar:	    2
+	     tooFewBytesForReadName:	    0
+	     tooFewBytesForCigarOps:	    0
+

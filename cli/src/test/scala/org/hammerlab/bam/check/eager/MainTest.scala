@@ -39,23 +39,23 @@ class MainTest
     outputPath.read should be(expected.stripMargin)
   }
 
-  val seqdoopTCGAExpectedOutput = File("output/check-bam/seqdoop/tcga")
+  val seqdoopTCGAExpectedOutput = File("output/check-bam/1.bam")
 
-  test("tcga compare") {
+  test("compare 1.bam") {
     compare(
       bam1,
       seqdoopTCGAExpectedOutput
     )
   }
 
-  test("tcga compare no .blocks file") {
+  test("compare 1.noblocks.bam") {
     compare(
       bam1Unindexed,
       seqdoopTCGAExpectedOutput
     )
   }
 
-  test("tcga hadoop-bam") {
+  test("seqdoop 1.bam") {
     val outputPath = tmpPath()
 
     Main.main(
@@ -70,7 +70,7 @@ class MainTest
     outputPath should fileMatch(seqdoopTCGAExpectedOutput)
   }
 
-  test("tcga spark-bam") {
+  test("eager 1.bam") {
     val outputPath = tmpPath()
 
     Main.main(
@@ -83,10 +83,10 @@ class MainTest
     )
 
     outputPath.read should be(
-      """2580596 uncompressed positions
-        |941K compressed
-        |Compression ratio: 2.68
-        |7976 reads
+      """1608257 uncompressed positions
+        |583K compressed
+        |Compression ratio: 2.69
+        |4917 reads
         |All calls matched!
         |"""
       .stripMargin
