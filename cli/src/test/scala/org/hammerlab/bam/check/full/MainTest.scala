@@ -44,6 +44,7 @@ class MainTest
     )
   }
 
+/*
   test("1.bam without indexed records") {
     check(
       bam1Unindexed
@@ -53,6 +54,7 @@ class MainTest
       expected("1.noblocks.bam")
     )
   }
+*/
 
   test("2.bam first block") {
     check(
@@ -85,6 +87,7 @@ class MainTest
     )
   }
 
+/*
   test("2.bam all") {
     check(
       bam2
@@ -94,4 +97,5 @@ class MainTest
       expected("2.bam")
     )
   }
+*/
 }
