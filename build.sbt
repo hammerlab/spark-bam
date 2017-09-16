@@ -33,6 +33,7 @@ lazy val check = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
+    bytes % "1.0.2",
     case_app,
     cats,
     channel % "1.1.0-SNAPSHOT",
@@ -56,11 +57,12 @@ lazy val cli = project.settings(
   version := "1.0.0-SNAPSHOT",
 
   deps ++= Seq(
-    hammerlab_hadoop_bam ^ "7.9.0",
+    bytes % "1.0.2",
     case_app,
     case_cli ^ "1.0.0-SNAPSHOT",
     cats,
     channel % "1.1.0-SNAPSHOT",
+    hammerlab_hadoop_bam ^ "7.9.0",
     iterators % "1.4.0",
     magic_rdds % "3.0.0-SNAPSHOT",
     paths % "1.2.1-SNAPSHOT",

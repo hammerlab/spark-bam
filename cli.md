@@ -102,7 +102,7 @@ Many commands are sensitive to the split-size. Default is often taken from the u
       Maximum Hadoop split-size; if unset, default to underlying FileSystem's value. Integers as well as byte-size short-hands accepted, e.g. 64m, 32MB
 ```
 
-## [`check-bam`][check/Main]
+## [check-bam][check/Main]
 
 - Run [spark-bam] and [hadoop-bam][] [`Checker`s][`Checker`] over every (uncompressed) position in a BAM file
 - Print statistics about their concordance.
@@ -131,7 +131,7 @@ False positives with succeeding read info:
 	533464:49472:	1 before D0N7FACXX120305:5:1204:3428:52534 2/2 76b unmapped read (placed at 1:24981468). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
 ```
 
-## [`full-check`][full/Main]
+## [full-check][full/Main]
 
 - Run the [`full`] checker over every (uncompressed) position in a BAM file
 - Print statistics about the frequency with which [the record-validity-checks][checks table] used by [spark-bam] correctly ruled out non-record-boundary positions. 
@@ -196,7 +196,7 @@ Total error counts:
 	     tooFewBytesForCigarOps:	     14
 ```
 
-## [`compute-splits`][spark/Main]
+## [compute-splits][spark/Main]
 
 Test computation on a given BAM using [spark-bam] and/or [hadoop-bam].
 
@@ -219,7 +219,7 @@ The BAM `1.bam` is a ≈600KB excerpt from the TCGA BAM [19155553-8199-4c4d-a35d
  
 The 105KB split-size used above drops hadoop-bam into the same position in the excerpted BAM, reproducing the bug in a smaller test-case. 
 
-## [`compare-splits`][compare/Main]
+## [compare-splits][compare/Main]
 
 Compare [spark-bam] and [hadoop-bam] splits on multiple/many BAMs.
 
@@ -259,7 +259,7 @@ sorted: 11.8 12.7 12.9 16.1
  	- Relative slowness likely results from emphasis on abstraction clarity and no profiling having been done.
  	- It's not considered particularly problematic: the expectation is that parallelization more than compensates for it (e.g. a 100-core cluster would be 20x fasterwith 5x the total CPU use).
 
-## [`index-records`][IndexRecords]
+## [index-records][IndexRecords]
 
 Outputs a `.bam.records` file with "virtual offsets" of all BAM records in a `.bam` file; see [the test data][test_bams] or [`IndexRecordsTest`] for example output:
 
@@ -286,7 +286,7 @@ This runs in one thread on one node and doesn't use Spark, which can take a long
 spark-submit $CLI_JAR index-records <input.bam>
 ```
 
-## [`index-blocks`][IndexBlocks]
+## [index-blocks][IndexBlocks]
 
 Outputs a `.bam.blocks` file with {start position, compressed size, and uncompressed size} for each BGZF block in an input `.bam` file; see [the test data][test_bams] or [`IndexBlocksTest`] for example output:
 
@@ -313,7 +313,7 @@ BGZF-block-splitting is a much more straightforward task than BAM-record-boundar
 spark-submit $CLI_JAR index-blocks <input.bam>
 ```
 
-## [`htsjdk-rewrite`][rewrite/Main]
+## [htsjdk-rewrite][rewrite/Main]
 
 - Round-trips a BAM file through HTSJDK, which writes it out without aligning BAM records to BGZF-block starts
 - Useful for creating BAMs with which to test [hadoop-bam]'s correctness
