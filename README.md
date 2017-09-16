@@ -26,7 +26,7 @@ sc.loadReads(path, splitSize = 16 MB)
 // RDD[SAMRecord]
 ```
 
-## Using [spark-bam]
+## Using
 
 With [spark-bam on the classpath][linking], a `SparkContext` can be "enriched" with relevant methods for loading BAM files by importing:
    
@@ -34,7 +34,7 @@ With [spark-bam on the classpath][linking], a `SparkContext` can be "enriched" w
 import org.hammerlab.bam.spark._
 ```
 
-### [`loadReads`]
+### [loadReads][`loadReads`]
 
 The primary method exposed is `loadReads`, which will load an `RDD` of [HTSJDK `SAMRecord`s][`SAMRecord`] from a `.sam`, `.bam`, or `.cram` file:
 
@@ -64,7 +64,7 @@ Arguments:
 	- optional; default: taken from underlying Hadoop filesystem APIs
 	- 
 
-### [`loadBamIntervals`]
+### [loadBamIntervals][`loadBamIntervals`]
 
 When the `path` is known to be an indexed `.bam` file, reads can be loaded that from only specified genomic-loci regions:
 
@@ -98,23 +98,27 @@ Arguments:
 	- optional; default: `3.0`
 	- minor parameter used for approximately balancing Spark partitions; shouldn't be necessary to change
 
-### [`loadReadsAndPositions`]
+### [loadReadsAndPositions][`loadReadsAndPositions`]
 
 Implementation of [`loadReads`]: takes the same arguments, but returns [`SAMRecord`]s keyed by BGZF position ([`Pos`]).
 
 Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`] command.
 
-### [`loadSplitsAndReads`]
+### [loadSplitsAndReads][`loadSplitsAndReads`]
 
 Similar to [`loadReads`], but also returns computed [`Split`]s alongside the `RDD[SAMRecord]`.
 
 Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`] command.
 
-## Linking against [spark-bam]
+## Linking
 
-### As a library
+### In SBT
 
-#### Depend on [spark-bam] using Maven
+```scala
+libraryDependencies += "org.hammerlab.bam" %% "load" % "1.0.0-SNAPSHOT"
+```
+
+### In Maven
 
 ```xml
 <dependency>
@@ -124,36 +128,20 @@ Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`]
 </dependency>
 ```
 
-#### Depend on [spark-bam] using SBT
-
-```scala
-libraryDependencies += "org.hammerlab.bam" %% "load" % "1.0.0-SNAPSHOT"
-```
-
 ### From `spark-shell`
-
-#### After [getting an assembly JAR]
-
-```bash
-spark-shell --jars $SPARK_BAM_JAR
-```
-
-#### Using Spark packages
 
 ```bash
 spark-shell --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
 ```
 
 ```scala
-spark-shell --jars $SPARK_BAM_JAR
-…
 import org.hammerlab.bam.spark._
 import org.hammerlab.paths.Path
 val reads = sc.loadBam(Path("test_bams/src/main/resources/2.bam"))  // RDD[SAMRecord]
 reads.count  // Long: 4910
 ```
 
-#### On Google Cloud
+### On Google Cloud
 
 [spark-bam] uses Java NIO APIs to read files, and needs the [google-cloud-nio] connector in order to read from Google Cloud Storage (`gs://` URLs).
 
@@ -167,7 +155,7 @@ wget https://oss.sonatype.org/content/repositories/releases/com/google/cloud/goo
 Then include it in your `--jars` list when running `spark-shell` or `spark-submit`:
 
 ```bash
-spark-shell --jars $SPARK_BAM_JAR,$GOOGLE_CLOUD_NIO_JAR
+spark-shell --jars $GOOGLE_CLOUD_NIO_JAR --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
 …
 import org.hammerlab.bam.spark._
 import org.hammerlab.paths.Path
