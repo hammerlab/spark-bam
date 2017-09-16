@@ -1,7 +1,7 @@
 # spark-bam
 [![Build Status](https://travis-ci.org/hammerlab/spark-bam.svg?branch=master)](https://travis-ci.org/hammerlab/spark-bam)
 
-Process [BAM files][SAM spec] using [Apache Spark] and [HTSJDK]; inspired by [HadoopGenomics/hadoop-bam][hadoop-bam].
+Process [BAM files][SAM spec] using [Apache Spark] and [HTSJDK]; inspired by [hadoop-bam].
 
 ```scala
 $ spark-shell --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
@@ -29,9 +29,9 @@ sc.loadReads(path, splitSize = 16 MB)
 
 [spark-bam] improves on [hadoop-bam] in 3 ways:
 
-- [parallelization](#Parallelization)
-- [correctness](#Correctness)
-- [algorithm/API clarity](#algorithm-api-clarity)
+- [parallelization][parallelization-section]
+- [correctness][correctness-section]
+- [algorithm/API clarity][algorithm-clarity-section]
 
 ### Parallelization
 
@@ -48,8 +48,8 @@ For example, on Google Cloud Storage (GCS), two factors causing high split-compu
 
 An important impetus for the creation of [spark-bam] was the discovery of two TCGA lung-cancer BAMs for which [hadoop-bam] produces invalid splits:
 
-- [19155553-8199-4c4d-a35d-9a2f94dd2e7d][1.bam]
-- [b7ee4c39-1185-4301-a160-669dea90e192][2.bam]
+- [19155553-8199-4c4d-a35d-9a2f94dd2e7d]
+- [b7ee4c39-1185-4301-a160-669dea90e192]
 
 HTSJDK threw an error when trying to parse reads from essentially random data fed to it by [hadoop-bam]:
 
@@ -716,7 +716,7 @@ TODO
 <!-- Command/Subcommand links -->
 [Main]: cli/src/main/scala/org/hammerlab/bam/Main.scala
 
-[`check-bam`]: #check
+[`check-bam`]: #check-bam
 [check/Main]: cli/src/main/scala/org/hammerlab/bam/check/Main.scala
 
 [`full-check`]: #full-check
@@ -740,8 +740,8 @@ TODO
 [rewrite/Main]: cli/src/main/scala/org/hammerlab/bam/rewrite/Main.scala
 
 <!-- External BAM links -->
-[1.bam]: https://portal.gdc.cancer.gov/legacy-archive/files/19155553-8199-4c4d-a35d-9a2f94dd2e7d
-[2.bam]: https://portal.gdc.cancer.gov/legacy-archive/files/b7ee4c39-1185-4301-a160-669dea90e192
+[19155553-8199-4c4d-a35d-9a2f94dd2e7d]: https://portal.gdc.cancer.gov/legacy-archive/files/19155553-8199-4c4d-a35d-9a2f94dd2e7d
+[b7ee4c39-1185-4301-a160-669dea90e192]: https://portal.gdc.cancer.gov/legacy-archive/files/b7ee4c39-1185-4301-a160-669dea90e192
 
 [`org.hammerlab.paths.Path`]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala
 [Path NIO ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L14
@@ -767,3 +767,7 @@ TODO
 [cli/str/slice]: cli/src/test/resources/slice
 
 [cli]: cli
+
+[parallelization-section]: #parallelization
+[correctness-section]: #correctness
+[algorithm-clarity-section]: #algorithmapi-clarity
