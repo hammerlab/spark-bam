@@ -4,34 +4,25 @@
 Process [BAM files][SAM spec] using [Apache Spark] and [HTSJDK]; inspired by [HadoopGenomics/hadoop-bam][hadoop-bam].
 
 ```scala
-$ spark-shell --jars $SPARK_BAM_JAR
+$ spark-shell --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
 …
-
 import org.hammerlab.bam.spark._
 import org.hammerlab.paths.Path
 
 val path = Path("test_bams/src/main/resources/2.bam")
 
 // Load an RDD[SAMRecord] from `path`; supports .bam, .sam, and .cram
-sc.loadReads(path)
+val reads = sc.loadReads(path)
 // RDD[SAMRecord]
+
+reads.count
+// 2500
 
 import org.hammerlab.bytes._
 
-// Configure split size
+// Configure maximum split size
 sc.loadReads(path, splitSize = 16 MB)
 // RDD[SAMRecord]
-
-// Return computed splits as well as the RDD[SAMRecord]
-val BAMRecordRDD(splits, rdd) = sc.loadSplitsAndReads(path)
-// splits: Seq[org.hammerlab.bam.spark.Split] = Vector(Split(2454:0,1010703:0))
-// rdd: org.apache.spark.rdd.RDD[htsjdk.samtools.SAMRecord] = MapPartitionsRDD[6] at values at CanLoadBam.scala:200
-
-// Example with multiple splits on a different BAM
-val path = Path("test_bams/src/main/resources/1.bam")
-val BAMRecordRDD(splits, rdd) = sc.loadSplitsAndReads(path, splitSize = 400 KB)
-// splits: … = Vector(Split(0:45846,410905:270), Split(410905:270,597482:0))
-// rdd: …
 ```
 
 ## Features

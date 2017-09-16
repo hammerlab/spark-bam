@@ -102,6 +102,12 @@ lazy val cli = project.settings(
 lazy val load = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
+
+  // When running all tests in this project with `sbt test`, sometimes a Kryo
+  // "Class is not registered: org.hammerlab.genomics.loci.set.LociSet" exception is thrown by
+  // LoadBAMTest:"indexed disjoint regions"; this works around it.
+  fork := true,
+
   deps ++= Seq(
     channel % "1.1.0-SNAPSHOT",
     htsjdk,
