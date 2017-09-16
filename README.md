@@ -686,17 +686,17 @@ TODO
 [api-clarity]: #algorithm-api-clarity
 
 <!-- Checkers -->
-[eager/Checker]: check/src/main/scala/org/hammerlab/bam/check/eager/Checker.scala
-[full/Checker]: check/src/main/scala/org/hammerlab/bam/check/full/Checker.scala
-[seqdoop/Checker]: seqdoop/src/main/scala/org/hammerlab/bam/check/seqdoop/Checker.scala
-[indexed/Checker]: check/src/main/scala/org/hammerlab/bam/check/indexed/Checker.scala
+[eager/Checker]: https://github.com/hammerlab/spark-bam/blob/master/check/src/main/scala/org/hammerlab/bam/check/eager/Checker.scala
+[full/Checker]: https://github.com/hammerlab/spark-bam/blob/master/check/src/main/scala/org/hammerlab/bam/check/full/Checker.scala
+[seqdoop/Checker]: https://github.com/hammerlab/spark-bam/blob/master/seqdoop/src/main/scala/org/hammerlab/bam/check/seqdoop/Checker.scala
+[indexed/Checker]: https://github.com/hammerlab/spark-bam/blob/master/check/src/main/scala/org/hammerlab/bam/check/indexed/Checker.scala
 
 [`Checker`]: src/main/scala/org/hammerlab/bam/check/Checker.scala
 
 <!-- test/resources links -->
-[`cli/src/test/resources/test-bams`]: cli/src/test/resources/test-bams
-[output/check-bam]: cli/src/test/resources/output/check-bam
-[output/full-check]: cli/src/test/resources/output/full-check
+[`cli/src/test/resources/test-bams`]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/test/resources/test-bams
+[output/check-bam]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/test/resources/output/check-bam
+[output/full-check]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/test/resources/output/full-check
 
 <!-- External project links -->
 [Apache Spark]: https://spark.apache.org/
@@ -714,30 +714,30 @@ TODO
 [`BAMSplitGuesser`]: https://github.com/HadoopGenomics/Hadoop-BAM/blob/7.8.0/src/main/java/org/seqdoop/hadoop_bam/BAMSplitGuesser.java
 
 <!-- Command/Subcommand links -->
-[Main]: cli/src/main/scala/org/hammerlab/bam/Main.scala
+[Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/Main.scala
 
 [`check-bam`]: #check-bam
-[check/Main]: cli/src/main/scala/org/hammerlab/bam/check/Main.scala
+[check/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/check/Main.scala
 
 [`full-check`]: #full-check
-[full/Main]: cli/src/main/scala/org/hammerlab/bam/check/full/Main.scala
+[full/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/check/full/Main.scala
 
 [`compute-splits`]: #compute-splits
-[spark/Main]: cli/src/main/scala/org/hammerlab/bam/spark/Main.scala
+[spark/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/spark/Main.scala
 
 [`compare-splits`]: #compare-splits
-[compare/Main]: cli/src/main/scala/org/hammerlab/bam/compare/Main.scala
+[compare/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/compare/Main.scala
 
 [`index-blocks`]: #index-blocks
-[IndexBlocks]: cli/src/main/scala/org/hammerlab/bgzf/index/IndexBlocks.scala
-[`IndexBlocksTest`]: cli/src/test/scala/org/hammerlab/bgzf/index/IndexBlocksTest.scala
+[IndexBlocks]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bgzf/index/IndexBlocks.scala
+[`IndexBlocksTest`]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/test/scala/org/hammerlab/bgzf/index/IndexBlocksTest.scala
 
 [`index-records`]: #index-records
-[IndexRecords]: cli/src/main/scala/org/hammerlab/bam/index/IndexRecords.scala
-[`IndexRecordsTest`]: cli/src/test/scala/org/hammerlab/bam/index/IndexRecordsTest.scala
+[IndexRecords]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/index/IndexRecords.scala
+[`IndexRecordsTest`]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/test/scala/org/hammerlab/bam/index/IndexRecordsTest.scala
 
 [`htsjdk-rewrite`]: #htsjdk-rewrite
-[rewrite/Main]: cli/src/main/scala/org/hammerlab/bam/rewrite/Main.scala
+[rewrite/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/rewrite/Main.scala
 
 <!-- External BAM links -->
 [19155553-8199-4c4d-a35d-9a2f94dd2e7d]: https://portal.gdc.cancer.gov/legacy-archive/files/19155553-8199-4c4d-a35d-9a2f94dd2e7d
@@ -750,23 +750,23 @@ TODO
 
 [`SAMRecord`]: https://github.com/samtools/htsjdk/blob/2.9.1/src/main/java/htsjdk/samtools/SAMRecord.java
 
-[`CanLoadBam`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala
-[`loadReads`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadBamIntervals`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadReadsAndPositions`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadSplitsAndReads`]: load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`CanLoadBam`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala
+[`loadReads`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadBamIntervals`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadReadsAndPositions`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadSplitsAndReads`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
 
 [`LociSet`]: https://github.com/hammerlab/genomic-loci/blob/2.0.1/src/main/scala/org/hammerlab/genomics/loci/set/LociSet.scala
 
-[`Pos`]: bgzf/src/main/scala/org/hammerlab/bgzf/Pos.scala
-[`Split`]: check/src/main/scala/org/hammerlab/bam/spark/Split.scala
+[`Pos`]: https://github.com/hammerlab/spark-bam/blob/master/bgzf/src/main/scala/org/hammerlab/bgzf/Pos.scala
+[`Split`]: https://github.com/hammerlab/spark-bam/blob/master/check/src/main/scala/org/hammerlab/bam/spark/Split.scala
 
 [linking]: #linking-against-spark-bam
 
 [test_bams]: test_bams/src/main/resources
-[cli/str/slice]: cli/src/test/resources/slice
+[cli/str/slice]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/test/resources/slice
 
-[cli]: cli
+[cli]: https://github.com/hammerlab/spark-bam/blob/master/cli
 
 [parallelization-section]: #parallelization
 [correctness-section]: #correctness
