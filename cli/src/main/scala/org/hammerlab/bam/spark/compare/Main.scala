@@ -1,23 +1,21 @@
 package org.hammerlab.bam.spark.compare
 
-import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O }
 import cats.Show
 import cats.implicits.catsKernelStdGroupForInt
 import cats.syntax.all._
 import com.esotericsoftware.kryo.Kryo
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.SparkContext
-import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, SplitSize }
+import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
 import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.bam.spark.CanCompareSplits
 import org.hammerlab.bgzf.block.BGZFBlocksToCheck
 import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.io.Printer._
-import org.hammerlab.iterator.SliceIterator._
 import org.hammerlab.kryo.serializeAs
 import org.hammerlab.paths.Path
 import org.hammerlab.stats.Stats
@@ -30,19 +28,13 @@ case class Opts(@Recurse output: OutputArgs,
                 @Recurse findReadArgs: FindReadArgs,
                 @Recurse findBlockArgs: FindBlockArgs,
 
-                @O("n")
-                @M("Only process this many files")
-                filesLimit: Option[Int] = None,
-
-                @O("s")
-                @M("Start from this offset into the file")
-                startOffset: Option[Int] = None
+                @O("r")
+                fileRanges: Option[IntRanges] = None
                )
   extends SparkPathAppArgs
 
 object Main
-  extends SparkPathApp[Opts](classOf[Registrar])
-    with CanCompareSplits {
+  extends SparkPathApp[Opts](classOf[Registrar]) {
 
   sparkConf(
     "spark.kryo.classesToRegister" →
@@ -62,7 +54,12 @@ object Main
         .lines
         .map(_.trim)
         .filter(_.nonEmpty)
-        .sliceOpt(opts.startOffset, opts.filesLimit)
+        .zipWithIndex
+        .collect {
+          case (path, idx)
+            if opts.fileRanges.forall(_.contains(idx)) ⇒
+            path
+        }
         .toVector
 
     val numBams = lines.length
