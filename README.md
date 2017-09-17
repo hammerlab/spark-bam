@@ -23,12 +23,6 @@ sc.loadReads(path, splitSize = 16 MB)
 // RDD[SAMRecord]
 ```
 
-More info:
-- [linking](#linking)
-- [API](api)
-- [command-line interface](cli)
-- [motivation](motivation)
-
 ## Linking
 
 ### In SBT

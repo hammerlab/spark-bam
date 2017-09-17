@@ -72,15 +72,17 @@ Arguments:
 
 ## [loadReadsAndPositions][`loadReadsAndPositions`]
 
-Implementation of [`loadReads`]: takes the same arguments, but returns [`SAMRecord`]s keyed by BGZF position ([`Pos`]).
+Implementation of [`loadReads`][loadreads-section]: takes the same arguments, but returns [`SAMRecord`]s keyed by BGZF position ([`Pos`]).
 
 Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`] command.
 
 ## [loadSplitsAndReads][`loadSplitsAndReads`]
 
-Similar to [`loadReads`], but also returns computed [`Split`]s alongside the `RDD[SAMRecord]`.
+Similar to [`loadReads`][loadreads-section], but also returns computed [`Split`]s alongside the `RDD[SAMRecord]`.
 
 Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`] command.
+
+[loadreads-section]: #loadreads
 
 
 [`CanLoadBam`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala
@@ -102,3 +104,5 @@ Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`]
 [Path NIO ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L14
 [Path URI ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L157
 [Path String ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L145-L155
+
+[linking]: index#linking
