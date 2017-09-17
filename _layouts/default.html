@@ -8,8 +8,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#157878">
 
-    <!--<link href="/public/css/poole.css" rel="stylesheet">-->
-    <link href="{{site.github.url}}/public/css/lanyon-sidebar.css" rel="stylesheet">
+
+    {% capture site_prefix %}{{ site.github.url | slice: 0, 23 }}{% endcapture %}
+    {% capture site_base %}{% if site_prefix == "http://github.com/pages" %}{% else %}
+        {{ site.github.url }}
+    {% endif %}{% endcapture %}
+
+    <link href="{{site_base}}/public/css/lanyon-sidebar.css" rel="stylesheet">
 
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
@@ -27,14 +32,47 @@
       {% endif %}
     </section>
 
-    {% include sidebar.html %}
+    <!-- Target for toggling the sidebar `.sidebar-checkbox` is for regular
+         styles, `#sidebar-checkbox` for behavior. -->
+    <input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
+
+    <!-- Toggleable sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-item">
+        <p>{{ site.description }}</p>
+      </div>
+
+      <nav class="sidebar-nav">
+        {% for item in site.data.nav.docs %}
+          {% capture sub_string %}/{{item.url}}{% endcapture %}
+          {% capture some_string %}{{ page.url | remove: ".html" }}{% endcapture %}
+
+          {% assign sub_string_size = sub_string | size %}
+          {% assign some_string_size = some_string | size %}
+          {% assign start_index = some_string_size | minus: sub_string_size %}
+          {% assign result = some_string | slice: start_index, sub_string_size %}
+
+          <a class="sidebar-nav-item{% if result == sub_string %} active{% endif %}" href="{{site_base}}/{{item.url}}">{{item.title}}</a>
+        {% endfor %}
+      </nav>
+    </div>
 
     <div class="flex-container">
       <div class="fixed-column left-nav">
         <h2>{{ site.data.nav.docs_list_title }}</h2>
         <ul>
           {% for item in site.data.nav.docs %}
-          <li><a href="{{ item.url }}" alt="{{ item.title }}">{{ item.title }}</a></li>
+            {% capture sub_string %}/{{item.url}}{% endcapture %}
+            {% capture some_string %}{{ page.url | remove: ".html" }}{% endcapture %}
+
+            {% assign sub_string_size = sub_string | size %}
+            {% assign some_string_size = some_string | size %}
+            {% assign start_index = some_string_size | minus: sub_string_size %}
+            {% assign result = some_string | slice: start_index, sub_string_size %}
+
+            <li>
+              <a class="{% if result == sub_string %}active{% endif %}" href="{{ site_base }}/{{ item.url }}" alt="{{ item.title }}">{{ item.title }}</a>
+            </li>
           {% endfor %}
         </ul>
       </div>
