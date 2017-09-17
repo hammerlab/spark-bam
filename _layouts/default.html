@@ -10,9 +10,7 @@
 
 
     {% capture site_prefix %}{{ site.github.url | slice: 0, 23 }}{% endcapture %}
-    {% capture site_base %}{% if site_prefix == "http://github.com/pages" %}{% else %}
-        {{ site.github.url }}
-    {% endif %}{% endcapture %}
+    {% capture site_base %}{% if site_prefix == "http://github.com/pages" %}{% else %}{{ site.github.url }}{% endif %}{% endcapture %}
 
     <link href="{{site_base}}/public/css/lanyon-sidebar.css" rel="stylesheet">
 
