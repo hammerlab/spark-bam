@@ -1,5 +1,7 @@
 Process [BAM files][SAM spec] using [Apache Spark] and [HTSJDK]; inspired by [hadoop-bam].
 
+http://hammerlab.org/spark-bam/
+
 ```bash
 $ spark-shell --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
 ```
