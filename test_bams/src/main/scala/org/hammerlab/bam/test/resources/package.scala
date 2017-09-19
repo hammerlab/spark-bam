@@ -1,15 +1,13 @@
 package org.hammerlab.bam.test
 
-import java.nio.file.Files
-
 import org.hammerlab.paths.Path
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.Url
 
 package object resources {
-  
-  def path(name: String): Path = Path(Url(name).toURI)  
-  
+
+  def path(name: String): Path = Path(Url(name).toURI)
+
   val bam1 = path("1.bam")
   val bam1Unindexed = path("1.noblocks.bam")
 
@@ -18,13 +16,6 @@ package object resources {
 
   trait TestBams {
     self: Suite ⇒
-
-    def fileCopy(path: Path, out: Path): Path = {
-      val in = path.inputStream
-      Files.copy(in, out)
-      in.close()
-      out
-    }
 
     def sam(bam: Path): Path =
       Path(bam.toString.dropRight(3) + "sam")

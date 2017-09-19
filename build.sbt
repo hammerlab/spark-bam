@@ -13,13 +13,13 @@ lazy val bgzf = project.settings(
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
     case_app,
-    case_cli ^ "1.0.0-SNAPSHOT",
+    case_cli % "1.0.0",
     cats,
-    channel % "1.1.0-SNAPSHOT",
+    channel % "1.1.0",
     io % "1.2.0",
     iterators % "1.4.0",
     math % "2.0.0",
-    paths % "1.2.1-SNAPSHOT",
+    paths % "1.3.0",
     slf4j % "1.3.1",
     spark_util % "1.3.0",
     stats % "1.0.1"
@@ -36,10 +36,10 @@ lazy val check = project.settings(
     bytes % "1.0.2",
     case_app,
     cats,
-    channel % "1.1.0-SNAPSHOT",
+    channel % "1.1.0",
     htsjdk,
-    magic_rdds % "3.0.0-SNAPSHOT",
-    paths % "1.2.1-SNAPSHOT",
+    magic_rdds % "3.0.0",
+    paths % "1.3.0",
     seqdoop_hadoop_bam,
     slf4j % "1.3.1",
     spark_util % "1.3.0"
@@ -59,13 +59,13 @@ lazy val cli = project.settings(
   deps ++= Seq(
     bytes % "1.0.2",
     case_app,
-    case_cli ^ "1.0.0-SNAPSHOT",
+    case_cli ^ "1.0.0",
     cats,
-    channel % "1.1.0-SNAPSHOT",
+    channel % "1.1.0",
     hammerlab_hadoop_bam ^ "7.9.0",
     iterators % "1.4.0",
-    magic_rdds % "3.0.0-SNAPSHOT",
-    paths % "1.2.1-SNAPSHOT",
+    magic_rdds % "3.0.0",
+    paths % "1.3.0",
     shapeless,
     spark_util % "1.3.0",
     stats % "1.0.1"
@@ -111,11 +111,11 @@ lazy val load = project.settings(
   fork := true,
 
   deps ++= Seq(
-    channel % "1.1.0-SNAPSHOT",
+    channel % "1.1.0",
     htsjdk,
     iterators % "1.4.0",
     math % "2.0.0",
-    paths % "1.2.1-SNAPSHOT",
+    paths % "1.3.0",
     reference % "1.4.0",
     seqdoop_hadoop_bam,
     slf4j % "1.3.1",
@@ -123,7 +123,7 @@ lazy val load = project.settings(
   ),
   compileAndTestDeps += loci % "2.0.1",
   addSparkDeps,
-  testDeps += magic_rdds % "3.0.0-SNAPSHOT"
+  testDeps += magic_rdds % "3.0.0"
 ).dependsOn(
   bgzf,
   check,
@@ -134,9 +134,9 @@ lazy val seqdoop = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    channel % "1.1.0-SNAPSHOT",
+    channel % "1.1.0",
     htsjdk,
-    paths % "1.2.1-SNAPSHOT",
+    paths % "1.3.0",
     hammerlab_hadoop_bam % "7.9.0"
   ),
   // Make sure we get org.hammerlab:hadoop-bam, not org.seqdoop
@@ -153,7 +153,7 @@ lazy val test_bams = project.settings(
   name := "test-bams",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    paths ^ "1.2.1-SNAPSHOT",
+    paths ^ "1.3.0",
     testUtils
   ),
   testDeps := Nil
