@@ -5,7 +5,6 @@ import cats.syntax.all._
 import cats.Show.show
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.broadcast.Broadcast
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.iterator.RecordStream

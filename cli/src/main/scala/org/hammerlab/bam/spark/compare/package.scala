@@ -6,7 +6,7 @@ import org.apache.hadoop.fs
 import org.apache.hadoop.mapreduce.lib.input
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths
 import org.apache.hadoop.mapreduce.{ InputSplit, Job }
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
+import org.hammerlab.bam.check.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.header.Header
 import org.hammerlab.bam.spark.load.Channels
 import org.hammerlab.bgzf.Pos

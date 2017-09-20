@@ -87,7 +87,7 @@ abstract class BlocksTest
             args: Blocks.Args,
             expectedBlocks: Array[Array[Int]],
             expectedBounds: (Int, Option[Int])*): Unit = {
-    val (blocks, bounds) = Blocks()
+    val Blocks(blocks, bounds) = Blocks()
 
     blocks
       .map(_.start)

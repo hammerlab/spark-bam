@@ -10,12 +10,8 @@ import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ AnalyzeCalls, Blocks, CheckerMain, eager, seqdoop }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.PosIterator
-import org.hammerlab.channel.CachingChannel._
-import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.cli.args.OutputArgs
-import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.paths.Path
 
 /**
@@ -56,15 +52,18 @@ case class Args(
   extends SparkPathAppArgs
 
 object Main
-  extends SparkPathApp[Args](classOf[Registrar])
-    with AnalyzeCalls {
+  extends SparkPathApp[Args](classOf[Registrar]) {
+
+  import AnalyzeCalls._
 
   override def run(args: Args): Unit = {
 
     new CheckerMain(args) {
       override def run(): Unit = {
 
-        val (compressedSizeAccumulator, calls) =
+        implicit val compressedSizeAccumulator = sc.longAccumulator("compressedSizeAccumulator")
+
+        val calls =
           (args.sparkBam, args.hadoopBam) match {
             case (true, false) ⇒
               vsIndexed[Boolean, eager.Checker]
@@ -90,42 +89,10 @@ object Main
       implicit
       path: Path,
       args: Blocks.Args,
+      compressedSizeAccumulator: LongAccumulator,
       makeChecker1: MakeChecker[Boolean, C1],
       makeChecker2: MakeChecker[Boolean, C2]
-  ): (LongAccumulator, RDD[(Pos, (Boolean, Boolean))]) = {
-
-    val (blocks, _) = Blocks()
-
-    val compressedSizeAccumulator = sc.longAccumulator("compressedSizeAccumulator")
-
-    val calls =
-      blocks
-        .mapPartitions {
-          blocks ⇒
-            val ch = SeekableByteChannel(path).cache
-            val checker1 = makeChecker1(ch)
-            val checker2 = makeChecker2(ch)
-
-            blocks
-              .flatMap {
-                block ⇒
-                  compressedSizeAccumulator.add(block.compressedSize)
-                  PosIterator(block)
-              }
-              .map {
-                pos ⇒
-                  pos →
-                    (
-                      checker1(pos),
-                      checker2(pos)
-                    )
-              }
-              .finish(ch.close())
-        }
-
-    (
-      compressedSizeAccumulator,
-      calls
-    )
-  }
+  ): RDD[(Pos, (Boolean, Boolean))] =
+    Blocks()
+      .mapPartitions(callPartition[C1, Boolean, C2])
 }

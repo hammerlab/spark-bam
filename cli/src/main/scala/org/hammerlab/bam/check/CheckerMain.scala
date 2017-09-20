@@ -4,7 +4,6 @@ import org.apache.log4j.Level.WARN
 import org.apache.log4j.Logger.getRootLogger
 import org.apache.spark.SparkContext
 import org.hammerlab.args.{ FindReadArgs, LogArgs }
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.header.Header
 import org.hammerlab.paths.Path

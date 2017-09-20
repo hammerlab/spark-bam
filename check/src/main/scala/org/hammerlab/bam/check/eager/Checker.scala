@@ -4,9 +4,10 @@ import java.io.{ EOFException, IOException }
 
 import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check
-import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, ReadsToCheck, SuccessfulReads, allowedReadNameChars }
-import org.hammerlab.bam.check.CheckerBase
+import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, allowedReadNameChars }
+import org.hammerlab.bam.check.{ MaxReadSize, PosChecker, ReadStartFinder, ReadsToCheck, SuccessfulReads }
 import org.hammerlab.bam.header.ContigLengths
+import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 
@@ -17,7 +18,8 @@ import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 case class Checker(uncompressedStream: SeekableUncompressedBytes,
                    contigLengths: ContigLengths,
                    readsToCheck: ReadsToCheck)
-  extends CheckerBase[Boolean] {
+  extends PosChecker[Boolean]
+    with ReadStartFinder {
 
   override protected def apply(startPos: Long)(
       implicit
@@ -121,6 +123,42 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
     )(
       successfulReads.n + 1
     )
+  }
+
+  def nextReadStart(start: Pos)(
+      implicit
+      maxReadSize: MaxReadSize
+  ): Option[Pos] =
+    nextReadStartWithDelta(start).map(_._1)
+
+  def nextReadStartWithDelta(start: Pos)(
+      implicit
+      maxReadSize: MaxReadSize
+  ): Option[(Pos, Int)] = {
+
+    uncompressedStream.seek(start)
+
+    var idx = 0
+    while (idx < maxReadSize.n) {
+      uncompressedStream.curPos match {
+        case Some(pos) ⇒
+          if (apply(pos)) {
+            return Some(pos → idx)
+          }
+
+          uncompressedStream.seek(pos)  // go back to this failed position
+
+          if (!uncompressedStream.hasNext)
+            return None
+
+          uncompressedStream.next()     // move over by 1 byte
+        case None ⇒
+          return None
+      }
+      idx += 1
+    }
+
+    None
   }
 }
 

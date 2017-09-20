@@ -8,7 +8,6 @@ import com.esotericsoftware.kryo.Kryo
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.SparkContext
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.block.BGZFBlocksToCheck
 import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
@@ -141,8 +140,7 @@ object Main
         ""
       )
       printTimings()
-    }
-    else {
+    } else {
       echo(
         s"${diffs.length} of $numBams BAMs' splits didn't match (totals: $numSparkBamSplits, $numHadoopBamSplits; $sparkOnlySplits, $hadoopOnlySplits unmatched)",
         ""
@@ -194,35 +192,4 @@ object Main
     /** [[Result]]s get [[org.apache.spark.rdd.RDD.collect collected]] */
     kryo.register(classOf[Result])
   }
-}
-
-/**
- * Wrapper for the split-computation Spark job that uses a [[Configuration]] in each task; forces the closure's
- * reference to the [[Configuration]] to be an instance variable that gets serialized, as opposed to [[Main.conf]] which
- * is static and would inadvertently cause creation of a [[SparkContext]] on each executor.
- */
-class PathChecks(lines: Vector[String], num: Int)(
-    implicit
-    sc: SparkContext,
-    conf: Configuration,
-    splitSize: MaxSplitSize,
-    bgzfBlocksToCheck: BGZFBlocksToCheck,
-    readsToCheck: ReadsToCheck,
-    maxReadSize: MaxReadSize
-)
-  extends Serializable {
-  val results =
-    sc
-      .parallelize(
-        lines,
-        numSlices = num
-      )
-      .map {
-        bamPathStr ⇒
-          val bamPath = Path(bamPathStr)
-
-          bamPath →
-            getPathResult(bamPath)
-      }
-      .cache
 }

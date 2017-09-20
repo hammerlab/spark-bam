@@ -5,17 +5,18 @@ import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.LongAccumulator
-import org.hammerlab.cli.app.SparkPathApp
 import org.hammerlab.args.ByteRanges
-import org.hammerlab.bam.check.Checker.{ MakeChecker, MaxReadSize, ReadsToCheck }
+import org.hammerlab.bam.check
+import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.full.error.{ Flags, Success }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
+import org.hammerlab.bgzf.block.{ Metadata, PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
+import org.hammerlab.io.{ Printer, SampleSize }
 import org.hammerlab.io.Printer.{ echo, print }
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.magic.rdd.SampleRDD._
@@ -25,13 +26,16 @@ import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
 
-trait AnalyzeCalls {
-  self: SparkPathApp[_] ⇒
+object AnalyzeCalls {
 
   def analyzeCalls(calls: RDD[(Pos, (Boolean, Boolean))],
                    resultsPerPartition: Int,
                    compressedSizeAccumulator: LongAccumulator)(
       implicit
+      sc: SparkContext,
+      path: Path,
+      printer: Printer,
+      sampleSize: SampleSize,
       headerBroadcast: Broadcast[Header],
       contigLengthsBroadcast: Broadcast[ContigLengths],
       readsToCheck: ReadsToCheck,
@@ -203,64 +207,49 @@ trait AnalyzeCalls {
     }
   }
 
+  def callPartition[C1 <: check.Checker[Boolean], Call2, C2 <: check.Checker[Call2]](blocks: Iterator[Metadata])(
+      implicit
+      path: Path,
+      compressedSizeAccumulator: LongAccumulator,
+      makeChecker1: MakeChecker[Boolean, C1],
+      makeChecker2: MakeChecker[Call2, C2]): Iterator[(Pos, (Boolean, Call2))] = {
+    val ch = SeekableByteChannel(path).cache
+    val checker1 = makeChecker1(ch)
+    val checker2 = makeChecker2(ch)
+
+    blocks
+      .flatMap {
+        block ⇒
+          compressedSizeAccumulator.add(block.compressedSize)
+          PosIterator(block)
+      }
+      .map {
+        pos ⇒
+          pos →
+            (
+              checker1(pos),
+              checker2(pos)
+            )
+      }
+      .finish(ch.close())
+  }
+
   def vsIndexed[Call, C <: Checker[Call]](
       implicit
       path: Path,
       sc: SparkContext,
       makeChecker: MakeChecker[Call, C],
+      compressedSizeAccumulator: LongAccumulator,
       rangesBroadcast: Broadcast[Option[ByteRanges]],
       blockArgs: Blocks.Args,
       recordArgs: IndexedRecordPositions.Args
-  ): (LongAccumulator, RDD[(Pos, (Boolean, Call))]) = {
-
-    val (blocks, bounds) = Blocks()
-
-    val posBounds =
-      bounds
-        .copy(
-          partitions =
-            bounds
-            .partitions
-            .map {
-              _.map {
-                case (start, endOpt) ⇒
-                  Pos(start, 0) → endOpt.map(Pos(_, 0))
-              }
-            }
-        )
-
-    val indexedRecords = IndexedRecordPositions(recordArgs.path)
-
-    val repartitionedRecords = indexedRecords.toSets(posBounds)
-
-    val compressedSizeAccumulator = sc.longAccumulator("compressedSize")
-
-    val calls =
-      blocks
-        .zippartitions(repartitionedRecords) {
-          (blocks, setsIter) ⇒
-            val recordsSet = setsIter.next()
-
-            val ch = SeekableByteChannel(path).cache
-            val checker = makeChecker(ch)
-
-            blocks
-              .flatMap {
-                block ⇒
-                  compressedSizeAccumulator.add(block.compressedSize)
-                  PosIterator(block)
-              }
-              .map {
-                pos ⇒
-                  pos →
-                    (
-                      recordsSet(pos),
-                      checker(pos)
-                    )
-              }
-              .finish(ch.close())
-        }
-
-    (compressedSizeAccumulator, calls)
+  ): RDD[(Pos, (Boolean, Call))] = {
+    val (blocks, repartitionedRecords) = IndexedRecordPositions()
+    blocks
+      .zippartitions(repartitionedRecords) {
+        (blocks, setsIter) ⇒
+          implicit val records = setsIter.next()
+          callPartition[indexed.Checker, Call, C](blocks)
+      }
   }
 }

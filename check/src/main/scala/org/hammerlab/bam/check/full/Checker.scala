@@ -4,8 +4,8 @@ import java.io.{ EOFException, IOException }
 
 import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check
-import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, ReadsToCheck, SuccessfulReads, allowedReadNameChars }
-import org.hammerlab.bam.check.CheckerBase
+import org.hammerlab.bam.check.Checker.{ MAX_CIGAR_OP, MakeChecker, allowedReadNameChars }
+import org.hammerlab.bam.check.{ PosChecker, ReadsToCheck, SuccessfulReads }
 import org.hammerlab.bam.check.full.error._
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
@@ -17,7 +17,7 @@ import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 case class Checker(uncompressedStream: SeekableUncompressedBytes,
                    contigLengths: ContigLengths,
                    readsToCheck: ReadsToCheck)
-  extends CheckerBase[Result] {
+  extends PosChecker[Result] {
 
   override protected def apply(startPos: Long)(
       implicit

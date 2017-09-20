@@ -8,19 +8,20 @@ import htsjdk.samtools.util.RuntimeIOException
 import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Checker.MakeChecker
+import org.hammerlab.bam.check.ReadStartFinder
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 import org.hammerlab.paths.Path
-import org.seqdoop.hadoop_bam.BAMPosGuesser
 import org.seqdoop.hadoop_bam.BAMSplitGuesser.MAX_BYTES_READ
+import org.seqdoop.hadoop_bam.{ BAMPosGuesser, BAMSplitGuesser }
 
 import scala.math.min
 
 case class Checker(path: Path,
                    cachingChannel: CachingChannel[SeekableByteChannel],
                    contigLengths: ContigLengths)
-  extends check.Checker[Boolean]
+  extends ReadStartFinder
     with Closeable {
 
   /** Wrap block-caching input stream in an HTSJDK [[SeekableStream]] for consumption by [[BAMPosGuesser]] */
@@ -51,6 +52,18 @@ case class Checker(path: Path,
 
   override def close(): Unit =
     ss.close()
+
+  @transient lazy val pathSize = path.size
+
+  @transient lazy val splitGuesser = new BAMSplitGuesser(ss, contigLengths.size)
+
+  override def nextReadStart(start: Pos)(implicit maxReadSize: check.MaxReadSize): Option[Pos] = {
+    val end = min(start.blockPos + MAX_BYTES_READ, pathSize)
+    splitGuesser.guessNextBAMRecordStart(start.blockPos, end) match {
+      case guess if guess == end ⇒ None
+      case guess ⇒ Some(Pos(guess))
+    }
+  }
 }
 
 case class BadBlockPos(pos: Pos, e: RuntimeException)

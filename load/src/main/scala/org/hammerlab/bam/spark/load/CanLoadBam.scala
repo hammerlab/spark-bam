@@ -7,7 +7,8 @@ import htsjdk.samtools.{ QueryInterval, SAMLineParser, SAMRecord, SamReaderFacto
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck, default }
+import org.hammerlab.bam.check.Checker.default
+import org.hammerlab.bam.check.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.header.ContigLengths.readSAMHeaderFromStream
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.index.Index.Chunk

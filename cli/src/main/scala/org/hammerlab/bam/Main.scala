@@ -1,7 +1,7 @@
 package org.hammerlab.bam
 
 import caseapp._
-import org.hammerlab.bam.check.{ eager, full }
+import org.hammerlab.bam.check.{ eager, full, blocks }
 import org.hammerlab.bam.spark.compare
 import org.hammerlab.bgzf
 
@@ -12,6 +12,7 @@ sealed abstract class Command[A](val main: CaseApp[A]) {
 }
 
 case class      CheckBam(@Recurse args:      eager.Args) extends Command(             eager.Main)
+case class   CheckBlocks(@Recurse args:      eager.Args) extends Command(            blocks.Main)
 case class     FullCheck(@Recurse args:       full.Args) extends Command(              full.Main)
 case class CompareSplits(@Recurse args:    compare.Opts) extends Command(           compare.Main)
 case class ComputeSplits(@Recurse args:      spark.Args) extends Command(             spark.Main)
@@ -25,6 +26,7 @@ object Main
                    remainingArgs: RemainingArgs): Unit =
     cmd match {
       case c @      CheckBam(args) ⇒ c.main.run(args, remainingArgs)
+      case c @   CheckBlocks(args) ⇒ c.main.run(args, remainingArgs)
       case c @     FullCheck(args) ⇒ c.main.run(args, remainingArgs)
       case c @ CompareSplits(args) ⇒ c.main.run(args, remainingArgs)
       case c @ ComputeSplits(args) ⇒ c.main.run(args, remainingArgs)

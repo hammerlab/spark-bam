@@ -36,8 +36,9 @@ case class Args(@Recurse blocks: Blocks.Args,
   extends SparkPathAppArgs
 
 object Main
-  extends SparkPathApp[Args](classOf[Registrar])
-    with AnalyzeCalls {
+  extends SparkPathApp[Args](classOf[Registrar]) {
+
+  import AnalyzeCalls._
 
   override def run(args: Args): Unit = {
 
@@ -47,7 +48,9 @@ object Main
         val calls =
           if (args.records.path.exists) {
 
-            val (compressedSizeAccumulator, calls) =
+            implicit val compressedSizeAccumulator = sc.longAccumulator("compressedSize")
+
+            val calls =
               vsIndexed[Result, Checker]
 
             analyzeCalls(
@@ -73,7 +76,6 @@ object Main
               }
           } else
             Blocks()
-              ._1
               .mapPartitions {
                 blocks ⇒
 

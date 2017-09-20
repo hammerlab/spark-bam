@@ -64,7 +64,7 @@ lazy val cli = project.settings(
     channel % "1.1.0",
     hammerlab_hadoop_bam ^ "7.9.0",
     iterators % "1.4.0",
-    magic_rdds % "3.0.0",
+    magic_rdds % "3.1.0",
     paths % "1.3.0",
     shapeless,
     spark_util % "1.3.0",

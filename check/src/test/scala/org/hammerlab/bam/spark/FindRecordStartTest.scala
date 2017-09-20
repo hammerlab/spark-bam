@@ -1,6 +1,7 @@
 package org.hammerlab.bam.spark
 
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck, default }
+import org.hammerlab.bam.check.Checker.default
+import org.hammerlab.bam.check.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bam.test.resources.bam1
 import org.hammerlab.bgzf.Pos

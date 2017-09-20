@@ -4,6 +4,7 @@
 
 - **Spark apps**
 	- [`check-bam`]
+	- [`check-blocks`]
 	- [`full-check`]
 	- [`compute-splits`]
 	- [`compare-splits`]
@@ -130,6 +131,15 @@ False positives with succeeding read info:
 	508565:56574:	1 before C0FR5ACXX120302:4:2202:2280:16832 2/2 76b unmapped read (placed at 1:24981398). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
 	533464:49472:	1 before D0N7FACXX120305:5:1204:3428:52534 2/2 76b unmapped read (placed at 1:24981468). Failing checks: tooLargeReadPos,tooLargeNextReadPos,emptyReadName,invalidCigarOp
 ```
+
+## [check-blocks][blocks/Main]
+
+- Run [spark-bam] and [hadoop-bam][] [`Checker`s][`Checker`] from the start of every BGZF block in a BAM file
+- Print statistics about their concordance
+- This is a good high-level estimate for the frequency and size of BAM-file portions that [hadoop-bam] will get wrong 
+
+See [tests for example output][blocks/MainTest].
+
 
 ## [full-check][full/Main]
 
@@ -339,8 +349,12 @@ spark-submit $CLI_JAR \
 [`check-bam`]: #check-bam
 [check/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/check/Main.scala
 
+[`check-blocks`]: #check-blocks
+[blocks/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/check/blocks/Main.scala
+[blocks/MainTest]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/test/scala/org/hammerlab/bam/check/blocks/MainTest.scala
+
 [`full-check`]: #full-check
-[full/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/check/full/Main.scala
+[full/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/check/full/Main.scalaz
 
 [`compute-splits`]: #compute-splits
 [spark/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/spark/Main.scala
