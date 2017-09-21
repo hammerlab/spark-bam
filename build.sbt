@@ -19,7 +19,7 @@ lazy val bgzf = project.settings(
     io % "1.2.0",
     iterators % "1.4.0",
     math % "2.0.0",
-    paths % "1.3.0",
+    paths % "1.3.1",
     slf4j % "1.3.1",
     spark_util % "1.3.0",
     stats % "1.0.1"
@@ -39,7 +39,7 @@ lazy val check = project.settings(
     channel % "1.1.0",
     htsjdk,
     magic_rdds % "3.0.0",
-    paths % "1.3.0",
+    paths % "1.3.1",
     seqdoop_hadoop_bam,
     slf4j % "1.3.1",
     spark_util % "1.3.0"
@@ -65,7 +65,7 @@ lazy val cli = project.settings(
     hammerlab_hadoop_bam ^ "7.9.0",
     iterators % "1.4.0",
     magic_rdds % "3.1.0",
-    paths % "1.3.0",
+    paths % "1.3.1",
     shapeless,
     spark_util % "1.3.0",
     stats % "1.0.1"
@@ -115,7 +115,7 @@ lazy val load = project.settings(
     htsjdk,
     iterators % "1.4.0",
     math % "2.0.0",
-    paths % "1.3.0",
+    paths % "1.3.1",
     reference % "1.4.0",
     seqdoop_hadoop_bam,
     slf4j % "1.3.1",
@@ -136,7 +136,7 @@ lazy val seqdoop = project.settings(
   deps ++= Seq(
     channel % "1.1.0",
     htsjdk,
-    paths % "1.3.0",
+    paths % "1.3.1",
     hammerlab_hadoop_bam % "7.9.0"
   ),
   // Make sure we get org.hammerlab:hadoop-bam, not org.seqdoop
@@ -153,7 +153,7 @@ lazy val test_bams = project.settings(
   name := "test-bams",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    paths ^ "1.3.0",
+    paths ^ "1.3.1",
     testUtils
   ),
   testDeps := Nil

@@ -11,6 +11,7 @@ import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.ReadStartFinder
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
+import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.BAMSplitGuesser.MAX_BYTES_READ
@@ -50,19 +51,39 @@ case class Checker(path: Path,
         throw BadBlockPos(pos, e)
     }
 
-  override def close(): Unit =
-    ss.close()
+  override def close(): Unit = ss.close()
 
   @transient lazy val pathSize = path.size
 
-  @transient lazy val splitGuesser = new BAMSplitGuesser(ss, contigLengths.size)
+  @transient lazy val uncompressedStream = {
+    import CachingChannel._
+    val channel = SeekableByteChannel(path).cache
+    SeekableUncompressedBytes(channel)
+  }
 
   override def nextReadStart(start: Pos)(implicit maxReadSize: check.MaxReadSize): Option[Pos] = {
-    val end = min(start.blockPos + MAX_BYTES_READ, pathSize)
-    splitGuesser.guessNextBAMRecordStart(start.blockPos, end) match {
-      case guess if guess == end ⇒ None
-      case guess ⇒ Some(Pos(guess))
+    uncompressedStream.seek(start)
+    var idx = 0
+    while (idx < maxReadSize.n) {
+      uncompressedStream.curPos match {
+        case Some(pos) ⇒
+          if (apply(pos)) {
+            return Some(pos)
+          }
+
+          uncompressedStream.seek(pos)  // go back to this failed position
+
+          if (!uncompressedStream.hasNext)
+            return None
+
+          uncompressedStream.next()     // move over by 1 byte
+        case None ⇒
+          return None
+      }
+      idx += 1
     }
+
+    None
   }
 }
 

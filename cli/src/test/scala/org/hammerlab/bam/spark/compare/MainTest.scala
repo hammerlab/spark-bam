@@ -1,6 +1,5 @@
 package org.hammerlab.bam.spark.compare
 
-import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.test.resources._
 import org.hammerlab.spark.test.suite.MainSuite
 import org.hammerlab.test.linesMatch
@@ -8,7 +7,7 @@ import org.hammerlab.test.matchers.lines.Line._
 import org.hammerlab.test.matchers.lines.{ Chars, Digits }
 
 class MainTest
-  extends MainSuite(classOf[Registrar]) {
+  extends MainSuite {
 
   val ratio = Chars("0123456789.")
   val elemsOrSorted = Chars(" delmorst")

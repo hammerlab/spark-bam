@@ -1,6 +1,5 @@
 package org.hammerlab.bam.check.eager
 
-import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.test.resources.{ bam1, bam1Unindexed }
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.MainSuite
@@ -8,7 +7,7 @@ import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
 import org.hammerlab.test.resources.File
 
 class MainTest
-  extends MainSuite(classOf[Registrar]) {
+  extends MainSuite {
 
   def compare(path: Path, expected: File): Unit = {
     val outputPath = tmpPath()

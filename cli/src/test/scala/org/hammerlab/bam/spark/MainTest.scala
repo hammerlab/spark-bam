@@ -1,12 +1,11 @@
 package org.hammerlab.bam.spark
 
-import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.test.resources.bam1
 import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.spark.test.suite.MainSuite
 
 class MainTest
-  extends MainSuite(classOf[Registrar]) {
+  extends MainSuite {
 
   def check(args: String*)(expected: String): Unit = {
     val outPath = tmpPath()

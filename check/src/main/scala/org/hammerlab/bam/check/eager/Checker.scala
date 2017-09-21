@@ -125,7 +125,7 @@ case class Checker(uncompressedStream: SeekableUncompressedBytes,
     )
   }
 
-  def nextReadStart(start: Pos)(
+  override def nextReadStart(start: Pos)(
       implicit
       maxReadSize: MaxReadSize
   ): Option[Pos] =

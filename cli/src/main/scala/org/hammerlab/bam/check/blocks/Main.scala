@@ -9,7 +9,8 @@ import org.hammerlab.args.ByteRanges
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.eager.Args
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
-import org.hammerlab.bam.check.{ Blocks, CheckerMain, MaxReadSize, ReadStartFinder, eager, seqdoop, indexed }
+import org.hammerlab.bam.check.{ Blocks, CheckerMain, MaxReadSize, ReadStartFinder, eager, indexed, seqdoop }
+import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.bytes.Bytes
@@ -22,10 +23,11 @@ import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
 import org.hammerlab.paths.Path
 
 object Main
-  extends SparkPathApp[Args] {
+  extends SparkPathApp[Args](classOf[Registrar]) {
 
   def callPartition[C1 <: ReadStartFinder, C2 <: ReadStartFinder](blocks: Iterator[(Option[Metadata], Metadata)])(
       implicit
+      pathBroadcast: Broadcast[Path],
       numBlocksAccumulator: LongAccumulator,
       totalCompressedSize: Long,
       makeChecker1: MakeChecker[Boolean, C1],
@@ -33,43 +35,43 @@ object Main
       maxReadSize: MaxReadSize
   ): Iterator[((Long, (Option[Pos], Option[Pos])), Long)] = {
 
-    val ch = SeekableByteChannel(path).cache
+    val ch = SeekableByteChannel(pathBroadcast.value).cache
 
     val checker1 = makeChecker1(ch)
     val checker2 = makeChecker2(ch)
 
     blocks
-    .flatMap {
-      case (
-        prevBlockOpt,
-        Metadata(start, _, _)
-      ) ⇒
+      .flatMap {
+        case (
+          prevBlockOpt,
+          Metadata(start, _, _)
+        ) ⇒
 
-        numBlocksAccumulator.add(1)
+          numBlocksAccumulator.add(1)
 
-        val pos1 = checker1.nextReadStart(Pos(start, 0))
-        val pos2 = checker2.nextReadStart(Pos(start, 0))
+          val pos1 = checker1.nextReadStart(Pos(start, 0))
+          val pos2 = checker2.nextReadStart(Pos(start, 0))
 
-        if (pos1 != pos2)
-          Some(
-            (
-              start,
-              (pos1, pos2)
-            ) →
-              prevBlockOpt
-                .map(_.compressedSize)
-                .getOrElse(1)
-                .toLong
-          )
-        else
-          None
-    }
+          if (pos1 != pos2)
+            Some(
+              (
+                start,
+                (pos1, pos2)
+              ) →
+                prevBlockOpt
+                  .map(_.compressedSize)
+                  .getOrElse(1)
+                  .toLong
+            )
+          else
+            None
+      }
   }
 
 
   def compare[C1 <: ReadStartFinder, C2 <: ReadStartFinder](
       implicit
-      path: Path,
+      pathBroadcast: Broadcast[Path],
       args: Blocks.Args,
       numBlocksAccumulator: LongAccumulator,
       makeChecker1: MakeChecker[Boolean, C1],
@@ -79,6 +81,8 @@ object Main
     implicit val totalCompressedSize = path.size
     val Blocks(blocks, _) = Blocks()
     blocks
+      .setName("blocks")
+      .cache
       .sliding2Prev
       .mapPartitions {
         blocks ⇒
@@ -88,7 +92,7 @@ object Main
 
   def vsIndexed[C <: ReadStartFinder](
       implicit
-      path: Path,
+      pathBroadcast: Broadcast[Path],
       sc: SparkContext,
       makeChecker: MakeChecker[Boolean, C],
       rangesBroadcast: Broadcast[Option[ByteRanges]],
@@ -114,6 +118,7 @@ object Main
 
         implicit val totalCompressedSize = path.size
         implicit val numBlocksAccumulator = sc.longAccumulator("numBlocks")
+        implicit val pathBroadcast = sc.broadcast(path)
 
         val badBlocks =
           (args.sparkBam, args.hadoopBam) match {

@@ -1,12 +1,11 @@
 package org.hammerlab.bam.check.blocks
 
-import org.hammerlab.bam.kryo.Registrar
-import org.hammerlab.spark.test.suite.MainSuite
 import org.hammerlab.bam.test.resources.{ bam1, bam2 }
 import org.hammerlab.paths.Path
+import org.hammerlab.spark.test.suite.MainSuite
 
 class MainTest
-  extends MainSuite(classOf[Registrar]) {
+  extends MainSuite {
 
   def check(bam: Path, args: String*)(expected: String): Unit = {
     val out = tmpPath()
