@@ -24,7 +24,7 @@ class MainTest
     check(
       bam1
     )(
-      """First read-position mis-matchined in 1 of 25 BGZF blocks
+      """First read-position mis-matched in 1 of 25 BGZF blocks
         |
         |25871 of 597482 (0.043300049206503294) compressed positions would lead to bad splits
         |
@@ -49,7 +49,7 @@ class MainTest
       bam1,
       "-u"
     )(
-      """First read-position mis-matchined in 1 of 25 BGZF blocks
+      """First read-position mis-matched in 1 of 25 BGZF blocks
         |
         |25871 of 597482 (0.043300049206503294) compressed positions would lead to bad splits
         |

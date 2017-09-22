@@ -68,7 +68,6 @@ object Main
       }
   }
 
-
   def compare[C1 <: ReadStartFinder, C2 <: ReadStartFinder](
       implicit
       pathBroadcast: Broadcast[Path],
@@ -80,6 +79,7 @@ object Main
   ): RDD[((Long, (Option[Pos], Option[Pos])), Long)] = {
     implicit val totalCompressedSize = path.size
     val Blocks(blocks, _) = Blocks()
+    //toSlidingRDD(blocks).sliding(2)
     blocks
       .setName("blocks")
       .cache
@@ -133,6 +133,10 @@ object Main
               ]
           }
 
+        badBlocks
+          .setName("bad-blocks")
+          .cache
+
         import cats.implicits._
 
         val (numWrongCompressedPositions, numWrongBlocks) =
@@ -151,7 +155,7 @@ object Main
           )
         else {
           echo(
-            s"First read-position mis-matchined in $numWrongBlocks of $numBlocks BGZF blocks",
+            s"First read-position mis-matched in $numWrongBlocks of $numBlocks BGZF blocks",
             "",
             s"$numWrongCompressedPositions of $totalCompressedSize (${numWrongCompressedPositions * 1.0 / totalCompressedSize}) compressed positions would lead to bad splits",
             ""

@@ -1,6 +1,7 @@
 
 lazy val spark_bam =
   rootProject(
+    benchmarks,
     bgzf,
     check,
     cli,
@@ -8,6 +9,12 @@ lazy val spark_bam =
     seqdoop,
     test_bams
   )
+
+lazy val benchmarks = project.settings(
+
+).dependsOn(
+  cli
+)
 
 lazy val bgzf = project.settings(
   version := "1.0.0-SNAPSHOT",
@@ -38,7 +45,7 @@ lazy val check = project.settings(
     cats,
     channel % "1.1.0",
     htsjdk,
-    magic_rdds % "3.0.0",
+    magic_rdds % "3.1.0",
     paths % "1.3.1",
     seqdoop_hadoop_bam,
     slf4j % "1.3.1",
@@ -59,12 +66,12 @@ lazy val cli = project.settings(
   deps ++= Seq(
     bytes % "1.0.2",
     case_app,
-    case_cli ^ "1.0.0",
+    case_cli ^ "1.0.1-SNAPSHOT",
     cats,
     channel % "1.1.0",
     hammerlab_hadoop_bam ^ "7.9.0",
     iterators % "1.4.0",
-    magic_rdds % "3.1.0",
+    magic_rdds % "3.1.1-SNAPSHOT",
     paths % "1.3.1",
     shapeless,
     spark_util % "1.3.0",
@@ -123,7 +130,7 @@ lazy val load = project.settings(
   ),
   compileAndTestDeps += loci % "2.0.1",
   addSparkDeps,
-  testDeps += magic_rdds % "3.0.0"
+  testDeps += magic_rdds % "3.1.0"
 ).dependsOn(
   bgzf,
   check,

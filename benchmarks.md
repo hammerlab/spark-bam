@@ -2,6 +2,19 @@
 
 ## Accuracy
 
+[spark-bam] and [hadoop-bam] were compared on the following datasets:
+
+- 1000 Genomes: 72 bams, 559GB
+	- {mapped, unmapped} x {low coverage, exome} for each of 18 individuals
+	- HG000096 through HG000115, excepting HG000098 and HG000104
+- Genome in a Bottle: 3 bams, 192GB
+	- [Ashkenazim trio, son (NA24385), Pacbio](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/PacBio_MtSinai_NIST/MtSinai_blasr_bam_GRCh37/): chromosomes X and Y
+	- [NA12878 Pacbio WGS BAM](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NA12878_PacBio_MtSinai/sorted_final_merged.bam)
+- TCGA Lung-Cancer samples: 1060 bams, 14TB 
+- DREAM challenge
+	- synthetic data: 10 bams, 1.8TB
+	- real data: 116 bams, 3.7TB
+
 ### [spark-bam]
 
 There are no known situations where [spark-bam] incorrectly classifies a BAM-record-boundary.
