@@ -10,6 +10,7 @@ package object resources {
 
   val bam1 = path("1.bam")
   val bam1Unindexed = path("1.noblocks.bam")
+  val bam1BlockAligned = path("1.block-aligned.bam")
 
   val bam2 = path("2.bam")
   val sam2 = path("2.sam")

@@ -48,7 +48,8 @@ case class Args(
 
 object Main
   extends SparkPathApp[Args](classOf[Registrar])
-    with Timer {
+    with Timer
+    with LoadReads {
 
   override def run(args: Args): Unit = {
     args
@@ -78,7 +79,11 @@ object Main
 
     (args.sparkBam, args.hadoopBam) match {
       case (false, true) ⇒
-        val BAMRecordRDD(splits, reads) = hadoopBamLoad
+        val (hadoopBamMS, BAMRecordRDD(splits, reads)) = time { hadoopBamLoad }
+        echo(
+          s"Get hadoop-bam splits: ${hadoopBamMS}ms",
+          ""
+        )
         printSplits(splits)
         if (args.printReadPartitionStats) {
           val partitionSizes = reads.partitionSizes
@@ -89,7 +94,11 @@ object Main
           )
         }
       case (true, false) ⇒
-        val BAMRecordRDD(splits, reads) = sparkBamLoad
+        val (sparkBamMS, BAMRecordRDD(splits, reads)) = time { sparkBamLoad }
+        echo(
+          s"Get spark-bam splits: ${sparkBamMS}ms",
+          ""
+        )
         printSplits(splits)
         if (args.printReadPartitionStats)
           echo(
@@ -98,10 +107,14 @@ object Main
           )
       case _ ⇒
         info("Computing spark-bam splits")
-        val our = sparkBamLoad
+        val (sparkBamMS, our) = time { sparkBamLoad }
+        echo(s"Get spark-bam splits: ${sparkBamMS}ms")
 
         info("Computing hadoop-bam splits")
-        val their = hadoopBamLoad
+        val (hadoopBamMS, their) = time { hadoopBamLoad }
+        echo(s"Get hadoop-bam splits: ${hadoopBamMS}ms")
+
+        echo("")
 
         implicit def toStart(split: Split): Pos = split.start
 
@@ -145,60 +158,61 @@ object Main
         }
     }
   }
+}
+
+trait LoadReads {
+  self: SparkPathApp[_] with Timer ⇒
 
   def sparkBamLoad(
       implicit
       args: SplitSize.Args,
       path: Path
-  ): BAMRecordRDD =
-    time("Get spark-bam splits") {
-      sc.loadSplitsAndReads(
-        path,
-        splitSize = args.maxSplitSize
-      )
-    }
+  ): BAMRecordRDD = {
+    sc.loadSplitsAndReads(
+      path,
+      splitSize = args.maxSplitSize
+    )
+  }
 
   def hadoopBamLoad(
       implicit
       args: SplitSize.Args,
       path: Path
-  ): BAMRecordRDD =
-    time("Get hadoop-bam splits") {
+  ): BAMRecordRDD = {
+    args
+      .splitSize
+      .foreach(
+        conf
+        .setLong(
+          SPLIT_MAXSIZE,
+          _
+        )
+      )
 
-      args
-        .splitSize
-        .foreach(
-          conf
-          .setLong(
-            SPLIT_MAXSIZE,
-            _
-          )
+    val rdd =
+      sc.newAPIHadoopFile(
+        path.toString(),
+        classOf[BAMInputFormat],
+        classOf[LongWritable],
+        classOf[SAMRecordWritable]
+      )
+
+    val reads =
+      rdd
+        .values
+        .map(_.get())
+
+    val partitions =
+      rdd
+        .partitions
+        .map(AsNewHadoopPartition(_))
+        .map[Split, Vector[Split]](
+          _
+          .serializableHadoopSplit
+          .value
+          .asInstanceOf[FileVirtualSplit]: Split
         )
 
-      val rdd =
-        sc.newAPIHadoopFile(
-          path.toString(),
-          classOf[BAMInputFormat],
-          classOf[LongWritable],
-          classOf[SAMRecordWritable]
-        )
-
-      val reads =
-        rdd
-          .values
-          .map(_.get())
-
-      val partitions =
-        rdd
-          .partitions
-          .map(AsNewHadoopPartition(_))
-          .map[Split, Vector[Split]](
-            _
-            .serializableHadoopSplit
-            .value
-            .asInstanceOf[FileVirtualSplit]: Split
-          )
-
-      BAMRecordRDD(partitions, reads)
-    }
+    BAMRecordRDD(partitions, reads)
+  }
 }

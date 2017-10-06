@@ -1,7 +1,6 @@
 
 lazy val spark_bam =
   rootProject(
-    benchmarks,
     bgzf,
     check,
     cli,
@@ -9,12 +8,6 @@ lazy val spark_bam =
     seqdoop,
     test_bams
   )
-
-lazy val benchmarks = project.settings(
-
-).dependsOn(
-  cli
-)
 
 lazy val bgzf = project.settings(
   version := "1.0.0-SNAPSHOT",
@@ -66,16 +59,17 @@ lazy val cli = project.settings(
   deps ++= Seq(
     bytes % "1.0.2",
     case_app,
-    case_cli ^ "1.0.1-SNAPSHOT",
+    case_cli ^ "1.0.0",
     cats,
     channel % "1.1.0",
     hammerlab_hadoop_bam ^ "7.9.0",
+    io ^ "2.0.0-SNAPSHOT",
     iterators % "1.4.0",
-    magic_rdds % "3.1.1-SNAPSHOT",
+    magic_rdds % "3.1.0",
     paths % "1.3.1",
     shapeless,
     spark_util % "1.3.0",
-    stats % "1.0.1"
+    stats % "1.1.0-SNAPSHOT"
   ),
 
   // Bits that depend on the seqdoop module use org.hammerlab:hadoop-bam; make sure we don't get the org.seqdoop one.
@@ -98,6 +92,8 @@ lazy val cli = project.settings(
   // at runtime (by Dataproc in the case of gcs-connector, and by manually adding to the classpath in the case of
   // google-cloud-nio).
   assemblyExcludeLib,
+
+  testUtilsVersion := "1.5.0-SNAPSHOT",
 
   publishAssemblyJar
 ).dependsOn(
@@ -164,4 +160,11 @@ lazy val test_bams = project.settings(
     testUtils
   ),
   testDeps := Nil
+)
+
+lazy val metrics = project.in(file("benchmarks")).settings(
+  deps ++= Seq(
+    paths ^ "1.3.1",
+    bytes ^ "1.0.2"
+  )
 )

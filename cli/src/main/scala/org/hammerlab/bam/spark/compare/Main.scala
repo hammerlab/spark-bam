@@ -96,7 +96,7 @@ object Main
           result ⇒
             // Create an HList with a Vector of timing-ratio Doubles followed by the Int fields from Result
             Vector(result.sparkBamMS.toDouble / result.hadoopBamMS) ::
-              gen.to(result).filter[Int]  // drop the differing-splits vector, leave+sum just the other (numeric) fields
+              Result.gen.to(result).filter[Int]  // drop the differing-splits vector, leave+sum just the other (numeric) fields
         }
         .reduce { _ |+| _ }
 
@@ -173,8 +173,8 @@ object Main
             s"\t${path.basename}: ${diffs.length} splits differ ($totalsMsg):",
             n ⇒ s"\t${path.basename}: first $n of ${diffs.length} splits that differ ($totalsMsg):"
           )
+          echo("")
       }
-      echo("")
     }
   }
 

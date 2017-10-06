@@ -1,10 +1,11 @@
 package org.hammerlab.bam.check.blocks
 
 import cats.Show
+import cats.implicits.{ catsStdShowForInt, catsStdShowForLong }
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
-import org.apache.spark.util.LongAccumulator
+import org.apache.spark.util.{ AccumulatorV2, LongAccumulator }
 import org.hammerlab.args.ByteRanges
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.eager.Args
@@ -21,6 +22,43 @@ import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.magic.rdd.sliding.SlidingRDD._
 import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
 import org.hammerlab.paths.Path
+import org.hammerlab.stats.Stats
+
+import scala.collection.immutable.SortedMap
+import scala.collection.mutable
+
+case class HistAccumulator[T: Ordering](var map: mutable.Map[T, Long] = mutable.Map.empty[T, Long])
+  extends AccumulatorV2[T, SortedMap[T, Long]] {
+  override def isZero: Boolean = map.isEmpty
+
+  override def copy(): AccumulatorV2[T, SortedMap[T, Long]] =
+    HistAccumulator(map.clone())
+
+  override def reset(): Unit = map = mutable.Map.empty[T, Long]
+
+  override def add(k: T): Unit =
+    map.update(
+      k,
+      map.getOrElse(k, 0L) + 1
+    )
+
+  override def merge(other: AccumulatorV2[T, SortedMap[T, Long]]): Unit =
+    for {
+      (k, v) ← other.value
+    } {
+      map.update(k, map.getOrElse(k, 0L) + v)
+    }
+
+  override def value: SortedMap[T, Long] = SortedMap(map.toSeq: _*)
+}
+
+object HistAccumulator {
+  def apply[T: Ordering](name: String)(implicit sc: SparkContext): HistAccumulator[T] = {
+    val a = HistAccumulator[T]()
+    sc.register(a, name)
+    a
+  }
+}
 
 object Main
   extends SparkPathApp[Args](classOf[Registrar]) {
@@ -29,6 +67,7 @@ object Main
       implicit
       pathBroadcast: Broadcast[Path],
       numBlocksAccumulator: LongAccumulator,
+      blockFirstOffsetsAccumulator: HistAccumulator[Option[Int]],
       totalCompressedSize: Long,
       makeChecker1: MakeChecker[Boolean, C1],
       makeChecker2: MakeChecker[Boolean, C2],
@@ -52,6 +91,9 @@ object Main
           val pos1 = checker1.nextReadStart(Pos(start, 0))
           val pos2 = checker2.nextReadStart(Pos(start, 0))
 
+          val offset = pos1.filter(_.blockPos == start).map(_.offset)
+          blockFirstOffsetsAccumulator.add(offset)
+
           if (pos1 != pos2)
             Some(
               (
@@ -73,13 +115,13 @@ object Main
       pathBroadcast: Broadcast[Path],
       args: Blocks.Args,
       numBlocksAccumulator: LongAccumulator,
+      blockFirstOffsetsAccumulator: HistAccumulator[Option[Int]],
       makeChecker1: MakeChecker[Boolean, C1],
       makeChecker2: MakeChecker[Boolean, C2],
       maxReadSize: MaxReadSize
   ): RDD[((Long, (Option[Pos], Option[Pos])), Long)] = {
     implicit val totalCompressedSize = path.size
     val Blocks(blocks, _) = Blocks()
-    //toSlidingRDD(blocks).sliding(2)
     blocks
       .setName("blocks")
       .cache
@@ -97,6 +139,7 @@ object Main
       makeChecker: MakeChecker[Boolean, C],
       rangesBroadcast: Broadcast[Option[ByteRanges]],
       numBlocksAccumulator: LongAccumulator,
+      blockFirstOffsetsAccumulator: HistAccumulator[Option[Int]],
       totalCompressedSize: Long,
       blockArgs: Blocks.Args,
       recordArgs: IndexedRecordPositions.Args,
@@ -118,6 +161,7 @@ object Main
 
         implicit val totalCompressedSize = path.size
         implicit val numBlocksAccumulator = sc.longAccumulator("numBlocks")
+        implicit val blockFirstOffsetsAccumulator = HistAccumulator[Option[Int]]("blockFirstOffsets")
         implicit val pathBroadcast = sc.broadcast(path)
 
         val badBlocks =
@@ -137,7 +181,8 @@ object Main
           .setName("bad-blocks")
           .cache
 
-        import cats.implicits._
+        import cats.implicits.{ catsKernelStdGroupForLong, catsKernelStdMonoidForTuple2 }
+        import cats.syntax.all._
 
         val (numWrongCompressedPositions, numWrongBlocks) =
           badBlocks
@@ -146,20 +191,62 @@ object Main
             .fold(0L → 0L)(_ |+| _)
 
         val numBlocks = numBlocksAccumulator.value
+        val blocksFirstOffsets = blockFirstOffsetsAccumulator.value
 
         import org.hammerlab.io.Printer._
 
-        if (numWrongBlocks == 0)
+        /**
+         * Print special messages if all BGZF blocks' first read-starts are at the start of the block (additionally
+         * distinguishing the case where some blocks don't contain any read-starts).
+         *
+         * Otherwise, print a histogram of the blocks' first-read-start offsets.
+         */
+        def printBlockFirstReadOffsetsInfo(): Unit =
+          blocksFirstOffsets
+            .keySet
+            .toVector match {
+              case Vector(None, Some(0)) ⇒
+                echo(
+                  "",
+                  s"${blocksFirstOffsets(Some(0))} blocks start with a read, ${blocksFirstOffsets(None)} blocks didn't contain a read"
+                )
+              case Vector(Some(0)) ⇒
+                echo(
+                  "",
+                  "All blocks start with reads"
+                )
+              case _ ⇒
+                val nonEmptyOffsets =
+                  blocksFirstOffsets.collect {
+                    case (Some(k), v) ⇒ k → v
+                  }
+
+                implicit val truncatedDouble: Show[Double] =
+                  Show.show { math.round(_).show }
+
+                import Stats.showRational
+
+                echo(
+                  "",
+                  s"Offsets of blocks' first reads (${blocksFirstOffsets.getOrElse(None, 0)} blocks didn't contain a read start):",
+                  Stats.fromHist(nonEmptyOffsets)
+                )
+            }
+
+        if (numWrongBlocks == 0) {
           echo(
             s"First read-position matched in $numBlocks BGZF blocks totaling ${Bytes.format(totalCompressedSize, includeB = true)} (compressed)"
           )
-        else {
+          printBlockFirstReadOffsetsInfo()
+        } else {
           echo(
             s"First read-position mis-matched in $numWrongBlocks of $numBlocks BGZF blocks",
             "",
-            s"$numWrongCompressedPositions of $totalCompressedSize (${numWrongCompressedPositions * 1.0 / totalCompressedSize}) compressed positions would lead to bad splits",
-            ""
+            s"$numWrongCompressedPositions of $totalCompressedSize (${numWrongCompressedPositions * 1.0 / totalCompressedSize}) compressed positions would lead to bad splits"
           )
+
+          printBlockFirstReadOffsetsInfo()
+          echo("")
 
           import cats.Show.show
 

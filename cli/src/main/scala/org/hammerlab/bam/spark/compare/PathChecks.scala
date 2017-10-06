@@ -33,7 +33,7 @@ class PathChecks(lines: Vector[String], num: Int)(
           val bamPath = Path(bamPathStr)
 
           bamPath →
-            getPathResult(bamPath)
+            Result(bamPath)
       }
       .cache
 }

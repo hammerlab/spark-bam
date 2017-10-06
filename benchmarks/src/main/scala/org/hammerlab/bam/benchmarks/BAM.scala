@@ -1,7 +1,5 @@
 package org.hammerlab.bam.benchmarks
 
-import java.net.URL
-
 import org.hammerlab.paths.Path
 
 case class Datasets(datasets: Map[Dataset, Seq[BAM]])
@@ -38,17 +36,9 @@ object Datasets {
     )
 }
 
-case class Dataset(path: Path)
-
-/*
-case object G100 extends Dataset("1kg")
-case object TCGALung extends Dataset("tcga-lung")
-
-case object Synthetic extends Dataset("dream/synthetic")
-case object Real extends Dataset("dream/real-data")
-
-case object GiaB extends Dataset
-*/
+case class Dataset(path: Path) {
+  def name = path.basename
+}
 
 case class BlocksInfo(numBlocks: Long,
                       badBlocks: Long,
@@ -57,9 +47,9 @@ case class BlocksInfo(numBlocks: Long,
 
 object BlocksInfo {
 
-  val mismatched = """First read-position mis-matched in (\d+) of (\d+) BGZF blocks""".r
-  val badCompressedPositionsRegex = """^(\d+) of (\d+)""".r
-  val matched = """First read-position matched in (\d+) BGZF blocks""".r
+  val mismatched = """First read-position mis-matched in (\d+) of (\d+) BGZF blocks.*""".r
+  val badCompressedPositionsRegex = """^(\d+) of (\d+) .*""".r
+  val matched = """First read-position matched in (\d+) BGZF blocks .*""".r
 
   def apply(path: Path, compressedSize: Long): BlocksInfo = {
     val lines = path.lines
@@ -123,6 +113,7 @@ object BAMInfo {
     val (falsePositives, falseNegatives) =
       lines(4) match {
         case falseCallsRegex(fp, fn) ⇒ (fp.toLong, fn.toLong)
+        case "All calls matched!" ⇒ (0L, 0L)
       }
 
     BAMInfo(
@@ -140,6 +131,7 @@ case class BAM(name: String,
                compressedSize: Long,
                badCompressedPositions: Long,
                uncompressedSize: Long,
+               reads: Long,
                numBlocks: Long,
                badBlocks: Long,
                numFalsePositives: Long,
@@ -149,10 +141,11 @@ case class BAM(name: String,
 object BAM {
   def apply(path: Path, dataset: Dataset): BAM = {
     val name = path.basename
-    val checkBamOut = path + ".out"
-    val checkBlocksOut = path + ".blocks.out"
+    val basePath = dataset.path / name
+    val checkBamOut = basePath + ".out"
+    val checkBlocksOut = basePath + ".blocks.out"
     val compressedSize = path.size
-    val BlocksInfo(numBlocks, badBlocks, badCompressedPositions, _) = BlocksInfo(checkBlocksOut, compressedSize)
+    val BlocksInfo(numBlocks, badBlocks, _, badCompressedPositions) = BlocksInfo(checkBlocksOut, compressedSize)
     val BAMInfo(uncompressedPositions, reads, falsePositives, falseNegatives) = BAMInfo(checkBamOut)
 
     BAM(
@@ -162,10 +155,38 @@ object BAM {
       compressedSize = compressedSize,
       badCompressedPositions = badCompressedPositions,
       uncompressedSize = uncompressedPositions,
+      reads = reads,
       numBlocks = numBlocks,
       badBlocks = badBlocks,
       numFalsePositives = falsePositives,
       numFalseNegatives = falseNegatives
     )
   }
+
+  import cats.Show.show
+
+/*
+  val showTSV: Show[BAM] =
+    show {
+      case BAM(
+        name,
+        path,
+        dataset,
+        compressedSize,
+        badCompressedPositions,
+        uncompressedSize,
+        numBlocks,
+        badBlocks,
+        numFalsePositives,
+        numFalseNegatives
+      ) ⇒
+      List(
+        name,
+        path,
+        dataset,
+        "",
+
+      )
+    }
+*/
 }

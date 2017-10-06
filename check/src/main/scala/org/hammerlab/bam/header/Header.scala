@@ -16,14 +16,14 @@ case class Header(contigLengths: ContigLengths,
 
 object Header {
 
-  def apply(path: Path): Header = {
+  def apply(path: Path)(implicit cf: ContigName.Factory): Header = {
     val uncompressedBytes = UncompressedBytes(path.inputStream)
     val header = apply(uncompressedBytes)
     uncompressedBytes.close()
     header
   }
 
-  def apply(byteStream: UncompressedBytesI[_]): Header = {
+  def apply(byteStream: UncompressedBytesI[_])(implicit cf: ContigName.Factory): Header = {
     val uncompressedByteChannel: ByteChannel = byteStream
     require(
       uncompressedByteChannel.readString(4, includesNull = false) == "BAM\1"

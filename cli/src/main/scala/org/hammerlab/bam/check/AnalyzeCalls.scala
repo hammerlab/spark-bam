@@ -48,7 +48,7 @@ object AnalyzeCalls {
     val falseNegativeAccumulator = sc.longAccumulator("falseNegatives")
 
     val differingCalls = {
-      val originalDifferingCalls =
+//      val originalDifferingCalls =
         calls
           .filter {
             case (_, (expected, actual)) ⇒
@@ -70,6 +70,7 @@ object AnalyzeCalls {
           .map { case (pos, (actual, _)) ⇒ pos → actual }
           .setName("originalDifferingCalls")
           .cache
+/*
 
       val numDifferingCalls = originalDifferingCalls.size
 
@@ -83,31 +84,8 @@ object AnalyzeCalls {
         )
         .setName("repartitioned-differing-calls")
         .cache
+*/
     }
-
-    // Blocks are materialized for the first time by the above job, so we can now read this data
-    val compressedSize = compressedSizeAccumulator.value
-
-    val  numTruePositives =  truePositiveAccumulator.value.toLong
-    val  numTrueNegatives =  trueNegativeAccumulator.value.toLong
-    val numFalsePositives = falsePositiveAccumulator.value.toLong
-    val numFalseNegatives = falseNegativeAccumulator.value.toLong
-
-    val numReads = numTruePositives + numFalseNegatives
-
-    val totalCalls =
-      numReads +
-        numTrueNegatives +
-        numFalsePositives
-
-    val compressionRatio = totalCalls.toDouble / compressedSize
-
-    echo(
-      s"$totalCalls uncompressed positions",
-      s"${Bytes.format(compressedSize)} compressed",
-      "Compression ratio: %.2f".format(compressionRatio),
-      s"$numReads reads"
-    )
 
     val fps = differingCalls.filter(!_._2).keys
     val fns = differingCalls.filter( _._2).keys
@@ -147,6 +125,32 @@ object AnalyzeCalls {
         }
         .setName("fpsWithMetadata")
         .cache
+
+    fpsWithMetadata.count
+
+    // Blocks are materialized for the first time by the above job, so we can now read this data
+    val compressedSize = compressedSizeAccumulator.value
+
+    val  numTruePositives =  truePositiveAccumulator.value.toLong
+    val  numTrueNegatives =  trueNegativeAccumulator.value.toLong
+    val numFalsePositives = falsePositiveAccumulator.value.toLong
+    val numFalseNegatives = falseNegativeAccumulator.value.toLong
+
+    val numReads = numTruePositives + numFalseNegatives
+
+    val totalCalls =
+      numReads +
+        numTrueNegatives +
+        numFalsePositives
+
+    val compressionRatio = totalCalls.toDouble / compressedSize
+
+    echo(
+      s"$totalCalls uncompressed positions",
+      s"${Bytes.format(compressedSize)} compressed",
+      "Compression ratio: %.2f".format(compressionRatio),
+      s"$numReads reads"
+    )
 
     def printFalsePositives(): Unit = {
       val flagsHist =

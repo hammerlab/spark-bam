@@ -1,94 +1,71 @@
 package org.hammerlab.bam.check.full
 
+import org.hammerlab.bam.spark.MainSuite
 import org.hammerlab.bam.test.resources.{ TestBams, bam1Unindexed }
 import org.hammerlab.paths.Path
-import org.hammerlab.spark.test.suite.MainSuite
-import org.hammerlab.test.matchers.files.FileMatcher.fileMatch
 import org.hammerlab.test.resources.File
 
 class MainTest
-  extends MainSuite
+  extends MainSuite(Main)
     with TestBams {
 
-  def expected(basename: String) = File(s"output/full-check/$basename")
-
-  def check(
-      path: Path
-  )(
-      args: String*
-  )(
-      expected: File
-  ): Unit = {
-    val outputPath = tmpPath()
-
-    Main.main(
-      args.toArray ++
-        Array(
-          "-l", "10",
-          "-o", outputPath.toString,
-          path.toString
-        )
+  override def defaultOpts(outPath: Path) =
+    Seq(
+      "-l", "10",
+      "-o", outPath
     )
 
-    outputPath should fileMatch(expected)
-  }
+  def expected(basename: String): File = File(s"output/full-check/$basename")
 
   test("1.bam with indexed records") {
-    check(
+    checkFile(
+      "-m", "200k",
       bam1
-    )(
-      "-m", "200k"
     )(
       expected("1.bam")
     )
   }
 
   test("1.bam without indexed records") {
-    check(
+    checkFile(
+      "-m", "200k",
       bam1Unindexed
-    )(
-      "-m", "200k"
     )(
       expected("1.noblocks.bam")
     )
   }
 
   test("2.bam first block") {
-    check(
+    checkFile(
+      "-i", "0",
       bam2
-    )(
-      "-i", "0"
     )(
       expected("2.bam.first")
     )
   }
 
   test("2.bam second block") {
-    check(
+    checkFile(
+      "-i", "26169",
       bam2
-    )(
-      "-i", "26169"
     )(
       expected("2.bam.second")
     )
   }
 
   test("2.bam 200k") {
-    check(
-      bam2
-    )(
+    checkFile(
       "-i", "0-200k",
-      "-m", "100k"
+      "-m", "100k",
+      bam2
     )(
       expected("2.bam.200k")
     )
   }
 
   test("2.bam all") {
-    check(
+    checkFile(
       bam2
-    )(
-      // All default args
     )(
       expected("2.bam")
     )

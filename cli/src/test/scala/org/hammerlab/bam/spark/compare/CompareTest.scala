@@ -32,7 +32,7 @@ class CompareTest
 
   test("230kb") {
     implicit val splitSize = MaxSplitSize(230.KB)
-    val actual = getPathResult(bam1)
+    val actual = Result(bam1)
 
     val expected =
       Result(
@@ -64,7 +64,7 @@ class CompareTest
   test("115KB") {
     implicit val splitSize = MaxSplitSize(115.KB)
     check(
-      getPathResult(bam1),
+      Result(bam1),
       Result(
         5,
         5,

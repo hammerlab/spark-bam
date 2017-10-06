@@ -5,8 +5,7 @@
 [spark-bam] and [hadoop-bam] were compared on the following datasets:
 
 - 1000 Genomes: 72 bams, 559GB
-	- {mapped, unmapped} x {low coverage, exome} for each of 18 individuals
-	- HG000096 through HG000115, excepting HG000098 and HG000104
+	- {mapped, unmapped} x {low coverage, exome} for each of 18 individuals (HG000096 through HG000115, excepting HG000098 and HG000104)
 - Genome in a Bottle: 3 bams, 192GB
 	- [Ashkenazim trio, son (NA24385), Pacbio](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/PacBio_MtSinai_NIST/MtSinai_blasr_bam_GRCh37/): chromosomes X and Y
 	- [NA12878 Pacbio WGS BAM](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NA12878_PacBio_MtSinai/sorted_final_merged.bam)
@@ -14,6 +13,12 @@
 - DREAM challenge
 	- synthetic data: 10 bams, 1.8TB
 	- real data: 116 bams, 3.7TB
+
+Across these datasets:
+- [hadoop-bam] called false positives at uncompressed positions at a rate of between 1.60e-9 and 5.39e-5 
+- this translated to an uncompressed "incorrect split" rate between 0 and 1.97e-4
+	- many BAMs in the wild have reads aligned to BGZF-block boundaries, basically eliminating the chance of [hadoop-bam] calling a false positive
+	- the highest incorrect-split rate, 1.97e-4, was observed on the Genome in a Bottle long-read data 
 
 ### [spark-bam]
 
