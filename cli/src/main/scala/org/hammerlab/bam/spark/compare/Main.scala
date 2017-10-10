@@ -2,21 +2,14 @@ package org.hammerlab.bam.spark.compare
 
 import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O }
 import cats.Show
-import cats.implicits.catsKernelStdGroupForInt
 import cats.syntax.all._
-import com.esotericsoftware.kryo.Kryo
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
-import org.apache.spark.SparkContext
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
-import org.hammerlab.bgzf.block.BGZFBlocksToCheck
+import org.hammerlab.bam.kryo._
 import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.cli.args.OutputArgs
-import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.io.Printer._
-import org.hammerlab.bam.kryo._
 import org.hammerlab.kryo._
-import org.hammerlab.kryo.spark.Registrator
 import org.hammerlab.paths.Path
 import org.hammerlab.stats.Stats
 import shapeless._
@@ -70,19 +63,19 @@ object Main
 
     implicit val bgzfBlocksToCheck = opts.findBlockArgs.bgzfBlocksToCheck
 
-    conf.setLong(SPLIT_MAXSIZE, splitSize)
+    opts.splitSizeArgs.set
 
     val pathResults =
       new PathChecks(lines, numBams)
         .results
 
+    import cats.implicits.catsKernelStdGroupForInt
     import cats.implicits.catsKernelStdMonoidForVector
     import org.hammerlab.types.Monoid._
     import shapeless._
-    import record._
 
     val (
-      (timingRatios: Seq[Double]) ::
+      (timingRatios: Seq[Double]) ::  // IntelliJ needs some help on the type inference here 🤷🏼️
       numSparkBamSplits ::
       numHadoopBamSplits ::
       sparkOnlySplits ::

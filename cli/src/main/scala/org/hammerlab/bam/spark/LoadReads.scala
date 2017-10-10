@@ -1,7 +1,6 @@
 package org.hammerlab.bam.spark
 
 import org.apache.hadoop.io.LongWritable
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.rdd.AsNewHadoopPartition
 import org.hammerlab.args.SplitSize
 import org.hammerlab.cli.app.SparkPathApp
@@ -26,15 +25,7 @@ trait LoadReads {
                     args: SplitSize.Args,
                     path: Path
                    ): BAMRecordRDD = {
-    args
-      .splitSize
-      .foreach(
-        conf
-          .setLong(
-            SPLIT_MAXSIZE,
-            _
-          )
-      )
+    args.set
 
     val rdd =
       sc.newAPIHadoopFile(

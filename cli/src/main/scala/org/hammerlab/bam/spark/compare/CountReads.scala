@@ -20,8 +20,8 @@ object CountReads
 
   override protected def run(args: CountReadsArgs): Unit = {
     implicit val splitSizeArgs = args.splitSizeArgs
-    implicit val splitSize = splitSizeArgs.maxSplitSize
-    val (sparkBamMS, sparkBamReads) = time { sc.loadBam(path).count }
+    val splitSize = splitSizeArgs.maxSplitSize
+    val (sparkBamMS, sparkBamReads) = time { sc.loadBam(path, splitSize).count }
 
     try {
       val (hadoopBamMS, hadoopBamReads) = time { hadoopBamLoad.count }

@@ -21,19 +21,18 @@ import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
 import org.hammerlab.hadoop.Configuration
-import org.hammerlab.hadoop.splits.{ FileSplits, MaxSplitSize }
+import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.iterator.CappedCostGroupsIterator.ElementTooCostlyStrategy.EmitAlone
 import org.hammerlab.iterator.CappedCostGroupsIterator._
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.iterator.sliding.Sliding2Iterator._
-import org.hammerlab.kryo
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.{ CRAMInputFormat, SAMRecordWritable }
 
 import scala.collection.JavaConverters._
-
+import scala.math.min
 
 /**
  * Add a `loadBam` method to [[SparkContext]] for loading [[SAMRecord]]s from a BAM file.
@@ -174,33 +173,33 @@ trait CanLoadBam
   }
 
   def loadBam(path: Path,
+              splitSize: MaxSplitSize = MaxSplitSize(),
               bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],
               readsToCheck: ReadsToCheck = default[ReadsToCheck],
-              maxReadSize: MaxReadSize = default[MaxReadSize],
-              splitSize: MaxSplitSize = MaxSplitSize()
+              maxReadSize: MaxReadSize = default[MaxReadSize]
              ): RDD[SAMRecord] =
     loadReadsAndPositions(
       path,
+      splitSize,
       bgzfBlocksToCheck,
       readsToCheck,
-      maxReadSize,
-      splitSize
+      maxReadSize
     )
     .values
 
   def loadSplitsAndReads(path: Path,
+                         splitSize: MaxSplitSize = MaxSplitSize(),
                          bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],
                          readsToCheck: ReadsToCheck = default[ReadsToCheck],
-                         maxReadSize: MaxReadSize = default[MaxReadSize],
-                         splitSize: MaxSplitSize = MaxSplitSize()
+                         maxReadSize: MaxReadSize = default[MaxReadSize]
                         ): BAMRecordRDD = {
     val positionsAndReadsRDD =
       loadReadsAndPositions(
         path,
+        splitSize,
         bgzfBlocksToCheck,
         readsToCheck,
-        maxReadSize,
-        splitSize
+        maxReadSize
       )
 
     val endPos = Pos(path.size, 0)
@@ -225,25 +224,26 @@ trait CanLoadBam
   }
 
   def loadReadsAndPositions(path: Path,
+                            splitSize: MaxSplitSize,
                             bgzfBlocksToCheck: BGZFBlocksToCheck,
                             readsToCheck: ReadsToCheck,
-                            maxReadSize: MaxReadSize,
-                            splitSize: MaxSplitSize
+                            maxReadSize: MaxReadSize
                            ): RDD[(Pos, SAMRecord)] = {
 
     val headerBroadcast = sc.broadcast(Header(path))
     val contigLengthsBroadcast = sc.broadcast(ContigLengths(path))
 
+    val end = path.size
     val fileSplits =
-      FileSplits(
-        path,
-        splitSize
-      )
-      .map(
-        split ⇒
-          split.start →
-            split.end
-      )
+      (0L until end by splitSize)
+        .map(
+          start ⇒
+            start →
+              min(
+                end,
+                start + splitSize.size
+              )
+        )
 
     val fileSplitsRDD =
       sc.parallelize(
@@ -321,10 +321,10 @@ trait CanLoadBam
       case "bam" ⇒
         loadBam(
           path,
+          splitSize,
           bgzfBlocksToCheck,
           readsToCheck,
-          maxReadSize,
-          splitSize
+          maxReadSize
         )
       case "cram" ⇒
         // Delegate to hadoop-bam

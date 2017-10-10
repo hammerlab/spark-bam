@@ -2,16 +2,17 @@ package org.hammerlab.bam.spark.compare
 
 import caseapp.Recurse
 import htsjdk.samtools.SAMRecord
+import org.apache.hadoop.io.LongWritable
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.SplitSize
-import org.hammerlab.bam.spark.load
-import org.hammerlab.bam.spark.LoadReads
+import org.hammerlab.bam.spark._
 import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.exception.Error
 import org.hammerlab.io.Printer.echo
 import org.hammerlab.iterator.NextOptionIterator
 import org.hammerlab.timing.Timer
+import org.seqdoop.hadoop_bam.{ BAMInputFormat, SAMRecordWritable }
 
 case class TimeLoadArgs(@Recurse output: OutputArgs,
                         @Recurse splitSizeArgs: SplitSize.Args)
@@ -24,7 +25,7 @@ object TimeLoad
 
   override protected def run(args: TimeLoadArgs): Unit = {
     implicit val splitSizeArgs = args.splitSizeArgs
-    implicit val splitSize = splitSizeArgs.maxSplitSize
+    val splitSize = splitSizeArgs.maxSplitSize
 
     def firstReadNames(reads: RDD[SAMRecord]): Array[String] =
       reads
@@ -36,15 +37,30 @@ object TimeLoad
          .map(_.getReadName)
          .collect
 
-    val (sparkBamMS, sparkBamReads) =
+    lazy val (sparkBamMS, sparkBamReads) =
       time {
-        firstReadNames(sparkBamLoad)
+        firstReadNames(sc.loadBam(path, splitSize))
       }
+
+    splitSizeArgs.set
 
     try {
       val (hadoopBamMS, hadoopBamReads) =
         time {
-          firstReadNames(hadoopBamLoad)
+          val rdd =
+            sc.newAPIHadoopFile(
+              path.toString(),
+              classOf[BAMInputFormat],
+              classOf[LongWritable],
+              classOf[SAMRecordWritable]
+            )
+
+          val reads =
+            rdd
+              .values
+              .map(_.get())
+
+          firstReadNames(reads)
         }
 
       echo(
@@ -61,13 +77,13 @@ object TimeLoad
 
       if (onlySparkBam.nonEmpty)
         echo(
-          "spark-bam returned partition-start reads:",
+          s"spark-bam returned ${onlySparkBam.size} unmatched partition-start reads:",
           onlySparkBam.mkString("\t", "\n\t", "\n")
         )
 
       if (onlyHadoopBam.nonEmpty)
         echo(
-          "hadoop-bam returned partition-start reads:",
+          s"hadoop-bam returned ${onlyHadoopBam.size} unmatched partition-start reads:",
           onlyHadoopBam.mkString("\t", "\n\t", "\n")
         )
 

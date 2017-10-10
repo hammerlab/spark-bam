@@ -29,7 +29,7 @@ class CountReadsTest
       bam1
     )(
       "spark-bam found 4917 reads, hadoop-bam threw exception:",
-      "org.apache.spark.SparkException: Job aborted due to stage failure: Task 1 in stage 1.0 failed 1 times, most recent failure: Lost task 1.0 in stage 1.0 (TID 2, localhost, executor driver): htsjdk.samtools.SAMFormatException: SAM validation error: ERROR: Record 1, Read name , MRNM should not be set for unpaired read."
+      l"org.apache.spark.SparkException: Job aborted due to stage failure: Task 1 in stage 1.0 failed 1 times, most recent failure: Lost task 1.0 in stage 1.0 (TID $d, localhost, executor driver): htsjdk.samtools.SAMFormatException: SAM validation error: ERROR: Record 1, Read name , MRNM should not be set for unpaired read."
     )
   }
 }

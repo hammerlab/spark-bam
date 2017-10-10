@@ -60,7 +60,7 @@ class MainTest
       """DefaultBaseCommand
         |Usage: default-base-command [options] [command] [command-options]
         |
-        |Available commands: check-bam, check-blocks, compare-splits, compute-splits, count-reads, full-check, htsjdk-rewrite, index-blocks, index-records
+        |Available commands: check-bam, check-blocks, compare-splits, compute-splits, count-reads, full-check, htsjdk-rewrite, index-blocks, index-records, time-load
         |
         |Type  default-base-command command --help  for help on an individual command
         |"""

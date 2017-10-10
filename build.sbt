@@ -160,6 +160,8 @@ lazy val test_bams = project.settings(
   testDeps := Nil
 )
 
+// named this module "metrics" instead of "benchmarks" to work around bizarre IntelliJ-scala-plugin bug, cf.
+// https://youtrack.jetbrains.com/issue/SCL-12628#comment=27-2439322
 lazy val metrics = project.in(file("benchmarks")).settings(
   deps ++= Seq(
     paths ^ "1.3.1",
