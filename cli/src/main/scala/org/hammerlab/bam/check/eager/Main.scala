@@ -8,10 +8,10 @@ import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ AnalyzeCalls, Blocks, CheckerMain, eager, seqdoop }
-import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.cli.args.OutputArgs
+import org.hammerlab.kryo._
 import org.hammerlab.paths.Path
 
 /**
@@ -51,8 +51,13 @@ case class Args(
 )
   extends SparkPathAppArgs
 
+class Registrar extends spark.Registrar(
+  AnalyzeCalls,
+  CheckerMain
+)
+
 object Main
-  extends SparkPathApp[Args](classOf[Registrar]) {
+  extends SparkPathApp[Args, Registrar] {
 
   import AnalyzeCalls._
 
@@ -76,7 +81,7 @@ object Main
               ]
           }
 
-        analyzeCalls(
+        AnalyzeCalls(
           calls,
           args.partitioning.resultsPerPartition,
           compressedSizeAccumulator

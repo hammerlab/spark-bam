@@ -14,6 +14,7 @@ import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.{ FileSplit, FileSplits, MaxSplitSize }
 import org.hammerlab.iterator.sliding.Sliding2Iterator._
 import org.hammerlab.iterator.sorted.OrZipIterator._
+import org.hammerlab.kryo._
 import org.hammerlab.paths.Path
 import org.hammerlab.timing.Timer
 import org.hammerlab.types.{ Both, L, R }
@@ -161,4 +162,9 @@ object Result
       .toVector
       .map(_.asInstanceOf[FileVirtualSplit]: Split)
   }
+
+  implicit val alsoRegister: AlsoRegister[Result] =
+    AlsoRegister(
+      cls[Split]
+    )
 }

@@ -42,7 +42,7 @@ lazy val check = project.settings(
     paths % "1.3.1",
     seqdoop_hadoop_bam,
     slf4j % "1.3.1",
-    spark_util % "1.3.0"
+    spark_util % "2.0.0-SNAPSHOT"
   ),
   fork := true,  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
   addSparkDeps,
@@ -59,7 +59,7 @@ lazy val cli = project.settings(
   deps ++= Seq(
     bytes % "1.0.2",
     case_app,
-    case_cli ^ "1.0.0",
+    case_cli ^ "1.1.0-SNAPSHOT",
     cats,
     channel % "1.1.0",
     hammerlab_hadoop_bam ^ "7.9.0",
@@ -68,7 +68,7 @@ lazy val cli = project.settings(
     magic_rdds % "3.1.0",
     paths % "1.3.1",
     shapeless,
-    spark_util % "1.3.0",
+    spark_util % "2.0.0-SNAPSHOT",
     stats % "1.1.0-SNAPSHOT"
   ),
 
@@ -92,8 +92,6 @@ lazy val cli = project.settings(
   // at runtime (by Dataproc in the case of gcs-connector, and by manually adding to the classpath in the case of
   // google-cloud-nio).
   assemblyExcludeLib,
-
-  testUtilsVersion := "1.5.0-SNAPSHOT",
 
   publishAssemblyJar
 ).dependsOn(

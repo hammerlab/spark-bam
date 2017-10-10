@@ -11,13 +11,14 @@ import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.eager.Args
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ Blocks, CheckerMain, MaxReadSize, ReadStartFinder, eager, indexed, seqdoop }
-import org.hammerlab.bam.kryo.Registrar
+import org.hammerlab.bam.kryo.pathSerializer
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.cli.app.SparkPathApp
+import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.magic.rdd.sliding.SlidingRDD._
 import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
@@ -60,8 +61,16 @@ object HistAccumulator {
   }
 }
 
+class Registrar extends spark.Registrar(
+  Blocks,
+  CheckerMain,
+  cls[Path],    // broadcast
+  cls[mutable.WrappedArray.ofRef[_]],  // sliding RDD collect
+  cls[mutable.WrappedArray.ofInt]      // sliding RDD collect
+)
+
 object Main
-  extends SparkPathApp[Args](classOf[Registrar]) {
+  extends SparkPathApp[Args, Registrar] {
 
   def callPartition[C1 <: ReadStartFinder, C2 <: ReadStartFinder](blocks: Iterator[(Option[Metadata], Metadata)])(
       implicit

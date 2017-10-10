@@ -17,6 +17,25 @@ object ByteRanges {
 
   implicit val parser: ArgParser[ByteRanges] =
     Ranges.parser[ByteRanges, Bytes, JLong]
+
+  import org.hammerlab.bytes._
+  import org.hammerlab.kryo._
+
+  implicit val alsoRegisterBytes: AlsoRegister[Bytes] =
+    AlsoRegister(
+      cls[ B],
+      cls[KB],
+      cls[MB],
+      cls[GB],
+      cls[TB],
+      cls[PB]
+    )
+
+  implicit val alsoRegister: AlsoRegister[ByteRanges] =
+    AlsoRegister(
+      cls[Range[_]],
+      cls[Bytes]
+    )
 }
 
 case class LongRanges(ranges: Seq[Range[Long]])

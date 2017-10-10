@@ -17,8 +17,7 @@ import org.hammerlab.bam.spark.{ BAMRecordRDD, FindRecordStart, Split }
 import org.hammerlab.bgzf.block.{ BGZFBlocksToCheck, FindBlockStart, SeekableUncompressedBytes }
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.channel.CachingChannel._
-import org.hammerlab.channel.SeekableByteChannel.ChannelByteChannel
-import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
+import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
 import org.hammerlab.hadoop.Configuration
@@ -28,6 +27,7 @@ import org.hammerlab.iterator.CappedCostGroupsIterator._
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.iterator.sliding.Sliding2Iterator._
+import org.hammerlab.kryo
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.{ CRAMInputFormat, SAMRecordWritable }
@@ -391,26 +391,4 @@ object CanLoadBam {
           Locus(record.getEnd)
         )
     )
-}
-
-case class Channels(path: Path,
-                    compressedChannel: CachingChannel[ChannelByteChannel],
-                    uncompressedBytes: SeekableUncompressedBytes) {
-  def close(): Unit = uncompressedBytes.close()
-}
-
-object Channels {
-  def apply(path: Path): Channels = {
-    val compressedChannel =
-      SeekableByteChannel(path).cache
-
-    val uncompressedBytes =
-      SeekableUncompressedBytes(compressedChannel)
-
-    Channels(
-      path,
-      compressedChannel,
-      uncompressedBytes
-    )
-  }
 }

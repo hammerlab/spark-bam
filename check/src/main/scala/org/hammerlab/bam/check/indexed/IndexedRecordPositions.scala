@@ -9,6 +9,7 @@ import org.hammerlab.args.ByteRanges
 import org.hammerlab.bam.check.Blocks
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
+import org.hammerlab.kryo.Registrar
 import org.hammerlab.magic.rdd.partitions.RangePartitionRDD._
 import org.hammerlab.magic.rdd.partitions.SortedRDD
 import org.hammerlab.magic.rdd.partitions.SortedRDD.{ Bounds, bounds }
@@ -33,7 +34,9 @@ case class IndexedRecordPositions(rdd: RDD[Pos],
 
 }
 
-object IndexedRecordPositions {
+object IndexedRecordPositions
+  extends Registrar {
+
   case class Args(
       @O("r")
       @ValueDescription("path")
@@ -117,4 +120,5 @@ object IndexedRecordPositions {
     )
   }
 
+  register(Blocks)
 }

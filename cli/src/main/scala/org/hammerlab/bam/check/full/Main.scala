@@ -10,7 +10,8 @@ import org.hammerlab.bam.check.full.error.Flags.TooFewFixedBlockBytes
 import org.hammerlab.bam.check.full.error.{ Counts, Flags, Result }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ AnalyzeCalls, Blocks, CheckerMain, PosMetadata }
-import org.hammerlab.bam.kryo.Registrar
+import org.hammerlab.bam
+import org.hammerlab.bam.spark.Split
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.channel.CachingChannel._
@@ -19,10 +20,12 @@ import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.FinishingIterator._
+import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.types.Monoid._
 
 import scala.collection.immutable.SortedMap
+import scala.collection.mutable
 
 @AppName("Check all uncompressed positions in a BAM with the 'full' checker; print statistics about which checks fail how often")
 @ProgName("… org.hammerlab.bam.check.full.Main")
@@ -35,8 +38,20 @@ case class Args(@Recurse blocks: Blocks.Args,
                )
   extends SparkPathAppArgs
 
+class Registrar extends spark.Registrar(
+  CheckerMain,
+  AnalyzeCalls,
+  Blocks,
+  cls[Flags],
+  cls[Counts],
+  arr[PosMetadata],
+  cls[mutable.WrappedArray.ofRef[_]],
+  arr[Split],
+  cls[mutable.WrappedArray.ofInt]
+)
+
 object Main
-  extends SparkPathApp[Args](classOf[Registrar]) {
+  extends SparkPathApp[Args, Registrar] {
 
   import AnalyzeCalls._
 
@@ -53,7 +68,7 @@ object Main
             val calls =
               vsIndexed[Result, Checker]
 
-            analyzeCalls(
+            AnalyzeCalls(
               calls
                 .map {
                   case (pos, (expected, result)) ⇒
@@ -66,13 +81,13 @@ object Main
 
             calls
               .map {
-                case (pos, (expected, result))
-                  if result.call == expected ⇒
-                  pos → result
-                case (pos, (_, result)) ⇒
-                  throw new IllegalStateException(
-                    s"False ${if (result.call) "positive" else "negative"} at $pos: $result"
-                  )
+                case (pos, (expected, result)) ⇒
+                  if (result.call == expected)
+                    pos → result
+                  else
+                    throw new IllegalStateException(
+                      s"False ${if (result.call) "positive" else "negative"} at $pos: $result"
+                    )
               }
           } else
             Blocks()
@@ -119,9 +134,9 @@ object Main
          */
         val negativesByNumNonzeroFields: Array[(Int, Counts)] =
           flagsByCount
-            .map {
-              case (numFlags, (_, flags)) ⇒
-                numFlags → flags.toCounts
+            .mapValues {
+              case (_, flags) ⇒
+                flags.toCounts
             }
             .reduceByKey(_ |+| _, Flags.size)
             .collect()

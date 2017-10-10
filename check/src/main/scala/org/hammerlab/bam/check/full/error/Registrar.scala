@@ -1,14 +1,11 @@
 package org.hammerlab.bam.check.full.error
 
-import com.esotericsoftware.kryo.Kryo
-import org.apache.spark.serializer.KryoRegistrator
+import org.hammerlab.kryo._
 
 import scala.collection.immutable.BitSet
 
 class Registrar
-  extends KryoRegistrator {
-  override def registerClasses(kryo: Kryo): Unit = {
-    kryo.register(classOf[BitSet])
-    kryo.register(classOf[Flags], new FlagsSerializer)
-  }
-}
+  extends spark.Registrar(
+    cls[BitSet],
+    cls[Flags] → new FlagsSerializer
+  )

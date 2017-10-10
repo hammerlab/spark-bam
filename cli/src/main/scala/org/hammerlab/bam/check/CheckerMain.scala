@@ -3,9 +3,10 @@ package org.hammerlab.bam.check
 import org.apache.log4j.Level.WARN
 import org.apache.log4j.Logger.getRootLogger
 import org.apache.spark.SparkContext
-import org.hammerlab.args.{ FindReadArgs, LogArgs }
+import org.hammerlab.args.{ ByteRanges, FindReadArgs, LogArgs }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
-import org.hammerlab.bam.header.Header
+import org.hammerlab.bam.header.{ ContigLengths, Header }
+import org.hammerlab.kryo._
 import org.hammerlab.paths.Path
 import shapeless._
 import shapeless.ops.hlist.Selector
@@ -50,3 +51,10 @@ abstract class CheckerMain[Args, L <: HList](t: Args)(
 
   run()
 }
+
+object CheckerMain extends spark.Registrar(
+  cls[Header],
+  cls[ContigLengths],
+  cls[Option[_]],
+  cls[ByteRanges]
+)

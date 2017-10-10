@@ -1,9 +1,9 @@
 package org.hammerlab.bam.check
 
 import cats.Show
-import cats.syntax.all._
 import cats.Show.show
-import htsjdk.samtools.SAMRecord
+import cats.syntax.all._
+import htsjdk.samtools.{ BAMRecord, SAMFileHeader, SAMRecord, ValidationStringency }
 import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.bam.header.{ ContigLengths, Header }
@@ -88,4 +88,15 @@ object PosMetadata {
       flags
     )
   }
+
+  import org.hammerlab.kryo._
+  import org.hammerlab.bam.kryo.registerSAMFileHeader
+
+  implicit val alsoRegister: AlsoRegister[PosMetadata] =
+    AlsoRegister(
+      cls[NextRecord],
+      cls[BAMRecord],
+      cls[ValidationStringency],
+      cls[SAMFileHeader]
+    )
 }

@@ -11,6 +11,7 @@ import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.full.error.{ Flags, Success }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.header.{ ContigLengths, Header }
+import org.hammerlab.bam.kryo.pathSerializer
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.bytes.Bytes
@@ -19,6 +20,7 @@ import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.io.{ Printer, SampleSize }
 import org.hammerlab.io.Printer.{ echo, print }
 import org.hammerlab.iterator.FinishingIterator._
+import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.magic.rdd.partitions.OrderedRepartitionRDD._
 import org.hammerlab.magic.rdd.size._
@@ -26,11 +28,14 @@ import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
 
-object AnalyzeCalls {
+import scala.collection.mutable
 
-  def analyzeCalls(calls: RDD[(Pos, (Boolean, Boolean))],
-                   resultsPerPartition: Int,
-                   compressedSizeAccumulator: LongAccumulator)(
+object AnalyzeCalls
+  extends Registrar {
+
+  def apply(calls: RDD[(Pos, (Boolean, Boolean))],
+            resultsPerPartition: Int,
+            compressedSizeAccumulator: LongAccumulator)(
       implicit
       sc: SparkContext,
       path: Path,
@@ -67,7 +72,7 @@ object AnalyzeCalls {
                   false
               }
           }
-          .map { case (pos, (actual, _)) ⇒ pos → actual }
+          .mapValues { case (actual, _) ⇒ actual }
           .setName("originalDifferingCalls")
           .cache
 /*
@@ -256,4 +261,12 @@ object AnalyzeCalls {
           callPartition[indexed.Checker, Call, C](blocks)
       }
   }
+
+  register(
+    cls[Path],
+    IndexedRecordPositions,
+    cls[mutable.WrappedArray.ofRef[_]],
+    cls[mutable.WrappedArray.ofInt],
+    cls[Flags]
+  )
 }

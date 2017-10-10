@@ -8,17 +8,20 @@ import com.esotericsoftware.kryo.Kryo
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.apache.spark.SparkContext
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
-import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.block.BGZFBlocksToCheck
 import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.cli.args.OutputArgs
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.io.Printer._
-import org.hammerlab.kryo.serializeAs
+import org.hammerlab.bam.kryo._
+import org.hammerlab.kryo._
+import org.hammerlab.kryo.spark.Registrator
 import org.hammerlab.paths.Path
 import org.hammerlab.stats.Stats
 import shapeless._
+
+import scala.collection.mutable
 
 @AppName("Compare splits computed from many BAM files listed in a given file")
 @ProgName("… org.hammerlab.bam.spark.compare")
@@ -32,22 +35,20 @@ case class Opts(@Recurse output: OutputArgs,
                )
   extends SparkPathAppArgs
 
-object Main
-  extends SparkPathApp[Opts](classOf[Registrar]) {
-
-  sparkConf(
-    "spark.kryo.classesToRegister" →
-      Seq[Class[_]](
-        classOf[_ :: _],
-        HNil.getClass,
-        classOf[Result]
-      )
-      .map(_.getName)
-      .mkString(",")
+class Registrar
+  extends spark.Registrar(
+    cls[mutable.WrappedArray.ofRef[_]],
+    cls[Path],
+    cls[Result],
+    cls[_ :: _],
+    HNil.getClass,
+    cls[Result]
   )
 
-  override protected def run(opts: Opts): Unit = {
+object Main
+  extends SparkPathApp[Opts, Registrar] {
 
+  override protected def run(opts: Opts): Unit = {
     val lines =
       path
         .lines
@@ -81,7 +82,7 @@ object Main
     import record._
 
     val (
-      timingRatios ::
+      (timingRatios: Seq[Double]) ::
       numSparkBamSplits ::
       numHadoopBamSplits ::
       sparkOnlySplits ::
@@ -178,6 +179,7 @@ object Main
     }
   }
 
+/*
   def register(kryo: Kryo): Unit = {
     /** A [[Configuration]] gets broadcast */
     Configuration.register(kryo)
@@ -192,4 +194,5 @@ object Main
     /** [[Result]]s get [[org.apache.spark.rdd.RDD.collect collected]] */
     kryo.register(classOf[Result])
   }
+*/
 }

@@ -15,8 +15,8 @@ class CountReadsTest
       "-m", "240k",
       bam1
     )(
-      l"Spark-bam read-count time: $d",
-      l"Hadoop-bam read-count time: $d",
+      l"spark-bam read-count time: $d",
+      l"hadoop-bam read-count time: $d",
       "",
       "Read counts matched: 4917",
       ""

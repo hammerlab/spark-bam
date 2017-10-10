@@ -2,7 +2,6 @@ package org.hammerlab.bam.spark.compare
 
 import caseapp.Recurse
 import org.hammerlab.args.SplitSize
-import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.spark._
 import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.cli.args.OutputArgs
@@ -15,23 +14,21 @@ case class CountReadsArgs(@Recurse output: OutputArgs,
   extends SparkPathAppArgs
 
 object CountReads
-  extends SparkPathApp[CountReadsArgs](classOf[Registrar])
+  extends SparkPathApp[CountReadsArgs, load.Registrar]
     with Timer
     with LoadReads {
+
   override protected def run(args: CountReadsArgs): Unit = {
     implicit val splitSizeArgs = args.splitSizeArgs
     implicit val splitSize = splitSizeArgs.maxSplitSize
     val (sparkBamMS, sparkBamReads) = time { sc.loadBam(path).count }
 
     try {
-      val (hadoopBamMS, hadoopBamReads) =
-        time {
-          hadoopBamLoad.count
-        }
+      val (hadoopBamMS, hadoopBamReads) = time { hadoopBamLoad.count }
 
       echo(
-        s"Spark-bam read-count time: $sparkBamMS",
-        s"Hadoop-bam read-count time: $hadoopBamMS",
+        s"spark-bam read-count time: $sparkBamMS",
+        s"hadoop-bam read-count time: $hadoopBamMS",
         ""
       )
 

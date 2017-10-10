@@ -3,24 +3,18 @@ package org.hammerlab.bam.spark
 import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
 import cats.implicits.catsStdShowForInt
 import cats.syntax.all._
-import org.apache.hadoop.io.LongWritable
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
-import org.apache.spark.rdd.AsNewHadoopPartition
 import org.hammerlab.args.SplitSize
-import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
 import org.hammerlab.cli.args.OutputArgs
-import org.hammerlab.collection.canBuildVector
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.sorted.OrZipIterator._
+import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
-import org.hammerlab.paths.Path
 import org.hammerlab.stats.Stats
 import org.hammerlab.timing.Timer
 import org.hammerlab.types._
-import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
 @AppName("Compute and print BAM-splits using spark-bam and/or hadoop-bam; if both, compare the two as well")
 @ProgName("… org.hammerlab.bam.spark.Main")
@@ -47,7 +41,7 @@ case class Args(
   extends SparkPathAppArgs
 
 object Main
-  extends SparkPathApp[Args](classOf[Registrar])
+  extends SparkPathApp[Args, load.Registrar]
     with Timer
     with LoadReads {
 
@@ -157,62 +151,5 @@ object Main
           }
         }
     }
-  }
-}
-
-trait LoadReads {
-  self: SparkPathApp[_] with Timer ⇒
-
-  def sparkBamLoad(
-      implicit
-      args: SplitSize.Args,
-      path: Path
-  ): BAMRecordRDD = {
-    sc.loadSplitsAndReads(
-      path,
-      splitSize = args.maxSplitSize
-    )
-  }
-
-  def hadoopBamLoad(
-      implicit
-      args: SplitSize.Args,
-      path: Path
-  ): BAMRecordRDD = {
-    args
-      .splitSize
-      .foreach(
-        conf
-        .setLong(
-          SPLIT_MAXSIZE,
-          _
-        )
-      )
-
-    val rdd =
-      sc.newAPIHadoopFile(
-        path.toString(),
-        classOf[BAMInputFormat],
-        classOf[LongWritable],
-        classOf[SAMRecordWritable]
-      )
-
-    val reads =
-      rdd
-        .values
-        .map(_.get())
-
-    val partitions =
-      rdd
-        .partitions
-        .map(AsNewHadoopPartition(_))
-        .map[Split, Vector[Split]](
-          _
-          .serializableHadoopSplit
-          .value
-          .asInstanceOf[FileVirtualSplit]: Split
-        )
-
-    BAMRecordRDD(partitions, reads)
   }
 }

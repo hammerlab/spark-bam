@@ -70,4 +70,11 @@ object Header {
         .asJava
       )
     )
+
+  import org.hammerlab.kryo._
+  implicit val alsoRegister: AlsoRegister[Header] =
+    AlsoRegister(
+      cls[ContigLengths],
+      cls[Pos]
+    )
 }

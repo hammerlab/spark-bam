@@ -1,22 +1,38 @@
 package org.hammerlab.bam.spark.load
 
-import com.esotericsoftware.kryo.Kryo
-import org.apache.spark.serializer.KryoRegistrator
-import org.hammerlab.bam
+import htsjdk.samtools.SAMFileHeader
+import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.index.Index.Chunk
+import org.hammerlab.bam.kryo.registerSAMFileHeader
+import org.hammerlab.bgzf.Pos
 import org.hammerlab.genomics.loci
+import org.hammerlab.kryo._
+
+import scala.collection.mutable
 
 class Registrar
-  extends KryoRegistrator {
-  override def registerClasses(kryo: Kryo): Unit = {
+  extends spark.Registrar(
 
-    bam.kryo.Registrar.registerClasses(kryo)
+      /** Several [[CanLoadBam]] methods broadcast [[Header]] and/or [[ContigLengths]] */
+      cls[Header],
+      cls[ContigLengths],
 
-    /** [[CanLoadBam.loadBamIntervals]] broadcasts a [[org.hammerlab.genomics.loci.set.LociSet]] */
-    new loci.set.Registrar().registerClasses(kryo)
+      /** [[CanLoadBam.loadSam]] broadcasts a [[htsjdk.samtools.SAMFileHeader]] */
+      cls[SAMFileHeader],
 
-    /** [[CanLoadBam.loadBamIntervals]] [[org.apache.spark.SparkContext.parallelize parallelize]]s some [[Vector]]s */
-    kryo.register(classOf[Array[Vector[_]]])
-    kryo.register(classOf[Chunk])
-  }
-}
+      /**
+       * An [[org.apache.spark.rdd.RDD]] of [[Pos]] is [[org.apache.spark.rdd.RDD.collect collect]]ed in
+       * [[CanLoadBam.loadSplitsAndReads]]
+       */
+      cls[mutable.WrappedArray.ofRef[_]],
+      arr[Pos],
+
+      /** [[CanLoadBam.loadBamIntervals]] broadcasts a [[org.hammerlab.genomics.loci.set.LociSet]] */
+      new loci.set.Registrar,
+
+      /** [[CanLoadBam.loadBamIntervals]] [[org.apache.spark.SparkContext.parallelize parallelize]]s some [[Vector]]s */
+      arr[Vector[_]],
+      cls[Chunk]
+  )
+
+object Registrar extends Registrar
