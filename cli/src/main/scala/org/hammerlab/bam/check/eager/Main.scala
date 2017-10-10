@@ -64,29 +64,26 @@ object Main
   override def run(args: Args): Unit = {
 
     new CheckerMain(args) {
-      override def run(): Unit = {
+      implicit val compressedSizeAccumulator = sc.longAccumulator("compressedSizeAccumulator")
 
-        implicit val compressedSizeAccumulator = sc.longAccumulator("compressedSizeAccumulator")
+      val calls =
+        (args.sparkBam, args.hadoopBam) match {
+          case (true, false) ⇒
+            vsIndexed[Boolean, eager.Checker]
+          case (false, true) ⇒
+            vsIndexed[Boolean, seqdoop.Checker]
+          case _ ⇒
+            compare[
+              eager.Checker,
+              seqdoop.Checker
+            ]
+        }
 
-        val calls =
-          (args.sparkBam, args.hadoopBam) match {
-            case (true, false) ⇒
-              vsIndexed[Boolean, eager.Checker]
-            case (false, true) ⇒
-              vsIndexed[Boolean, seqdoop.Checker]
-            case _ ⇒
-              compare[
-                eager.Checker,
-                seqdoop.Checker
-              ]
-          }
-
-        AnalyzeCalls(
-          calls,
-          args.partitioning.resultsPerPartition,
-          compressedSizeAccumulator
-        )
-      }
+      AnalyzeCalls(
+        calls,
+        args.partitioning.resultsPerPartition,
+        compressedSizeAccumulator
+      )
     }
   }
 

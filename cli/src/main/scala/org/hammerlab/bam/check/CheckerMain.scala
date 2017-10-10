@@ -46,10 +46,6 @@ abstract class CheckerMain[Args, L <: HList](t: Args)(
 
   if (logging.warn)
     getRootLogger.setLevel(WARN)
-
-  def run(): Unit
-
-  run()
 }
 
 object CheckerMain extends spark.Registrar(

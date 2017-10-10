@@ -166,122 +166,120 @@ object Main
 
   override protected def run(args: Args): Unit = {
     new CheckerMain(args) {
-      override def run(): Unit = {
 
-        implicit val totalCompressedSize = path.size
-        implicit val numBlocksAccumulator = sc.longAccumulator("numBlocks")
-        implicit val blockFirstOffsetsAccumulator = HistAccumulator[Option[Int]]("blockFirstOffsets")
-        implicit val pathBroadcast = sc.broadcast(path)
+      implicit val totalCompressedSize = path.size
+      implicit val numBlocksAccumulator = sc.longAccumulator("numBlocks")
+      implicit val blockFirstOffsetsAccumulator = HistAccumulator[Option[Int]]("blockFirstOffsets")
+      implicit val pathBroadcast = sc.broadcast(path)
 
-        val badBlocks =
-          (args.sparkBam, args.hadoopBam) match {
-            case (true, false) ⇒
-              vsIndexed[eager.Checker]
-            case (false, true) ⇒
-              vsIndexed[seqdoop.Checker]
+      val badBlocks =
+        (args.sparkBam, args.hadoopBam) match {
+          case (true, false) ⇒
+            vsIndexed[eager.Checker]
+          case (false, true) ⇒
+            vsIndexed[seqdoop.Checker]
+          case _ ⇒
+            compare[
+              eager.Checker,
+              seqdoop.Checker
+            ]
+        }
+
+      badBlocks
+        .setName("bad-blocks")
+        .cache
+
+      import cats.implicits.{ catsKernelStdGroupForLong, catsKernelStdMonoidForTuple2 }
+      import cats.syntax.all._
+
+      val (numWrongCompressedPositions, numWrongBlocks) =
+        badBlocks
+          .values
+          .map(_ → 1L)
+          .fold(0L → 0L)(_ |+| _)
+
+      val numBlocks = numBlocksAccumulator.value
+      val blocksFirstOffsets = blockFirstOffsetsAccumulator.value
+
+      import org.hammerlab.io.Printer._
+
+      /**
+       * Print special messages if all BGZF blocks' first read-starts are at the start of the block (additionally
+       * distinguishing the case where some blocks don't contain any read-starts).
+       *
+       * Otherwise, print a histogram of the blocks' first-read-start offsets.
+       */
+      def printBlockFirstReadOffsetsInfo(): Unit =
+        blocksFirstOffsets
+          .keySet
+          .toVector match {
+            case Vector(None, Some(0)) ⇒
+              echo(
+                "",
+                s"${blocksFirstOffsets(Some(0))} blocks start with a read, ${blocksFirstOffsets(None)} blocks didn't contain a read"
+              )
+            case Vector(Some(0)) ⇒
+              echo(
+                "",
+                "All blocks start with reads"
+              )
             case _ ⇒
-              compare[
-                eager.Checker,
-                seqdoop.Checker
-              ]
+              val nonEmptyOffsets =
+                blocksFirstOffsets.collect {
+                  case (Some(k), v) ⇒ k → v
+                }
+
+              implicit val truncatedDouble: Show[Double] =
+                Show.show { math.round(_).show }
+
+              import Stats.showRational
+
+              echo(
+                "",
+                s"Offsets of blocks' first reads (${blocksFirstOffsets.getOrElse(None, 0)} blocks didn't contain a read start):",
+                Stats.fromHist(nonEmptyOffsets)
+              )
           }
 
-        badBlocks
-          .setName("bad-blocks")
-          .cache
+      if (numWrongBlocks == 0) {
+        echo(
+          s"First read-position matched in $numBlocks BGZF blocks totaling ${Bytes.format(totalCompressedSize, includeB = true)} (compressed)"
+        )
+        printBlockFirstReadOffsetsInfo()
+      } else {
+        echo(
+          s"First read-position mis-matched in $numWrongBlocks of $numBlocks BGZF blocks",
+          "",
+          s"$numWrongCompressedPositions of $totalCompressedSize (${numWrongCompressedPositions * 1.0 / totalCompressedSize}) compressed positions would lead to bad splits"
+        )
 
-        import cats.implicits.{ catsKernelStdGroupForLong, catsKernelStdMonoidForTuple2 }
-        import cats.syntax.all._
+        printBlockFirstReadOffsetsInfo()
+        echo("")
 
-        val (numWrongCompressedPositions, numWrongBlocks) =
+        import cats.Show.show
+
+        implicit val showPosOpt: Show[Option[Pos]] =
+          show {
+            _.map(_.toString).getOrElse("-")
+          }
+
+        print[String](
           badBlocks
-            .values
-            .map(_ → 1L)
-            .fold(0L → 0L)(_ |+| _)
-
-        val numBlocks = numBlocksAccumulator.value
-        val blocksFirstOffsets = blockFirstOffsetsAccumulator.value
-
-        import org.hammerlab.io.Printer._
-
-        /**
-         * Print special messages if all BGZF blocks' first read-starts are at the start of the block (additionally
-         * distinguishing the case where some blocks don't contain any read-starts).
-         *
-         * Otherwise, print a histogram of the blocks' first-read-start offsets.
-         */
-        def printBlockFirstReadOffsetsInfo(): Unit =
-          blocksFirstOffsets
-            .keySet
-            .toVector match {
-              case Vector(None, Some(0)) ⇒
-                echo(
-                  "",
-                  s"${blocksFirstOffsets(Some(0))} blocks start with a read, ${blocksFirstOffsets(None)} blocks didn't contain a read"
-                )
-              case Vector(Some(0)) ⇒
-                echo(
-                  "",
-                  "All blocks start with reads"
-                )
-              case _ ⇒
-                val nonEmptyOffsets =
-                  blocksFirstOffsets.collect {
-                    case (Some(k), v) ⇒ k → v
-                  }
-
-                implicit val truncatedDouble: Show[Double] =
-                  Show.show { math.round(_).show }
-
-                import Stats.showRational
-
-                echo(
-                  "",
-                  s"Offsets of blocks' first reads (${blocksFirstOffsets.getOrElse(None, 0)} blocks didn't contain a read start):",
-                  Stats.fromHist(nonEmptyOffsets)
-                )
+            .map {
+              case (
+                (
+                  start,
+                  (pos1, pos2)
+                ),
+                compressedSize
+              ) ⇒
+                show"$start (prev block size: $compressedSize):\t$pos1\t$pos2"
             }
-
-        if (numWrongBlocks == 0) {
-          echo(
-            s"First read-position matched in $numBlocks BGZF blocks totaling ${Bytes.format(totalCompressedSize, includeB = true)} (compressed)"
-          )
-          printBlockFirstReadOffsetsInfo()
-        } else {
-          echo(
-            s"First read-position mis-matched in $numWrongBlocks of $numBlocks BGZF blocks",
-            "",
-            s"$numWrongCompressedPositions of $totalCompressedSize (${numWrongCompressedPositions * 1.0 / totalCompressedSize}) compressed positions would lead to bad splits"
-          )
-
-          printBlockFirstReadOffsetsInfo()
-          echo("")
-
-          import cats.Show.show
-
-          implicit val showPosOpt: Show[Option[Pos]] =
-            show {
-              _.map(_.toString).getOrElse("-")
-            }
-
-          print[String](
-            badBlocks
-              .map {
-                case (
-                  (
-                    start,
-                    (pos1, pos2)
-                  ),
-                  compressedSize
-                ) ⇒
-                  show"$start (prev block size: $compressedSize):\t$pos1\t$pos2"
-              }
-              .sample(numWrongBlocks),
-            numWrongBlocks,
-            s"$numWrongBlocks mismatched blocks:",
-            (n: Int) ⇒ s"$n of $numWrongBlocks mismatched blocks:"
-          )
-        }
+            .sample(numWrongBlocks),
+          numWrongBlocks,
+          s"$numWrongBlocks mismatched blocks:",
+          (n: Int) ⇒ s"$n of $numWrongBlocks mismatched blocks:"
+        )
       }
     }
   }
