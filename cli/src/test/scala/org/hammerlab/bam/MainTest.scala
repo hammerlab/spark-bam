@@ -85,12 +85,10 @@ class MainTest
         |        File with BAM-record-start positions, as output by index-records. If unset, the BAM path with a ".records" extension appended is used
         |  --warn  
         |        Set the root logging level to WARN; useful for making Spark display the console progress-bar in client-mode
-        |  --print-limit | -l  <num=1000000>
-        |        When collecting samples of records/results for displaying to the user, limit to this many to avoid overloading the driver
-        |  --output-path | -o  <path>
-        |        Print output to this file, otherwise to stdout
         |  --overwrite | -f  
         |        Whether to overwrite the output file, if it already exists
+        |  --print-limit | -l  <num=1000000>
+        |        When collecting samples of records/results for displaying to the user, limit to this many to avoid overloading the driver
         |  --results-per-partition | -p  <num=100000>
         |        After running eager and/or seqdoop checkers over a BAM file and filtering to just the contested positions, repartition to have this many records per partition. Typically there are far fewer records at this stage, so it's useful to coalesce down to avoid 1,000's of empty partitions
         |  --max-read-size  <num=10000000>
@@ -108,7 +106,7 @@ class MainTest
 
   test("htsjdk-rewrite help") {
     check(
-      rewrite.Main
+      rewrite.HTSJDKRewrite.Main
     )(
       "-h"
     )(
@@ -120,6 +118,7 @@ class MainTest
         |        Print help message and exit
         |  --read-ranges | -r  <value>
         |  --overwrite | -f  
+        |        Whether to overwrite the output file, if it already exists
         |  --index-blocks | -b  
         |  --index-records | -i  
         |
@@ -135,6 +134,7 @@ class MainTest
         |Usage: default-base-command htsjdk-rewrite 
         |  --read-ranges | -r  <value>
         |  --overwrite | -f  
+        |        Whether to overwrite the output file, if it already exists
         |  --index-blocks | -b  
         |  --index-records | -i  
         |

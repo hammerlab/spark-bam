@@ -1,19 +1,15 @@
 package org.hammerlab.bam.spark.compare
 
-import org.hammerlab.bam.spark.MainSuite
 import org.hammerlab.bam.test.resources._
-import org.hammerlab.paths.Path
+import org.hammerlab.cli.app.MainSuite
 import org.hammerlab.test.matchers.lines.Chars
 import org.hammerlab.test.matchers.lines.Line._
 
-class MainTest
-  extends MainSuite(Main) {
+class CompareSplitsTest
+  extends MainSuite(CompareSplits.Main) {
 
   val ratio = Chars("0123456789.")
   val elemsOrSorted = Chars(" delmorst")
-
-  override def defaultOpts(outPath: Path) =
-    Seq("-o", outPath)
 
   test("230KB, 2 bams") {
     val bamsPath = tmpPath()
@@ -24,7 +20,7 @@ class MainTest
       )
     )
 
-    checkLines(
+    checkAllLines(
       "-m", "230k",
       bamsPath
     )(
@@ -50,7 +46,7 @@ class MainTest
     val bamsPath = tmpPath()
     bamsPath.write(bam2.toString)
 
-    checkLines(
+    checkAllLines(
       "-m", "100k",
       bamsPath
     )(

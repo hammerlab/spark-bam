@@ -1,6 +1,5 @@
 package org.hammerlab.bgzf
 
-import caseapp.core.Default
 import cats.Show
 import cats.Show.show
 
@@ -10,17 +9,10 @@ import scala.math.max
  * A "virtual position" in a BGZF file: [[blockPos]] (offset to bgzf-block-start in compressed file) and [[offset]] into
  * that block's uncompressed data.
  */
-case class Pos(blockPos: Long, offset: Int)
-  extends Ordered[Pos] {
+case class Pos(blockPos: Long, offset: Int) {
 
   override def toString: String =
     s"$blockPos:$offset"
-
-  override def compare(that: Pos): Int =
-    blockPos.compare(that.blockPos) match {
-      case 0 ⇒ offset.compare(that.offset)
-      case x ⇒ x
-    }
 
   def -(other: Pos)(implicit estimatedCompressionRatio: EstimatedCompressionRatio): Double =
     max(
@@ -30,17 +22,6 @@ case class Pos(blockPos: Long, offset: Int)
     )
 
   def toHTSJDK: Long = (blockPos << 16 | offset)
-}
-
-case class EstimatedCompressionRatio(ratio: Double)
-
-object EstimatedCompressionRatio {
-  implicit def makeEstimatedCompressionRatio(ratio: Double): EstimatedCompressionRatio =
-    EstimatedCompressionRatio(ratio)
-  implicit def unmakeEstimatedCompressionRatio(ratio: EstimatedCompressionRatio): Double =
-    ratio.ratio
-
-  implicit val default: Default[EstimatedCompressionRatio] = Default.instance(3.0)
 }
 
 object Pos {
@@ -54,6 +35,9 @@ object Pos {
       (vpos & 0xffff).toInt
     )
 
-  implicit val showPos: Show[Pos] =
-    show[Pos] { pos ⇒ pos.toString }
+  implicit val showPos: Show[Pos] = show { _.toString }
+
+  // Ordering brings in some undesirable implicit interactions / divergences; redo some pieces of it here
+  implicit val ord: Ordering[Pos] = Ordering.by(pos ⇒ pos.blockPos → pos.offset)
+  implicit def mkOrderingOps(pos: Pos): ord.Ops = new ord.Ops(pos)
 }

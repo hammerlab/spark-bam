@@ -5,8 +5,10 @@ import cats.Show
 import cats.syntax.all._
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
 import org.hammerlab.bam.kryo._
-import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.cli.args.OutputArgs
+import org.hammerlab.cli.app
+import org.hammerlab.cli.app.Args
+import org.hammerlab.cli.app.spark.PathApp
+import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.io.Printer._
 import org.hammerlab.kryo._
@@ -16,32 +18,22 @@ import shapeless._
 
 import scala.collection.mutable
 
-@AppName("Compare splits computed from many BAM files listed in a given file")
-@ProgName("… org.hammerlab.bam.spark.compare")
-case class Opts(@Recurse output: OutputArgs,
-                @Recurse splitSizeArgs: SplitSize.Args,
-                @Recurse findReadArgs: FindReadArgs,
-                @Recurse findBlockArgs: FindBlockArgs,
+object CompareSplits {
 
-                @O("r")
-                fileRanges: Option[IntRanges] = None
-               )
-  extends SparkPathAppArgs
+  @AppName("Compare splits computed from many BAM files listed in a given file")
+  @ProgName("… org.hammerlab.bam.spark.compare")
+  case class Opts(@Recurse printLimit: PrintLimitArgs,
+                  @Recurse splitSizeArgs: SplitSize.Args,
+                  @Recurse findReadArgs: FindReadArgs,
+                  @Recurse findBlockArgs: FindBlockArgs,
 
-class Registrar
-  extends spark.Registrar(
-    cls[mutable.WrappedArray.ofRef[_]],
-    cls[Path],
-    cls[Result],
-    cls[_ :: _],
-    HNil.getClass,
-    cls[Result]
+                  @O("r")
+                  fileRanges: Option[IntRanges] = None
   )
 
-object Main
-  extends SparkPathApp[Opts, Registrar] {
+  case class App(args: Args[Opts])
+    extends PathApp(args, Registrar) {
 
-  override protected def run(opts: Opts): Unit = {
     val lines =
       path
         .lines
@@ -50,7 +42,7 @@ object Main
         .zipWithIndex
         .collect {
           case (path, idx)
-            if opts.fileRanges.forall(_.contains(idx)) ⇒
+            if args.fileRanges.forall(_.contains(idx)) ⇒
             path
         }
         .toVector
@@ -69,8 +61,7 @@ object Main
       new PathChecks(lines, numBams)
         .results
 
-    import cats.implicits.catsKernelStdGroupForInt
-    import cats.implicits.catsKernelStdMonoidForVector
+    import cats.implicits.{ catsKernelStdGroupForInt, catsKernelStdMonoidForVector }
     import org.hammerlab.types.Monoid._
     import shapeless._
 
@@ -172,20 +163,14 @@ object Main
     }
   }
 
-/*
-  def register(kryo: Kryo): Unit = {
-    /** A [[Configuration]] gets broadcast */
-    Configuration.register(kryo)
+  case class Registrar() extends spark.Registrar(
+    cls[mutable.WrappedArray.ofRef[_]],
+    cls[Path],      // collected
+    cls[Result],    // collected
+    cls[_ :: _],    // reduced
+    HNil.getClass,
+    cls[Result]
+  )
 
-    /** BAM-files are distributed as [[Path]]s which serialize as [[String]]s */
-    kryo.register(
-      classOf[Path],
-      serializeAs[Path, String](_.toString, Path(_))
-    )
-    kryo.register(classOf[Array[String]])
-
-    /** [[Result]]s get [[org.apache.spark.rdd.RDD.collect collected]] */
-    kryo.register(classOf[Result])
-  }
-*/
+  object Main extends app.Main(App)
 }

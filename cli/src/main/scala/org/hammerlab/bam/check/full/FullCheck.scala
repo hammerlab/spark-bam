@@ -1,7 +1,9 @@
 package org.hammerlab.bam.check.full
 
 import caseapp.{ AppName, ProgName, Recurse }
-import cats.instances.long._
+import cats.Monoid
+import cats.instances.long.{ catsKernelStdGroupForLong, catsStdShowForLong }
+import cats.instances.map.catsKernelStdMonoidForMap
 import cats.syntax.all._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.{ FindReadArgs, LogArgs, PostPartitionArgs }
@@ -10,15 +12,17 @@ import org.hammerlab.bam.check.full.error.Flags.TooFewFixedBlockBytes
 import org.hammerlab.bam.check.full.error.{ Counts, Flags, Result }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ AnalyzeCalls, Blocks, CheckerMain, PosMetadata }
-import org.hammerlab.bam
 import org.hammerlab.bam.spark.Split
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
-import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.cli.args.OutputArgs
+import org.hammerlab.cli.app
+import org.hammerlab.cli.app.Args
+import org.hammerlab.cli.app.spark.PathApp
+import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.io.Printer._
+import org.hammerlab.io.SampleSize
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
@@ -27,44 +31,34 @@ import org.hammerlab.types.Monoid._
 import scala.collection.immutable.SortedMap
 import scala.collection.mutable
 
-@AppName("Check all uncompressed positions in a BAM with the 'full' checker; print statistics about which checks fail how often")
-@ProgName("… org.hammerlab.bam.check.full.Main")
-case class Args(@Recurse blocks: Blocks.Args,
-                @Recurse records: IndexedRecordPositions.Args,
-                @Recurse logging: LogArgs,
-                @Recurse output: OutputArgs,
-                @Recurse partitioning: PostPartitionArgs,
-                @Recurse findReadArgs: FindReadArgs
-               )
-  extends SparkPathAppArgs
+object FullCheck {
 
-class Registrar extends spark.Registrar(
-  CheckerMain,
-  AnalyzeCalls,
-  Blocks,
-  cls[Flags],
-  cls[Counts],
-  arr[PosMetadata],
-  cls[mutable.WrappedArray.ofRef[_]],
-  arr[Split],
-  cls[mutable.WrappedArray.ofInt]
-)
-
-object Main
-  extends SparkPathApp[Args, Registrar] {
+  @AppName("Check all uncompressed positions in a BAM with the 'full' checker; print statistics about which checks fail how often")
+  @ProgName("… org.hammerlab.bam.check.full.Main")
+  case class Opts(@Recurse blocks: Blocks.Args,
+                  @Recurse records: IndexedRecordPositions.Args,
+                  @Recurse logging: LogArgs,
+                  @Recurse printLimit: PrintLimitArgs,
+                  @Recurse partitioning: PostPartitionArgs,
+                  @Recurse findReadArgs: FindReadArgs
+                 )
 
   import AnalyzeCalls._
 
-  override def run(args: Args): Unit = {
+  case class App(args: Args[Opts])
+    extends PathApp(args, Registrar) {
 
-    new CheckerMain(args) {
+    def this() {
+      this(null)
+    }
+    
+    new CheckerMain(opts) {
       val calls =
         if (args.records.path.exists) {
 
           implicit val compressedSizeAccumulator = sc.longAccumulator("compressedSize")
 
-          val calls =
-            vsIndexed[Result, Checker]
+          val calls = vsIndexed[Result, Checker]
 
           AnalyzeCalls(
             calls
@@ -122,8 +116,6 @@ object Main
           }
           .keyBy(_._2.numNonZeroFields)
 
-      import cats.implicits.catsKernelStdMonoidForMap
-
       /**
        * How many times each flag correctly rules out a [[Pos]], grouped by how many total flags rule out that [[Pos]].
        *
@@ -171,12 +163,14 @@ object Main
             .collect: _*
         )
 
+      val pathBroadcast = sc.broadcast(path)
+      
       val closeCalls =
         flagsByCount
           .filter(_._1 <= 2)
           .mapPartitions {
             it ⇒
-              val ch = SeekableByteChannel(path).cache
+              val ch = SeekableByteChannel(pathBroadcast.value).cache
 
               implicit val uncompressedBytes = SeekableUncompressedBytes(ch)
 
@@ -228,43 +222,55 @@ object Main
 
       echo("")
 
+      val numCloseCalls = positionsByFlagCounts.getOrElse(2, 0L)
+      println(s"numCloseCalls: $numCloseCalls")
+      
+      val closePositions =
+        closeCalls
+          .filter(_._1 == 2)
+          .values
+
+      val closeCallHist =
+        closePositions
+          .map(_.flags → 1L)
+          .reduceByKey(_ + _)
+          .map(_.swap)
+          .collect
+          .sortBy(-_._1)
+
+      //      implicit val pl: SampleSize = printLimit
+      val sampledCalls = sampleCalls(closePositions, numCloseCalls)
+
       countsByNonZeroFields.get(2) match {
         case Some((counts, _)) ⇒
-          val numCloseCalls = positionsByFlagCounts(2)
+//          val numCloseCalls = positionsByFlagCounts(2)
 
-          val calls =
-            closeCalls
-              .filter(_._1 == 2)
-              .values
+//          val closeCallHist =
+//            calls
+//              .map(_.flags → 1L)
+//              .reduceByKey(_ + _)
+//              .map(_.swap)
+//              .collect
+//              .sortBy(-_._1)
 
-          val closeCallHist =
-            calls
-              .map(_.flags → 1L)
-              .reduceByKey(_ + _)
-              .map(_.swap)
-              .collect
-              .sortBy(-_._1)
+//          print(
+//            sampledCalls,
+//            numCloseCalls,
+//            s"$numCloseCalls positions where exactly two checks failed:",
+//            n ⇒ s"$n of $numCloseCalls positions where exactly two checks failed:",
+//            indent = "\t"
+//          )
+//          echo("")
 
-          val sampledCalls = calls.sample(numCloseCalls)
-
-          print(
-            sampledCalls,
-            numCloseCalls,
-            s"$numCloseCalls positions where exactly two checks failed:",
-            n ⇒ s"$n of $numCloseCalls positions where exactly two checks failed:",
-            indent = "\t"
-          )
-          echo("")
-
-          if (closeCallHist.head._1 > 1) {
-            print(
-              closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
-              "\tHistogram:",
-              _ ⇒ "\tHistogram:",
-              indent = "\t\t"
-            )
-            echo("")
-          }
+//          if (closeCallHist.head._1 > 1) {
+//            print(
+//              closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
+//              "\tHistogram:",
+//              _ ⇒ "\tHistogram:",
+//              indent = "\t\t"
+//            )
+//            echo("")
+//          }
 
           echo(
             "\tPer-flag totals:",
@@ -295,4 +301,25 @@ object Main
       )
     }
   }
+
+  def sampleCalls(calls: RDD[PosMetadata], 
+                  numCalls: Long)(
+      implicit 
+      sampleSize: SampleSize
+  ): Array[PosMetadata] = 
+    calls.sample(numCalls)
+  
+  case class Registrar() extends spark.Registrar(
+    CheckerMain,
+    AnalyzeCalls,
+    Blocks,
+    cls[Flags],
+    cls[Counts],
+    arr[PosMetadata],
+    cls[mutable.WrappedArray.ofRef[_]],
+    arr[Split],
+    cls[mutable.WrappedArray.ofInt]
+  )
+
+  object Main extends app.Main(App)
 }

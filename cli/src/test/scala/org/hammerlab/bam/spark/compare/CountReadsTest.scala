@@ -1,17 +1,15 @@
 package org.hammerlab.bam.spark.compare
 
-import org.hammerlab.bam.spark.MainSuite
 import org.hammerlab.bam.test.resources.TestBams
-import org.hammerlab.paths.Path
+import org.hammerlab.cli.app.MainSuite
 import org.hammerlab.test.matchers.lines.Line._
+import CountReads.Main
 
 class CountReadsTest
-  extends MainSuite(CountReads)
+  extends MainSuite(Main)
     with TestBams {
-  override def defaultOpts(outPath: Path) = Seq("-o", outPath)
-
   test("1.bam 240k") {
-    checkLines(
+    checkAllLines(
       "-m", "240k",
       bam1
     )(
@@ -24,7 +22,7 @@ class CountReadsTest
   }
 
   test("1.bam 230k") {
-    checkLines(
+    checkFirstLines(
       "-m", "230k",
       bam1
     )(

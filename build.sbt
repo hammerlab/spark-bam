@@ -1,3 +1,4 @@
+import org.hammerlab.sbt.deps.Dep
 
 lazy val spark_bam =
   rootProject(
@@ -11,20 +12,20 @@ lazy val spark_bam =
 
 lazy val bgzf = project.settings(
   version := "1.0.0-SNAPSHOT",
-  deps ++= Seq(
+  deps ++= Seq[Dep](
     case_app,
-    case_cli % "1.0.0",
     cats,
-    channel % "1.1.0",
-    io % "1.2.0",
-    iterators % "1.4.0",
-    math % "2.0.0",
-    paths % "1.3.1",
-    slf4j % "1.3.1",
-    spark_util % "1.3.0",
-    stats % "1.0.1"
+    channel ^ "1.1.0",
+    io ^ "1.2.0",
+    iterators ^ "1.4.0",
+    math ^ "2.0.0",
+    paths ^ "1.3.1",
+    slf4j,
+    spark_util % "2.0.1-SNAPSHOT",
+    stats ^ "1.0.1"
   ),
-  addSparkDeps
+  addSparkDeps,
+  compileAndTestDeps += case_cli ^ "2.0.0-SNAPSHOT"
 ).dependsOn(
   test_bams % "test"
 )
@@ -33,20 +34,23 @@ lazy val check = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    bytes % "1.0.2",
+    bytes ^ "1.0.2",
     case_app,
     cats,
-    channel % "1.1.0",
+    channel ^ "1.1.0",
     htsjdk,
-    magic_rdds % "3.1.0",
-    paths % "1.3.1",
+    magic_rdds ^ "3.1.0",
+    paths ^ "1.3.1",
     seqdoop_hadoop_bam,
-    slf4j % "1.3.1",
-    spark_util % "2.0.0-SNAPSHOT"
+    slf4j,
+    spark_util % "2.0.1-SNAPSHOT"
   ),
   fork := true,  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
   addSparkDeps,
-  compileAndTestDeps += loci % "2.0.1"
+  compileAndTestDeps ++= Seq(
+    case_cli ^ "2.0.0-SNAPSHOT",
+    loci ^ "2.0.1"
+  )
 ).dependsOn(
   bgzf,
   test_bams % "test"
@@ -57,20 +61,21 @@ lazy val cli = project.settings(
   version := "1.0.0-SNAPSHOT",
 
   deps ++= Seq(
-    bytes % "1.0.2",
+    bytes ^ "1.0.2",
     case_app,
-    case_cli ^ "1.1.0-SNAPSHOT",
     cats,
-    channel % "1.1.0",
+    channel ^ "1.1.0",
     hammerlab_hadoop_bam ^ "7.9.0",
     io ^ "2.0.0-SNAPSHOT",
-    iterators % "1.4.0",
-    magic_rdds % "3.1.0",
-    paths % "1.3.1",
+    iterators ^ "1.4.0",
+    magic_rdds ^ "3.1.0",
+    paths ^ "1.3.1",
     shapeless,
-    spark_util % "2.0.0-SNAPSHOT",
-    stats % "1.1.0-SNAPSHOT"
+    spark_util ^ "2.0.1-SNAPSHOT",
+    stats ^ "1.1.0-SNAPSHOT"
   ),
+
+  compileAndTestDeps += case_cli ^ "2.0.0-SNAPSHOT",
 
   // Bits that depend on the seqdoop module use org.hammerlab:hadoop-bam; make sure we don't get the org.seqdoop one.
   excludes += seqdoop_hadoop_bam,
@@ -112,19 +117,19 @@ lazy val load = project.settings(
   fork := true,
 
   deps ++= Seq(
-    channel % "1.1.0",
+    channel ^ "1.1.0",
     htsjdk,
-    iterators % "1.4.0",
-    math % "2.0.0",
-    paths % "1.3.1",
-    reference % "1.4.0",
+    iterators ^ "1.4.0",
+    math ^ "2.0.0",
+    paths ^ "1.3.1",
+    reference ^ "1.4.0",
     seqdoop_hadoop_bam,
-    slf4j % "1.3.1",
-    spark_util % "1.3.0"
+    slf4j,
+    spark_util ^ "2.0.1-SNAPSHOT"
   ),
-  compileAndTestDeps += loci % "2.0.1",
+  compileAndTestDeps += loci ^ "2.0.1",
   addSparkDeps,
-  testDeps += magic_rdds % "3.1.0"
+  testDeps += magic_rdds ^ "3.1.0"
 ).dependsOn(
   bgzf,
   check,
@@ -135,10 +140,10 @@ lazy val seqdoop = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    channel % "1.1.0",
+    channel ^ "1.1.0",
     htsjdk,
-    paths % "1.3.1",
-    hammerlab_hadoop_bam % "7.9.0"
+    paths ^ "1.3.1",
+    hammerlab_hadoop_bam ^ "7.9.0"
   ),
   // Make sure we get org.hammerlab:hadoop-bam, not org.seqdoop
   excludes += seqdoop_hadoop_bam,

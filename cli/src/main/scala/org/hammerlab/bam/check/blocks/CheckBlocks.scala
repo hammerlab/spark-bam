@@ -5,10 +5,10 @@ import cats.implicits.{ catsStdShowForInt, catsStdShowForLong }
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
-import org.apache.spark.util.{ AccumulatorV2, LongAccumulator }
+import org.apache.spark.util.LongAccumulator
 import org.hammerlab.args.ByteRanges
 import org.hammerlab.bam.check.Checker.MakeChecker
-import org.hammerlab.bam.check.eager.Args
+import org.hammerlab.bam.check.eager.CheckBam
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ Blocks, CheckerMain, MaxReadSize, ReadStartFinder, eager, indexed, seqdoop }
 import org.hammerlab.bam.kryo.pathSerializer
@@ -17,66 +17,28 @@ import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
-import org.hammerlab.cli.app.SparkPathApp
+import org.hammerlab.cli.app
+import org.hammerlab.cli.app.Args
+import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.magic.rdd.sliding.SlidingRDD._
 import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
 import org.hammerlab.paths.Path
+import org.hammerlab.spark.accumulator.Histogram
 import org.hammerlab.stats.Stats
 
-import scala.collection.immutable.SortedMap
 import scala.collection.mutable
 
-case class HistAccumulator[T: Ordering](var map: mutable.Map[T, Long] = mutable.Map.empty[T, Long])
-  extends AccumulatorV2[T, SortedMap[T, Long]] {
-  override def isZero: Boolean = map.isEmpty
+object CheckBlocks {
 
-  override def copy(): AccumulatorV2[T, SortedMap[T, Long]] =
-    HistAccumulator(map.clone())
-
-  override def reset(): Unit = map = mutable.Map.empty[T, Long]
-
-  override def add(k: T): Unit =
-    map.update(
-      k,
-      map.getOrElse(k, 0L) + 1
-    )
-
-  override def merge(other: AccumulatorV2[T, SortedMap[T, Long]]): Unit =
-    for {
-      (k, v) ← other.value
-    } {
-      map.update(k, map.getOrElse(k, 0L) + v)
-    }
-
-  override def value: SortedMap[T, Long] = SortedMap(map.toSeq: _*)
-}
-
-object HistAccumulator {
-  def apply[T: Ordering](name: String)(implicit sc: SparkContext): HistAccumulator[T] = {
-    val a = HistAccumulator[T]()
-    sc.register(a, name)
-    a
-  }
-}
-
-class Registrar extends spark.Registrar(
-  Blocks,
-  CheckerMain,
-  cls[Path],    // broadcast
-  cls[mutable.WrappedArray.ofRef[_]],  // sliding RDD collect
-  cls[mutable.WrappedArray.ofInt]      // sliding RDD collect
-)
-
-object Main
-  extends SparkPathApp[Args, Registrar] {
+  type Opts = CheckBam.Opts
 
   def callPartition[C1 <: ReadStartFinder, C2 <: ReadStartFinder](blocks: Iterator[(Option[Metadata], Metadata)])(
       implicit
       pathBroadcast: Broadcast[Path],
       numBlocksAccumulator: LongAccumulator,
-      blockFirstOffsetsAccumulator: HistAccumulator[Option[Int]],
+      blockFirstOffsetsAccumulator: Histogram[Option[Int]],
       totalCompressedSize: Long,
       makeChecker1: MakeChecker[Boolean, C1],
       makeChecker2: MakeChecker[Boolean, C2],
@@ -119,57 +81,59 @@ object Main
       }
   }
 
-  def compare[C1 <: ReadStartFinder, C2 <: ReadStartFinder](
-      implicit
-      pathBroadcast: Broadcast[Path],
-      args: Blocks.Args,
-      numBlocksAccumulator: LongAccumulator,
-      blockFirstOffsetsAccumulator: HistAccumulator[Option[Int]],
-      makeChecker1: MakeChecker[Boolean, C1],
-      makeChecker2: MakeChecker[Boolean, C2],
-      maxReadSize: MaxReadSize
-  ): RDD[((Long, (Option[Pos], Option[Pos])), Long)] = {
-    implicit val totalCompressedSize = path.size
-    val Blocks(blocks, _) = Blocks()
-    blocks
-      .setName("blocks")
-      .cache
-      .sliding2Prev
-      .mapPartitions {
-        blocks ⇒
-          callPartition[C1, C2](blocks)
-      }
-  }
+  case class App(args: Args[Opts])
+    extends PathApp(args, Registrar) {
 
-  def vsIndexed[C <: ReadStartFinder](
-      implicit
-      pathBroadcast: Broadcast[Path],
-      sc: SparkContext,
-      makeChecker: MakeChecker[Boolean, C],
-      rangesBroadcast: Broadcast[Option[ByteRanges]],
-      numBlocksAccumulator: LongAccumulator,
-      blockFirstOffsetsAccumulator: HistAccumulator[Option[Int]],
-      totalCompressedSize: Long,
-      blockArgs: Blocks.Args,
-      recordArgs: IndexedRecordPositions.Args,
-      maxReadSize: MaxReadSize
-  ): RDD[((Long, (Option[Pos], Option[Pos])), Long)] = {
-    val (blocks, records) = IndexedRecordPositions()
-    blocks
+    def vsIndexed[C <: ReadStartFinder](
+        implicit
+        pathBroadcast: Broadcast[Path],
+        sc: SparkContext,
+        makeChecker: MakeChecker[Boolean, C],
+        rangesBroadcast: Broadcast[Option[ByteRanges]],
+        numBlocksAccumulator: LongAccumulator,
+        blockFirstOffsetsAccumulator: Histogram[Option[Int]],
+        totalCompressedSize: Long,
+        blockArgs: Blocks.Args,
+        recordArgs: IndexedRecordPositions.Args,
+        maxReadSize: MaxReadSize
+    ): RDD[((Long, (Option[Pos], Option[Pos])), Long)] = {
+      val (blocks, records) = IndexedRecordPositions()
+      blocks
       .sliding2Prev
       .zippartitions(records) {
         case (blocks, setsIter) ⇒
           implicit val records = setsIter.next()
           callPartition[indexed.Checker, C](blocks)
       }
-  }
+    }
 
-  override protected def run(args: Args): Unit = {
-    new CheckerMain(args) {
+    def compare[C1 <: ReadStartFinder, C2 <: ReadStartFinder](
+        implicit
+        pathBroadcast: Broadcast[Path],
+        args: Blocks.Args,
+        numBlocksAccumulator: LongAccumulator,
+        blockFirstOffsetsAccumulator: Histogram[Option[Int]],
+        makeChecker1: MakeChecker[Boolean, C1],
+        makeChecker2: MakeChecker[Boolean, C2],
+        maxReadSize: MaxReadSize
+    ): RDD[((Long, (Option[Pos], Option[Pos])), Long)] = {
+      implicit val totalCompressedSize = path.size
+      val Blocks(blocks, _) = Blocks()
+      blocks
+        .setName("blocks")
+        .cache
+        .sliding2Prev
+        .mapPartitions {
+          blocks ⇒
+            callPartition[C1, C2](blocks)
+        }
+    }
+
+    new CheckerMain(opts) {
 
       implicit val totalCompressedSize = path.size
       implicit val numBlocksAccumulator = sc.longAccumulator("numBlocks")
-      implicit val blockFirstOffsetsAccumulator = HistAccumulator[Option[Int]]("blockFirstOffsets")
+      implicit val blockFirstOffsetsAccumulator = Histogram[Option[Int]]("blockFirstOffsets")
       implicit val pathBroadcast = sc.broadcast(path)
 
       val badBlocks =
@@ -191,6 +155,8 @@ object Main
 
       import cats.implicits.{ catsKernelStdGroupForLong, catsKernelStdMonoidForTuple2 }
       import cats.syntax.all._
+
+      val ord = implicitly[Ordering[(Long, (Option[Pos], Option[Pos]))]]
 
       val (numWrongCompressedPositions, numWrongBlocks) =
         badBlocks
@@ -263,7 +229,7 @@ object Main
             _.map(_.toString).getOrElse("-")
           }
 
-        print[String](
+        print(
           badBlocks
             .map {
               case (
@@ -283,4 +249,14 @@ object Main
       }
     }
   }
+
+  case class Registrar() extends spark.Registrar(
+    Blocks,
+    CheckerMain,
+    cls[Path],    // broadcast
+    cls[mutable.WrappedArray.ofRef[_]],  // sliding RDD collect
+    cls[mutable.WrappedArray.ofInt]      // sliding RDD collect
+  )
+
+  object Main extends app.Main(App)
 }

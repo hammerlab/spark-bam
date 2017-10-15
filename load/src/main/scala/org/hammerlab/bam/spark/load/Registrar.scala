@@ -10,7 +10,7 @@ import org.hammerlab.kryo._
 
 import scala.collection.mutable
 
-class Registrar
+case class Registrar()
   extends spark.Registrar(
 
       /** Several [[CanLoadBam]] methods broadcast [[Header]] and/or [[ContigLengths]] */
@@ -34,5 +34,3 @@ class Registrar
       arr[Vector[_]],
       cls[Chunk]
   )
-
-object Registrar extends Registrar

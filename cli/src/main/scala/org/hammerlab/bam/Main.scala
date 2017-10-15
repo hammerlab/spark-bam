@@ -3,7 +3,6 @@ package org.hammerlab.bam
 import caseapp._
 import org.hammerlab.bam.check.{ blocks, eager, full }
 import org.hammerlab.bam.spark.compare
-import org.hammerlab.bam.spark.compare.{ CountReadsArgs, TimeLoadArgs }
 import org.hammerlab.bgzf
 
 @AppName("spark-bam")
@@ -12,16 +11,22 @@ sealed abstract class Command[A](val main: CaseApp[A]) {
   def args: A
 }
 
-case class      CheckBam(@Recurse args:      eager.Args) extends Command(             eager.Main)
-case class   CheckBlocks(@Recurse args:      eager.Args) extends Command(            blocks.Main)
-case class    CountReads(@Recurse args:  CountReadsArgs) extends Command(     compare.CountReads)
-case class      TimeLoad(@Recurse args:    TimeLoadArgs) extends Command(       compare.TimeLoad)
-case class     FullCheck(@Recurse args:       full.Args) extends Command(              full.Main)
-case class CompareSplits(@Recurse args:    compare.Opts) extends Command(           compare.Main)
-case class ComputeSplits(@Recurse args:      spark.Args) extends Command(             spark.Main)
-case class   IndexBlocks(@Recurse args: bgzf.index.Args) extends Command( bgzf.index.IndexBlocks)
-case class  IndexRecords(@Recurse args:      index.Args) extends Command(     index.IndexRecords)
-case class HtsjdkRewrite(@Recurse args:    rewrite.Args) extends Command(           rewrite.Main)
+trait Cmd {
+  type Main
+  type App
+  type Opts
+}
+
+case class      CheckBam(@Recurse args:         eager.CheckBam.Opts) extends Command(             eager.CheckBam.Main)
+case class   CheckBlocks(@Recurse args:     blocks.CheckBlocks.Opts) extends Command(            blocks.CheckBlocks.Main)
+case class    CountReads(@Recurse args:     compare.CountReads.Opts) extends Command(     compare.CountReads.Main)
+case class      TimeLoad(@Recurse args:       compare.TimeLoad.Opts) extends Command(       compare.TimeLoad.Main)
+case class     FullCheck(@Recurse args:         full.FullCheck.Opts) extends Command(              full.FullCheck.Main)
+case class CompareSplits(@Recurse args:  compare.CompareSplits.Opts) extends Command(           compare.CompareSplits.Main)
+case class ComputeSplits(@Recurse args:    spark.ComputeSplits.Opts) extends Command(             spark.ComputeSplits.Main)
+case class   IndexBlocks(@Recurse args: bgzf.index.IndexBlocks.Opts) extends Command( bgzf.index.IndexBlocks.Main)
+case class  IndexRecords(@Recurse args:     index.IndexRecords.Opts) extends Command(     index.IndexRecords.Main)
+case class HtsjdkRewrite(@Recurse args:  rewrite.HTSJDKRewrite.Opts) extends Command(           rewrite.HTSJDKRewrite.Main)
 
 object Main
   extends CommandApp[Command[_]] {

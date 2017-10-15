@@ -6,46 +6,51 @@ import cats.syntax.all._
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
-import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.cli.args.OutputArgs
+import org.hammerlab.cli.app
+import org.hammerlab.cli.app.Args
+import org.hammerlab.cli.app.spark.PathApp
+import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.sorted.OrZipIterator._
-import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.stats.Stats
 import org.hammerlab.timing.Timer
 import org.hammerlab.types._
 
-@AppName("Compute and print BAM-splits using spark-bam and/or hadoop-bam; if both, compare the two as well")
-@ProgName("… org.hammerlab.bam.spark.Main")
-case class Args(
-    @Recurse output: OutputArgs,
-    @Recurse splitSizeArgs: SplitSize.Args,
+object ComputeSplits {
 
-    @O("g")
-    @M("Set the buffer size (fs.gs.io.buffersize) used by the GCS-HDFS connector")
-    gsBuffer: Option[Bytes] = None,
+  @AppName("Compute and print BAM-splits using spark-bam and/or hadoop-bam; if both, compare the two as well")
+  @ProgName("… org.hammerlab.bam.spark.Main")
+  case class Opts(
+      @Recurse printLimit: PrintLimitArgs,
+      @Recurse splitSizeArgs: SplitSize.Args,
 
-    @O("p")
-    @M("Print extra statistics, about the distributions of computed split sizes and number of reads per partition")
-    printReadPartitionStats: Boolean = false,
+      @O("g")
+      @M("Set the buffer size (fs.gs.io.buffersize) used by the GCS-HDFS connector")
+      gsBuffer: Option[Bytes] = None,
 
-    @O("s")
-    @M("Run the spark-bam checker; if both or neither of -s and -u are set, then they are both run, and the results compared. If only one is set, its computed splits are printed")
-    sparkBam: Boolean = false,
+      @O("p")
+      @M("Print extra statistics, about the distributions of computed split sizes and number of reads per partition")
+      printReadPartitionStats: Boolean = false,
 
-    @O("upstream") @O("u")
-    @M("Run the hadoop-bam checker; if both or neither of -s and -u are set, then they are both run, and the results compared. If only one is set, its computed splits are printed")
-    hadoopBam: Boolean = false
-)
-  extends SparkPathAppArgs
+      @O("s")
+      @M("Run the spark-bam checker; if both or neither of -s and -u are set, then they are both run, and the results compared. If only one is set, its computed splits are printed")
+      sparkBam: Boolean = false,
 
-object Main
-  extends SparkPathApp[Args, load.Registrar]
-    with Timer
-    with LoadReads {
+      @O("upstream") @O("u")
+      @M("Run the hadoop-bam checker; if both or neither of -s and -u are set, then they are both run, and the results compared. If only one is set, its computed splits are printed")
+      hadoopBam: Boolean = false
+  )
 
-  override def run(args: Args): Unit = {
+  object Main extends app.Main(App)
+
+  val fn: () ⇒ load.Registrar = load.Registrar
+  
+  case class App(args: Args[Opts])
+    extends PathApp(args, load.Registrar)
+      with Timer
+      with LoadReads {
+
     args
       .gsBuffer
       .foreach(

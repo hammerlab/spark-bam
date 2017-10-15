@@ -1,18 +1,14 @@
 package org.hammerlab.bam.check.eager
 
-import org.hammerlab.bam.spark.MainSuite
 import org.hammerlab.bam.test.resources.{ bam1, bam1Unindexed }
+import org.hammerlab.cli.app.MainSuite
 import org.hammerlab.paths.Path
 import org.hammerlab.test.resources.File
 
-class MainTest
-  extends MainSuite(Main) {
+class CheckBamTest
+  extends MainSuite(CheckBam.Main) {
 
-  override def defaultOpts(outPath: Path) =
-    Seq(
-      "-m", "200k",
-      "-o", outPath
-    )
+  override def defaultOpts(outPath: Path) = Seq("-m", "200k")
 
   val seqdoopTCGAExpectedOutput = File("output/check-bam/1.bam")
 

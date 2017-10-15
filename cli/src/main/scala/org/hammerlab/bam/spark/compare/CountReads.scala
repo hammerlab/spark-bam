@@ -3,22 +3,23 @@ package org.hammerlab.bam.spark.compare
 import caseapp.Recurse
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bam.spark._
-import org.hammerlab.cli.app.{ SparkPathApp, SparkPathAppArgs }
-import org.hammerlab.cli.args.OutputArgs
+import org.hammerlab.cli.app
+import org.hammerlab.cli.app.Args
+import org.hammerlab.cli.app.spark.PathApp
+import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.exception.Error
 import org.hammerlab.io.Printer._
 import org.hammerlab.timing.Timer
 
-case class CountReadsArgs(@Recurse output: OutputArgs,
-                          @Recurse splitSizeArgs: SplitSize.Args)
-  extends SparkPathAppArgs
+object CountReads {
+  case class Opts(@Recurse printLimit: PrintLimitArgs,
+                  @Recurse splitSizeArgs: SplitSize.Args)
 
-object CountReads
-  extends SparkPathApp[CountReadsArgs, load.Registrar]
-    with Timer
-    with LoadReads {
+  case class App(args: Args[Opts])
+    extends PathApp(args, load.Registrar)
+      with Timer
+      with LoadReads {
 
-  override protected def run(args: CountReadsArgs): Unit = {
     implicit val splitSizeArgs = args.splitSizeArgs
     val splitSize = splitSizeArgs.maxSplitSize
     val (sparkBamMS, sparkBamReads) = time { sc.loadBam(path, splitSize).count }
@@ -45,4 +46,6 @@ object CountReads
     }
 
   }
+
+  object Main extends app.Main(App)
 }

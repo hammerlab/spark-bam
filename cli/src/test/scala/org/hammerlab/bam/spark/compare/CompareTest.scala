@@ -16,8 +16,8 @@ import shapeless.LabelledGeneric
 class CompareTest
   extends SparkSuite {
 
-  implicit val readsToCheck = default[ReadsToCheck]
-  implicit val maxReadSize = default[MaxReadSize]
+  implicit val readsToCheck      = default[ReadsToCheck]
+  implicit val maxReadSize       = default[MaxReadSize]
   implicit val bgzfBlocksToCheck = default[BGZFBlocksToCheck]
 
   val lg = LabelledGeneric[Result]

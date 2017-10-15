@@ -1,21 +1,18 @@
 package org.hammerlab.bam.spark
 
 import org.hammerlab.bam.test.resources.bam1
+import org.hammerlab.cli.app.MainSuite
 import org.hammerlab.paths.Path
 
-class MainTest
-  extends MainSuite(Main) {
+class ComputeSplitsTest
+  extends MainSuite(ComputeSplits.Main) {
 
-  override def defaultArgs(outPath: Path) =
-    Seq(
-      "-o", outPath,
-      bam1
-    )
+  override def extraArgs(outPath: Path) = Seq(bam1, outPath)
 
   import org.hammerlab.test.matchers.lines.Line._
 
   test("eager 230KB") {
-    checkLines(
+    checkAllLines(
       "-s",
       "-m", "230k"
     )(
@@ -35,7 +32,7 @@ class MainTest
   }
 
   test("seqdoop 230KB") {
-    checkLines(
+    checkAllLines(
       "-u",
       "-m", "230k"
     )(
@@ -55,7 +52,7 @@ class MainTest
   }
 
   test("compare 230KB") {
-    checkLines(
+    checkAllLines(
       "-m", "230k"
     )(
       l"Get spark-bam splits: ${d}ms",
@@ -69,7 +66,7 @@ class MainTest
   }
 
   test("compare 240KB") {
-    checkLines(
+    checkAllLines(
       "-m", "240k"
     )(
       l"Get spark-bam splits: ${d}ms",

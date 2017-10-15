@@ -3,14 +3,14 @@ package org.hammerlab.bam.spark
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.rdd.AsNewHadoopPartition
 import org.hammerlab.args.SplitSize
-import org.hammerlab.cli.app.SparkPathApp
+import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.collection.canBuildVector
 import org.hammerlab.paths.Path
 import org.hammerlab.timing.Timer
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
 trait LoadReads {
-  self: SparkPathApp[_, _] with Timer ⇒
+  self: PathApp[_] with Timer ⇒
 
   def sparkBamLoad(implicit
                    args: SplitSize.Args,

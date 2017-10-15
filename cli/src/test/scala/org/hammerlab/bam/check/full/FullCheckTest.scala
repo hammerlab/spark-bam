@@ -1,19 +1,15 @@
 package org.hammerlab.bam.check.full
 
-import org.hammerlab.bam.spark.MainSuite
 import org.hammerlab.bam.test.resources.{ TestBams, bam1Unindexed }
+import org.hammerlab.cli.app.MainSuite
 import org.hammerlab.paths.Path
 import org.hammerlab.test.resources.File
 
-class MainTest
-  extends MainSuite(Main)
+class FullCheckTest
+  extends MainSuite(FullCheck.Main)
     with TestBams {
 
-  override def defaultOpts(outPath: Path) =
-    Seq(
-      "-l", "10",
-      "-o", outPath
-    )
+  override def defaultOpts(outPath: Path) = Seq("-l", "10")
 
   def expected(basename: String): File = File(s"output/full-check/$basename")
 

@@ -1,13 +1,10 @@
 package org.hammerlab.bam.check.blocks
 
-import org.hammerlab.bam.spark.MainSuite
-import org.hammerlab.bam.test.resources.{ bam1, bam2, bam1BlockAligned }
-import org.hammerlab.paths.Path
+import org.hammerlab.bam.test.resources.{ bam1, bam1BlockAligned, bam2 }
+import org.hammerlab.cli.app.MainSuite
 
-class MainTest
-  extends MainSuite(Main) {
-
-  override def defaultOpts(outPath: Path) = Seq("-o", outPath)
+class CheckBlocksTest
+  extends MainSuite(CheckBlocks.Main) {
 
   test("1.bam") {
     check(
