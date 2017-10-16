@@ -85,7 +85,6 @@ object IndexedRecordPositions
       implicit
       path: Path,
       sc: SparkContext,
-      compressedSizeAccumulator: LongAccumulator,
       rangesBroadcast: Broadcast[Option[ByteRanges]],
       blockArgs: Blocks.Args,
       recordArgs: IndexedRecordPositions.Args

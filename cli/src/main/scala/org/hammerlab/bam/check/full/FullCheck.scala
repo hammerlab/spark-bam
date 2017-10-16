@@ -5,16 +5,18 @@ import cats.Monoid
 import cats.instances.long.{ catsKernelStdGroupForLong, catsStdShowForLong }
 import cats.instances.map.catsKernelStdMonoidForMap
 import cats.syntax.all._
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.{ FindReadArgs, LogArgs, PostPartitionArgs }
 import org.hammerlab.bam.check.PosMetadata.showRecord
 import org.hammerlab.bam.check.full.error.Flags.TooFewFixedBlockBytes
 import org.hammerlab.bam.check.full.error.{ Counts, Flags, Result }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
-import org.hammerlab.bam.check.{ AnalyzeCalls, Blocks, CheckerMain, PosMetadata }
+import org.hammerlab.bam.check.{ AnalyzeCalls, Blocks, CheckerApp, MaxReadSize, PosMetadata, ReadsToCheck }
+import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.spark.Split
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.{ PosIterator, SeekableUncompressedBytes }
+import org.hammerlab.bgzf.block.{ Metadata, PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.cli.app
@@ -26,6 +28,7 @@ import org.hammerlab.io.SampleSize
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
+import org.hammerlab.paths.Path
 import org.hammerlab.types.Monoid._
 
 import scala.collection.immutable.SortedMap
@@ -45,148 +48,198 @@ object FullCheck {
 
   import AnalyzeCalls._
 
-  case class App(args: Args[Opts])
-    extends PathApp(args, Registrar) {
+  def closeCallsWithMetadata(it: Iterator[(Int, (Pos, Flags))])(implicit 
+                                                                path: Path,
+                                                                header: Broadcast[Header],
+                                                                readsToCheck: ReadsToCheck,
+                                                                maxReadSize: MaxReadSize
+  ) = {
+    val ch = SeekableByteChannel(path).cache
 
-    def this() {
-      this(null)
+    implicit val uncompressedBytes = SeekableUncompressedBytes(ch)
+
+    it
+      .map {
+        case (numFlags, (pos, flags)) ⇒
+          numFlags →
+            PosMetadata(
+              pos,
+              flags
+            )
+      }
+      .finish(uncompressedBytes.close())
+  }
+
+  def checkPartition(blocks: Iterator[Metadata])(implicit
+                                                 path: Path,
+                                                 contigLengthsBroadcast: Broadcast[ContigLengths],
+                                                 readsToCheck: ReadsToCheck) = {
+    val ch = SeekableByteChannel(path).cache
+    val uncompressedBytes = SeekableUncompressedBytes(ch)
+    val checker =
+      Checker(
+        uncompressedBytes,
+        contigLengthsBroadcast.value,
+        readsToCheck
+      )
+
+    blocks
+    .flatMap(PosIterator(_))
+    .map {
+      pos ⇒
+        pos →
+          checker(pos)
     }
-    
-    new CheckerMain(opts) {
-      val calls =
-        if (args.records.path.exists) {
+    .finish(uncompressedBytes.close())
+  }
+  
+  case class App(args: Args[Opts])
+    extends CheckerApp(args, Registrar) {
 
-          implicit val compressedSizeAccumulator = sc.longAccumulator("compressedSize")
+    val calls =
+      if (args.records.path.exists) {
 
-          val calls = vsIndexed[Result, Checker]
+        implicit val compressedSizeAccumulator = sc.longAccumulator("compressedSize")
 
-          AnalyzeCalls(
-            calls
-              .map {
-                case (pos, (expected, result)) ⇒
-                  pos → ((expected, result.call))
-              },
-            args.partitioning.resultsPerPartition,
-            compressedSizeAccumulator
-          )
-          echo("")
+        val calls = vsIndexed[Result, Checker]
 
+        AnalyzeCalls(
           calls
             .map {
               case (pos, (expected, result)) ⇒
-                if (result.call == expected)
-                  pos → result
-                else
-                  throw new IllegalStateException(
-                    s"False ${if (result.call) "positive" else "negative"} at $pos: $result"
-                  )
-            }
-        } else
-          Blocks()
-            .mapPartitions {
-              blocks ⇒
+                pos → ((expected, result.call))
+            },
+          args.partitioning.resultsPerPartition,
+          compressedSizeAccumulator
+        )
+        echo("")
 
-                val ch = SeekableByteChannel(path).cache
-                val uncompressedBytes = SeekableUncompressedBytes(ch)
-                val checker =
-                  Checker(
-                    uncompressedBytes,
-                    contigLengthsBroadcast.value,
-                    readsToCheck
-                  )
-
-                blocks
-                  .flatMap(PosIterator(_))
-                  .map {
-                    pos ⇒
-                      pos →
-                          checker(pos)
-                  }
-                  .finish(uncompressedBytes.close())
-            }
-
-      val flagsByCount: RDD[(Int, (Pos, Flags))] =
         calls
-          .flatMap {
-            case (pos, flags: Flags)
-              if flags != TooFewFixedBlockBytes ⇒
-              Some(pos → flags)
-            case _ ⇒
-              None
+          .map {
+            case (pos, (expected, result)) ⇒
+              if (result.call == expected)
+                pos → result
+              else
+                throw new IllegalStateException(
+                  s"False ${if (result.call) "positive" else "negative"} at $pos: $result"
+                )
           }
-          .keyBy(_._2.numNonZeroFields)
+      } else
+        Blocks()
+          .mapPartitions { //checkPartition }
+            blocks ⇒
 
-      /**
-       * How many times each flag correctly rules out a [[Pos]], grouped by how many total flags rule out that [[Pos]].
-       *
-       * Useful for identifying e.g. flags that tend to be "critical" (necessary to avoid false-positive read-boundary
-       * calls).
-       */
-      val negativesByNumNonzeroFields: Array[(Int, Counts)] =
-        flagsByCount
-          .mapValues {
-            case (_, flags) ⇒
-              flags.toCounts
-          }
-          .reduceByKey(_ |+| _, Flags.size)
-          .collect()
-          .sortBy(_._1)
+              val ch = SeekableByteChannel(path).cache
+              val uncompressedBytes = SeekableUncompressedBytes(ch)
+              val checker =
+                Checker(
+                  uncompressedBytes,
+                  contigLengthsBroadcast.value,
+                  readsToCheck
+                )
 
-      /**
-       * CDF to [[negativesByNumNonzeroFields]]'s PDF: how many times does each flag correctly rule out [[Pos]]s that
-       * were ruled out by *at most `n`* total flags, for each `n`.
-       */
-      val countsByNonZeroFields: SortedMap[Int, (Counts, Counts)] =
-        SortedMap(
-          negativesByNumNonzeroFields
-            .scanLeft(
-              0 → (zero[Counts], zero[Counts])
-            ) {
-              case (
-                (_, (_, countSoFar)),
-                (numNonZeroFields, count)
-              ) ⇒
-                numNonZeroFields →
-                  (
-                    count,
-                    countSoFar |+| count
-                  )
-            }
-            .drop(1): _*  // Discard the dummy/initial "0" entry added above to conform to [[scanLeft]] API
-        )
-
-      lazy val positionsByFlagCounts =
-        SortedMap(
-          flagsByCount
-            .mapValues(_ ⇒ 1L)
-            .reduceByKey(_ + _)
-            .collect: _*
-        )
-
-      val pathBroadcast = sc.broadcast(path)
-      
-      val closeCalls =
-        flagsByCount
-          .filter(_._1 <= 2)
-          .mapPartitions {
-            it ⇒
-              val ch = SeekableByteChannel(pathBroadcast.value).cache
-
-              implicit val uncompressedBytes = SeekableUncompressedBytes(ch)
-
-              it
+              blocks
+                .flatMap(PosIterator(_))
                 .map {
-                  case (numFlags, (pos, flags)) ⇒
-                    numFlags →
-                      PosMetadata(
-                        pos,
-                        flags
-                      )
+                  pos ⇒
+                    pos →
+                        checker(pos)
                 }
                 .finish(uncompressedBytes.close())
           }
-          .cache
 
+    val flagsByCount: RDD[(Int, (Pos, Flags))] =
+      calls
+        .flatMap {
+          case (pos, flags: Flags)
+            if flags != TooFewFixedBlockBytes ⇒
+            Some(pos → flags)
+          case _ ⇒
+            None
+        }
+        .keyBy(_._2.numNonZeroFields)
+
+    /**
+     * How many times each flag correctly rules out a [[Pos]], grouped by how many total flags rule out that [[Pos]].
+     *
+     * Useful for identifying e.g. flags that tend to be "critical" (necessary to avoid false-positive read-boundary
+     * calls).
+     */
+    val negativesByNumNonzeroFields: Array[(Int, Counts)] =
+      flagsByCount
+        .mapValues {
+          case (_, flags) ⇒
+            flags.toCounts
+        }
+        .reduceByKey(_ |+| _, Flags.size)
+        .collect()
+        .sortBy(_._1)
+
+    /**
+     * CDF to [[negativesByNumNonzeroFields]]'s PDF: how many times does each flag correctly rule out [[Pos]]s that
+     * were ruled out by *at most `n`* total flags, for each `n`.
+     */
+    val countsByNonZeroFields: SortedMap[Int, (Counts, Counts)] =
+      SortedMap(
+        negativesByNumNonzeroFields
+          .scanLeft(
+            0 → (zero[Counts], zero[Counts])
+          ) {
+            case (
+              (_, (_, countSoFar)),
+              (numNonZeroFields, count)
+            ) ⇒
+              numNonZeroFields →
+                (
+                  count,
+                  countSoFar |+| count
+                )
+          }
+          .drop(1): _*  // Discard the dummy/initial "0" entry added above to conform to [[scanLeft]] API
+      )
+
+    lazy val positionsByFlagCounts =
+      SortedMap(
+        flagsByCount
+          .mapValues(_ ⇒ 1L)
+          .reduceByKey(_ + _)
+          .collect: _*
+      )
+
+//    flagsByCount.take(10)
+    
+//    val lowPos =
+//      flagsByCount
+//        .filter(getCloseCalls)
+//        //.filter(_._1 <= 2)
+//
+//    lowPos.take(10)
+
+    val closeCalls =
+      flagsByCount
+        .filter(_._1 <= 2)
+//      lowPos
+        .mapPartitions { //(closeCallsWithMetadata)
+          it ⇒
+            val ch = SeekableByteChannel(path).cache
+
+            implicit val uncompressedBytes = SeekableUncompressedBytes(ch)
+
+            it
+              .map {
+                case (numFlags, (pos, flags)) ⇒
+                  numFlags →
+                    PosMetadata(
+                      pos,
+                      flags
+                    )
+              }
+              .finish(uncompressedBytes.close())
+        }
+        .cache
+
+//    closeCalls.take(10)
+    
       /**
        * "Critical" error counts: how many times each flag was the *only* flag identifying a read-boundary-candidate as
        * false.
@@ -220,57 +273,65 @@ object FullCheck {
           )
       }
 
+//      val numCriticalCalls = positionsByFlagCounts.getOrElse(1, 0L)
+//      val numCloseCalls = positionsByFlagCounts.getOrElse(2, 0L)
+//
+//      val numCloseOrCritical = numCriticalCalls + numCloseCalls
+      
       echo("")
 
-      val numCloseCalls = positionsByFlagCounts.getOrElse(2, 0L)
-      println(s"numCloseCalls: $numCloseCalls")
-      
-      val closePositions =
-        closeCalls
-          .filter(_._1 == 2)
-          .values
+//      val closePositionsSample = closePositions.take(10)
 
-      val closeCallHist =
-        closePositions
-          .map(_.flags → 1L)
-          .reduceByKey(_ + _)
-          .map(_.swap)
-          .collect
-          .sortBy(-_._1)
+//      val closePositionsSample = closePositions.sample(numCloseOrCritical)
 
-      //      implicit val pl: SampleSize = printLimit
-      val sampledCalls = sampleCalls(closePositions, numCloseCalls)
+//      val closeCallHist =
+//        closePositions
+//          .map(_.flags → 1L)
+//          .reduceByKey(_ + _)
+//          .map(_.swap)
+//          .collect
+//          .sortBy(-_._1)
+
+//            implicit val pl: SampleSize = printLimit
+//      val sampledCalls = sampleCalls()
 
       countsByNonZeroFields.get(2) match {
         case Some((counts, _)) ⇒
-//          val numCloseCalls = positionsByFlagCounts(2)
+          val numCloseCalls = positionsByFlagCounts(2)
 
-//          val closeCallHist =
-//            calls
-//              .map(_.flags → 1L)
-//              .reduceByKey(_ + _)
-//              .map(_.swap)
-//              .collect
-//              .sortBy(-_._1)
+          val closePositions =
+            closeCalls
+              .filter(_._1 == 2)
+              .values
+              .setName("closePositions")
+              .cache
 
-//          print(
-//            sampledCalls,
-//            numCloseCalls,
-//            s"$numCloseCalls positions where exactly two checks failed:",
-//            n ⇒ s"$n of $numCloseCalls positions where exactly two checks failed:",
-//            indent = "\t"
-//          )
-//          echo("")
+          val closeCallHist =
+            closePositions
+              .map(_.flags → 1L)
+              .reduceByKey(_ + _)
+              .map(_.swap)
+              .collect
+              .sortBy(-_._1)
 
-//          if (closeCallHist.head._1 > 1) {
-//            print(
-//              closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
-//              "\tHistogram:",
-//              _ ⇒ "\tHistogram:",
-//              indent = "\t\t"
-//            )
-//            echo("")
-//          }
+          print(
+            closePositions.sample(numCloseCalls),
+            numCloseCalls,
+            s"$numCloseCalls positions where exactly two checks failed:",
+            n ⇒ s"$n of $numCloseCalls positions where exactly two checks failed:",
+            indent = "\t"
+          )
+          echo("")
+
+          if (closeCallHist.head._1 > 1) {
+            print(
+              closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
+              "\tHistogram:",
+              _ ⇒ "\tHistogram:",
+              indent = "\t\t"
+            )
+            echo("")
+          }
 
           echo(
             "\tPer-flag totals:",
@@ -289,18 +350,18 @@ object FullCheck {
           )
       }
 
-      /**
-       * "Total" error counts: how many times each flag ruled out a position, over the entire dataset
-       */
-      val totalErrorCounts = countsByNonZeroFields.last._2._2
+    /**
+     * "Total" error counts: how many times each flag ruled out a position, over the entire dataset
+     */
+    val totalErrorCounts = countsByNonZeroFields.last._2._2
 
-      echo(
-        "Total error counts:",
-        totalErrorCounts.show(hideTooFewFixedBlockBytes = true),
-        ""
-      )
-    }
+    echo(
+      "Total error counts:",
+      totalErrorCounts.show(hideTooFewFixedBlockBytes = true),
+      ""
+    )
   }
+//  }
 
   def sampleCalls(calls: RDD[PosMetadata], 
                   numCalls: Long)(
@@ -310,7 +371,7 @@ object FullCheck {
     calls.sample(numCalls)
   
   case class Registrar() extends spark.Registrar(
-    CheckerMain,
+    CheckerApp,
     AnalyzeCalls,
     Blocks,
     cls[Flags],
