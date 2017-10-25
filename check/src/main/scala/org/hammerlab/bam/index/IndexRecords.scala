@@ -8,12 +8,12 @@ import htsjdk.samtools.util.{ RuntimeEOFException, RuntimeIOException }
 import org.hammerlab.bam.iterator.{ PosStream, RecordStream, SeekablePosStream, SeekableRecordStream }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, IndexingApp }
+import org.hammerlab.cli.app.{ Args, Cmd, IndexingApp }
 import org.hammerlab.cli.args.PrinterArgs
 import org.hammerlab.io.Printer._
 import org.hammerlab.timing.Interval.heartbeat
 
-object IndexRecords {
+object IndexRecords extends Cmd {
 
   /**
    * Traverse a BAM file (the sole argument) and output the BGZF "virtual" positions ([[Pos]]) of all record-starts.
@@ -32,59 +32,59 @@ object IndexRecords {
                   @O("c") useChannel: Boolean = false,
                   @O("t") throwOnTruncation: Boolean = false)
 
-  case class App(args: Args[Opts])
-    extends IndexingApp[Opts]("records", args)
+  val main = Main(
+    args ⇒ new IndexingApp[Opts]("records", args)
       with Logging {
 
-    val stream =
-      (args.parseRecords, args.useChannel) match {
-        case (true, true) ⇒
-          SeekableRecordStream(path).map(_._1)
-        case (true, false) ⇒
-          RecordStream(path.inputStream).map(_._1)
-        case (false, true) ⇒
-          SeekablePosStream(path)
-        case (false, false) ⇒
-          PosStream(path.inputStream)
-      }
+      val stream =
+        (args.parseRecords, args.useChannel) match {
+          case (true, true) ⇒
+            SeekableRecordStream(path).map(_._1)
+          case (true, false) ⇒
+            RecordStream(path.inputStream).map(_._1)
+          case (false, true) ⇒
+            SeekablePosStream(path)
+          case (false, false) ⇒
+            PosStream(path.inputStream)
+        }
 
-    var idx = 0
-    var lastPos = Pos(0, 0)
+      var idx = 0
+      var lastPos = Pos(0, 0)
 
-    def traverse(): Unit = {
-      for {
-        pos ← stream
-      } {
-        echo(s"${pos.blockPos},${pos.offset}")
-        lastPos = pos
-        idx += 1
-      }
-    }
-
-    heartbeat(
-      () ⇒
-        info(
-          s"$idx records processed, pos: $lastPos"
-        ),
-      if (args.throwOnTruncation) {
-        traverse()
-      } else {
-        try {
-          traverse()
-        } catch {
-          case e: IOException ⇒ error(e)
-
-          // Non-record-parsing mode hits this in the case of a truncated file
-          case e: RuntimeEOFException ⇒ error(e)
-
-          // Record-parsing can hit this in the presence of incomplete records in a truncated file
-          case e: RuntimeIOException ⇒ error(e)
+      def traverse(): Unit = {
+        for {
+          pos ← stream
+        } {
+          echo(s"${pos.blockPos},${pos.offset}")
+          lastPos = pos
+          idx += 1
         }
       }
-    )
 
-    info("Traversal done")
-  }
+      heartbeat(
+        () ⇒
+          info(
+            s"$idx records processed, pos: $lastPos"
+          ),
+        if (args.throwOnTruncation) {
+          traverse()
+        } else {
+          try {
+            traverse()
+          } catch {
+            case e: IOException ⇒ error(e)
 
-  object Main extends app.Main(App)
+            // Non-record-parsing mode hits this in the case of a truncated file
+            case e: RuntimeEOFException ⇒ error(e)
+
+            // Record-parsing can hit this in the presence of incomplete records in a truncated file
+            case e: RuntimeIOException ⇒ error(e)
+          }
+        }
+      )
+
+      info("Traversal done")
+    }
+  )
+//  object Main extends app.Main(App)
 }

@@ -3,7 +3,7 @@ package org.hammerlab.bam
 import java.io.ByteArrayOutputStream
 import java.security.Permission
 
-import caseapp.CaseApp
+import org.hammerlab.cli.app.Cmd
 import org.hammerlab.test.Suite
 
 case class ExitException(status: Int)
@@ -27,11 +27,11 @@ class MainTest
 
   override def afterAll(): Unit = System.setSecurityManager(null)
 
-  def check(app: CaseApp[_])(args: String*)(expected: String): Unit = {
+  def check(cmd: Cmd)(args: String*)(expected: String): Unit = {
     val stream = new ByteArrayOutputStream()
     Console.withOut(stream) {
       intercept[ExitException] {
-        app.main(
+        cmd.main.main(
           args.toArray
         )
       }
@@ -106,7 +106,7 @@ class MainTest
 
   test("htsjdk-rewrite help") {
     check(
-      rewrite.HTSJDKRewrite.Main
+      rewrite.HTSJDKRewrite
     )(
       "-h"
     )(

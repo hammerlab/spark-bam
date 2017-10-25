@@ -5,7 +5,7 @@ import org.hammerlab.cli.app.MainSuite
 import org.hammerlab.paths.Path
 
 class ComputeSplitsTest
-  extends MainSuite(ComputeSplits.Main) {
+  extends MainSuite(ComputeSplits) {
 
   override def extraArgs(outPath: Path) = Seq(bam1, outPath)
 

@@ -4,7 +4,6 @@ import caseapp.{ ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
-import org.apache.spark.util.LongAccumulator
 import org.hammerlab.args.ByteRanges
 import org.hammerlab.bam.check.Blocks
 import org.hammerlab.bgzf.Pos
@@ -20,17 +19,14 @@ import scala.reflect.ClassTag
 
 case class IndexedRecordPositions(rdd: RDD[Pos],
                                   bounds: Bounds[Pos])(
-    implicit o: Ordering[Pos]
+    implicit val ord: Ordering[Pos]
 )
   extends SortedRDD[Pos] {
-
-  override implicit def ord: Ordering[Pos] = o
-
   def toSets(newBounds: Bounds[Pos]): RDD[SortedSet[Pos]] =
     this
       .sortedRepartition(newBounds)
       .rdd
-      .mapPartitions(it ⇒ Iterator(SortedSet(it.toSeq: _*)(o)))
+      .mapPartitions(it ⇒ Iterator(SortedSet(it.toSeq: _*)(ord)))
 
 }
 
@@ -80,44 +76,4 @@ object IndexedRecordPositions
       bounds(reads)
     )
   }
-
-  def apply[U: ClassTag]()(
-      implicit
-      path: Path,
-      sc: SparkContext,
-      rangesBroadcast: Broadcast[Option[ByteRanges]],
-      blockArgs: Blocks.Args,
-      recordArgs: IndexedRecordPositions.Args
-  ): (RDD[Metadata], RDD[SortedSet[Pos]]) = {
-
-    val Blocks(blocks, bounds) = Blocks()
-
-    val posBounds =
-      bounds
-        .copy(
-          partitions =
-            bounds
-            .partitions
-            .map {
-              _.map {
-                case (start, endOpt) ⇒
-                  (
-                    Pos(start, 0),
-                    endOpt.map(Pos(_, 0))
-                  )
-              }
-            }
-        )
-
-    val indexedRecords = IndexedRecordPositions(recordArgs.path)
-
-    val repartitionedRecords = indexedRecords.toSets(posBounds)
-
-    (
-      blocks,
-      repartitionedRecords
-    )
-  }
-
-  register(Blocks)
 }

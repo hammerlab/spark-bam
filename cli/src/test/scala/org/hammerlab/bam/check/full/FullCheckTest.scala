@@ -6,7 +6,7 @@ import org.hammerlab.paths.Path
 import org.hammerlab.test.resources.File
 
 class FullCheckTest
-  extends MainSuite(FullCheck.Main)
+  extends MainSuite(FullCheck)
     with TestBams {
 
   override def defaultOpts(outPath: Path) = Seq("-l", "10")

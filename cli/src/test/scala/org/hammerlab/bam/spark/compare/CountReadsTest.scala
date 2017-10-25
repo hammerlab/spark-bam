@@ -3,10 +3,9 @@ package org.hammerlab.bam.spark.compare
 import org.hammerlab.bam.test.resources.TestBams
 import org.hammerlab.cli.app.MainSuite
 import org.hammerlab.test.matchers.lines.Line._
-import CountReads.Main
 
 class CountReadsTest
-  extends MainSuite(Main)
+  extends MainSuite(CountReads)
     with TestBams {
   test("1.bam 240k") {
     checkAllLines(

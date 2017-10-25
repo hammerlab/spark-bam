@@ -4,7 +4,7 @@ import org.hammerlab.bam.test.resources.{ bam1, bam1BlockAligned, bam2 }
 import org.hammerlab.cli.app.MainSuite
 
 class CheckBlocksTest
-  extends MainSuite(CheckBlocks.Main) {
+  extends MainSuite(CheckBlocks) {
 
   test("1.bam") {
     check(

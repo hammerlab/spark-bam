@@ -4,11 +4,10 @@ import caseapp.{ ExtraName ⇒ O, _ }
 import grizzled.slf4j.Logging
 import htsjdk.samtools.{ SAMFileWriterFactory, SamReaderFactory }
 import org.hammerlab.args.IntRanges
-import org.hammerlab.bam.Cmd
 import org.hammerlab.bam.index.IndexRecords
 import org.hammerlab.bgzf.index.IndexBlocks
 import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, HasPrinter, RequiredArgOutPathApp }
+import org.hammerlab.cli.app.{ Args, Cmd, HasPrinter, RequiredArgOutPathApp }
 import org.hammerlab.cli.args.PrinterArgs
 
 import scala.collection.JavaConverters._
@@ -35,61 +34,61 @@ object HTSJDKRewrite extends Cmd {
                   @O("b") indexBlocks: Boolean = false,
                   @O("i") indexRecords: Boolean = false)
 
-  case class App(args: Args[Opts])
-    extends RequiredArgOutPathApp(args)
+  val main = Main(
+    args ⇒ new RequiredArgOutPathApp(args)
       with HasPrinter
       with Logging {
 
-    val reader = SamReaderFactory.make().open(path)
+      val reader = SamReaderFactory.make().open(path)
 
-    val header = reader.getFileHeader
+      val header = reader.getFileHeader
 
-    val records = {
-      val records =
-        reader
-          .iterator()
-          .asScala
+      val records = {
+        val records =
+          reader
+            .iterator()
+            .asScala
 
-      args.readRanges match {
-        case Some(ranges) ⇒
-          records
-            .zipWithIndex
-            .collect {
-              case (record, idx) if ranges.contains(idx) ⇒
-                record
-            }
-        case _ ⇒
-          records
+        args.readRanges match {
+          case Some(ranges) ⇒
+            records
+              .zipWithIndex
+              .collect {
+                case (record, idx) if ranges.contains(idx) ⇒
+                  record
+              }
+          case _ ⇒
+            records
+        }
       }
+
+      val writer =
+        new SAMFileWriterFactory()
+          .makeBAMWriter(header, true, printer)
+
+      records.foreach(writer.addAlignment)
+
+      reader.close()
+      writer.close()
+
+      if (args.indexBlocks)
+        IndexBlocks.main(
+          args.printerArgs,
+          RemainingArgs(
+            Seq(out.toString),
+            Nil
+          )
+        )
+
+      if (args.indexRecords)
+        IndexRecords.main(
+          IndexRecords.Opts(args.printerArgs),
+          RemainingArgs(
+            Seq(out.toString),
+            Nil
+          )
+        )
     }
-
-    val writer =
-      new SAMFileWriterFactory()
-        .makeBAMWriter(header, true, printer)
-
-    records.foreach(writer.addAlignment)
-
-    reader.close()
-    writer.close()
-
-    if (args.indexBlocks)
-      IndexBlocks.Main.run(
-        args.printerArgs,
-        RemainingArgs(
-          Seq(out.toString),
-          Nil
-        )
-      )
-
-    if (args.indexRecords)
-      IndexRecords.Main.run(
-        IndexRecords.Opts(args.printerArgs),
-        RemainingArgs(
-          Seq(out.toString),
-          Nil
-        )
-      )
-  }
-
-  object Main extends app.Main(App)
+  )
+//  object Main extends app.Main(App)
 }

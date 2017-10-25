@@ -6,7 +6,7 @@ import org.hammerlab.test.matchers.lines.Chars
 import org.hammerlab.test.matchers.lines.Line._
 
 class CompareSplitsTest
-  extends MainSuite(CompareSplits.Main) {
+  extends MainSuite(CompareSplits) {
 
   val ratio = Chars("0123456789.")
   val elemsOrSorted = Chars(" delmorst")

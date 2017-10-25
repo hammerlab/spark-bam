@@ -21,8 +21,8 @@ lazy val bgzf = project.settings(
     math ^ "2.0.0",
     paths ^ "1.3.1",
     slf4j,
-    spark_util % "2.0.1-SNAPSHOT",
-    stats ^ "1.0.1"
+    spark_util % "2.0.1",
+    stats ^ "1.1.0-SNAPSHOT"
   ),
   addSparkDeps,
   compileAndTestDeps += case_cli ^ "2.0.0-SNAPSHOT"
@@ -43,7 +43,7 @@ lazy val check = project.settings(
     paths ^ "1.3.1",
     seqdoop_hadoop_bam,
     slf4j,
-    spark_util % "2.0.1-SNAPSHOT"
+    spark_util % "2.0.1"
   ),
   fork := true,  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
   addSparkDeps,
@@ -71,7 +71,7 @@ lazy val cli = project.settings(
     magic_rdds ^ "3.1.0",
     paths ^ "1.3.1",
     shapeless,
-    spark_util ^ "2.0.1-SNAPSHOT",
+    spark_util ^ "2.0.1",
     stats ^ "1.1.0-SNAPSHOT"
   ),
 
@@ -125,7 +125,7 @@ lazy val load = project.settings(
     reference ^ "1.4.0",
     seqdoop_hadoop_bam,
     slf4j,
-    spark_util ^ "2.0.1-SNAPSHOT"
+    spark_util ^ "2.0.1"
   ),
   compileAndTestDeps += loci ^ "2.0.1",
   addSparkDeps,

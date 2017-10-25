@@ -5,7 +5,7 @@ import org.hammerlab.cli.app.MainSuite
 import org.hammerlab.test.matchers.lines.Line._
 
 class TimeLoadTest
-  extends MainSuite(TimeLoad.Main)
+  extends MainSuite(TimeLoad)
     with TestBams {
 
   test("1.bam 230k") {

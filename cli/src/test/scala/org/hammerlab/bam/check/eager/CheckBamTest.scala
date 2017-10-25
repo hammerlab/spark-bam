@@ -6,7 +6,7 @@ import org.hammerlab.paths.Path
 import org.hammerlab.test.resources.File
 
 class CheckBamTest
-  extends MainSuite(CheckBam.Main) {
+  extends MainSuite(CheckBam) {
 
   override def defaultOpts(outPath: Path) = Seq("-m", "200k")
 

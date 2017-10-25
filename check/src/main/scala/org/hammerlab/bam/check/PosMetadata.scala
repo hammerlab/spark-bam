@@ -30,10 +30,10 @@ object PosMetadata {
       case None ⇒ "no next record"
     }
 
-  def recordPos(record: SAMRecord)(implicit contigLengthsBroadcast: Broadcast[ContigLengths]): String =
-    s"${contigLengthsBroadcast.value.apply(record.getReferenceIndex)._1}:${record.getStart}"
+  def recordPos(record: SAMRecord)(implicit contigLengths: ContigLengths): String =
+    s"${contigLengths(record.getReferenceIndex)._1}:${record.getStart}"
 
-  implicit def showRecord(implicit contigLengthsBroadcast: Broadcast[ContigLengths]): Show[SAMRecord] =
+  implicit def showRecord(implicit contigLengths: ContigLengths): Show[SAMRecord] =
     show {
       record ⇒
         record
@@ -45,7 +45,7 @@ object PosMetadata {
                 record.getReadUnmappedFlag &&
                   record.getStart >= 0 &&
                   record.getReferenceIndex >= 0 &&
-                  record.getReferenceIndex < contigLengthsBroadcast.value.size
+                  record.getReferenceIndex < contigLengths.size
               )
                 s" (placed at ${recordPos(record)})"
               else if (!record.getReadUnmappedFlag)
