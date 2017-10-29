@@ -6,12 +6,10 @@ import org.apache.hadoop.io.LongWritable
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bam.spark._
-import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, Cmd }
+import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.exception.Error
-import org.hammerlab.io.Printer.echo
 import org.hammerlab.iterator.NextOptionIterator
 import org.hammerlab.timing.Timer
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, SAMRecordWritable }
@@ -19,8 +17,6 @@ import org.seqdoop.hadoop_bam.{ BAMInputFormat, SAMRecordWritable }
 object TimeLoad extends Cmd {
   case class Opts(@Recurse printLimit: PrintLimitArgs,
                   @Recurse splitSizeArgs: SplitSize.Args)
-
-//  object Main extends app.Main(App)
 
   val main = Main(
     args ⇒ new PathApp(args, load.Registrar)

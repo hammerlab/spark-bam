@@ -1,7 +1,6 @@
 package org.hammerlab.bam.check.full
 
 import caseapp.{ AppName, ProgName, Recurse }
-import cats.Monoid
 import cats.instances.long.{ catsKernelStdGroupForLong, catsStdShowForLong }
 import cats.instances.map.catsKernelStdMonoidForMap
 import cats.syntax.all._
@@ -19,12 +18,8 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
-import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, Cmd }
-import org.hammerlab.cli.app.spark.PathApp
+import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.args.PrintLimitArgs
-import org.hammerlab.io.Printer._
-import org.hammerlab.io.SampleSize
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
@@ -94,7 +89,7 @@ object FullCheck extends Cmd {
   }
   
   val main = Main(makeApp)
-  def makeApp(args: Args[Opts]): app.App[Opts] =
+  def makeApp(args: Args) =
     new CheckerApp(args, Registrar)
       with CallPartition {
 

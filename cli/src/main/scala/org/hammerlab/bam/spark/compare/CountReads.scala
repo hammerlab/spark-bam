@@ -3,12 +3,10 @@ package org.hammerlab.bam.spark.compare
 import caseapp.Recurse
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bam.spark._
-import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, Cmd }
+import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.exception.Error
-import org.hammerlab.io.Printer._
 import org.hammerlab.timing.Timer
 
 object CountReads extends Cmd {

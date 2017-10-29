@@ -6,8 +6,7 @@ import htsjdk.samtools.{ SAMFileWriterFactory, SamReaderFactory }
 import org.hammerlab.args.IntRanges
 import org.hammerlab.bam.index.IndexRecords
 import org.hammerlab.bgzf.index.IndexBlocks
-import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, Cmd, HasPrinter, RequiredArgOutPathApp }
+import org.hammerlab.cli.app.{ Cmd, HasPrinter, RequiredArgOutPathApp }
 import org.hammerlab.cli.args.PrinterArgs
 
 import scala.collection.JavaConverters._

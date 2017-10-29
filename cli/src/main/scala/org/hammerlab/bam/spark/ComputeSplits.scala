@@ -6,8 +6,7 @@ import cats.syntax.all._
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
-import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, Cmd }
+import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.io.Printer._

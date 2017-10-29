@@ -5,12 +5,10 @@ import cats.Show
 import cats.syntax.all._
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
 import org.hammerlab.bam.kryo._
-import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, Cmd }
+import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.hadoop.splits.MaxSplitSize
-import org.hammerlab.io.Printer._
 import org.hammerlab.kryo._
 import org.hammerlab.paths.Path
 import org.hammerlab.stats.Stats

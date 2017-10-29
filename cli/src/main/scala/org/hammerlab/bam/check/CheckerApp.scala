@@ -19,7 +19,6 @@ import org.hammerlab.cli.app.HasPrintLimit.PrintLimit
 import org.hammerlab.cli.app.OutPathApp.HasOverwrite
 import org.hammerlab.cli.app.close.Closeable
 import org.hammerlab.cli.app.spark.{ PathApp, Registrar }
-import org.hammerlab.io.Printer.{ echo, print }
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
@@ -43,7 +42,7 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
   extends PathApp(args, reg)
     with Serializable {
 
-  implicit val blocksArgs = args.findt[Blocks.Args] //findBlocks(args)
+  implicit val blocksArgs = args.findt[Blocks.Args]
   implicit val recordPosArgs = args.findt[IndexedRecordPositions.Args]
   implicit val logging = args.findt[LogArgs]
   implicit val findReadArgs = args.findt[FindReadArgs]

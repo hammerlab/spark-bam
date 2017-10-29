@@ -1,11 +1,10 @@
 package org.hammerlab.bam.check.eager
 
-import caseapp.{ AppName, ProgName, Recurse ⇒ R, ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ AppName, ProgName, ExtraName ⇒ O, HelpMessage ⇒ M, Recurse ⇒ R }
 import org.hammerlab.args.{ FindReadArgs, LogArgs, PostPartitionArgs }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
-import org.hammerlab.bam.check.{ CallPartition, Blocks, CheckerApp, eager, seqdoop }
-import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, Cmd }
+import org.hammerlab.bam.check.{ Blocks, CallPartition, CheckerApp, eager, seqdoop }
+import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.kryo._
 
@@ -49,11 +48,10 @@ object CheckBam
   )
 
   val main = Main(makeApp)
-  def makeApp(args: Args[Opts]): app.App[Opts] =
+  def makeApp(args: Args) =
     new CheckerApp(args, Registrar)
       with CallPartition {
 
-      println("CheckBam makeApp")
       val calls =
         (args.sparkBam, args.hadoopBam) match {
           case (true, false) ⇒

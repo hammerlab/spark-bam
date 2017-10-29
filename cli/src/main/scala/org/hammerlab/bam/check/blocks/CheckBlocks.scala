@@ -14,8 +14,7 @@ import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
-import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, Cmd }
+import org.hammerlab.cli.app.Cmd
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
@@ -31,7 +30,7 @@ object CheckBlocks
   extends Cmd.With[CheckBam.Opts] {
 
   val main = Main(makeApp)
-  def makeApp(args: Args[Opts]): app.App[Opts] = new CheckerApp(args, Registrar) {
+  def makeApp(args: Args) = new CheckerApp(args, Registrar) {
 
     val totalCompressedSize = path.size
 
