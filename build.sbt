@@ -77,7 +77,7 @@ lazy val cli = project.settings(
   // Spark 2.1.0 (spark-submit is an easy way to run this library's Main) puts shapeless 2.0.0 on the classpath, but we
   // need 2.3.2.
   shadeRenames ++= Seq(
-    "shapeless.**" → "org.hammerlab.shapeless.@1"
+    "shapeless.**" → "shaded.shapeless.@1"
   ),
 
   main := "org.hammerlab.bam.Main",
