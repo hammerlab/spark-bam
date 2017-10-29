@@ -94,11 +94,11 @@ It can serve as a "ground truth" against which to check either the [`eager`] or 
 
 ### Future-proofing
 
-Some assumptions in [hadoop-bam] are likely to break when processing long reads.
+[hadoop-bam] is poorly suited to handling increasingly-long reads from e.g. PacBio and Oxford Nanopore sequencers.
  
-For example, a 100kbp-long read is likely to span multiple BGZF blocks, likely causing [hadoop-bam] to reject it as invalid.
+For example, a 100kbp-long read is likely to span multiple BGZF blocks, causing [hadoop-bam] to reject it as invalid.
 
-It is believed that [spark-bam] will be robust to such situations, related to [its agnosticity about buffer-sizes / reads' relative positions with respect to BGZF-block boundaries][algorithm-clarity-section], though this has not been tested. TODO
+[spark-bam] is robust to such situations, related to [its agnosticity about buffer-sizes / reads' relative positions with respect to BGZF-block boundaries][algorithm-clarity-section].
 
 ## Algorithm/API clarity
 

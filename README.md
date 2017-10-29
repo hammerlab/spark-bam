@@ -150,12 +150,6 @@ val reads = sc.loadBam(Path("gs://bucket/my.bam"))
 
 [`SAMRecord`]: https://github.com/samtools/htsjdk/blob/2.9.1/src/main/java/htsjdk/samtools/SAMRecord.java
 
-[`CanLoadBam`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala
-[`loadReads`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadBamIntervals`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadReadsAndPositions`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadSplitsAndReads`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-
 [`LociSet`]: https://github.com/hammerlab/genomic-loci/blob/2.0.1/src/main/scala/org/hammerlab/genomics/loci/set/LociSet.scala
 
 [`Pos`]: https://github.com/hammerlab/spark-bam/blob/master/bgzf/src/main/scala/org/hammerlab/bgzf/Pos.scala

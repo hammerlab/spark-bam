@@ -6,11 +6,10 @@ import org.hammerlab.args.SplitSize
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.collection.canBuildVector
 import org.hammerlab.paths.Path
-import org.hammerlab.timing.Timer
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
 trait LoadReads {
-  self: PathApp[_] with Timer ⇒
+  self: PathApp[_] ⇒
 
   def sparkBamLoad(implicit
                    args: SplitSize.Args,

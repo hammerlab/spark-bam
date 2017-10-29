@@ -1,6 +1,6 @@
 package org.hammerlab.bam.spark.compare
 
-import caseapp.Recurse
+import caseapp.{ Name ⇒ O, Recurse ⇒ R }
 import htsjdk.samtools.SAMRecord
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.rdd.RDD
@@ -15,8 +15,9 @@ import org.hammerlab.timing.Timer
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, SAMRecordWritable }
 
 object TimeLoad extends Cmd {
-  case class Opts(@Recurse printLimit: PrintLimitArgs,
-                  @Recurse splitSizeArgs: SplitSize.Args)
+  case class Opts(@R printLimit: PrintLimitArgs,
+                  @R splitSizeArgs: SplitSize.Args,
+                  @O("s") sparkBamFirst: Boolean = false)
 
   val main = Main(
     args ⇒ new PathApp(args, load.Registrar)
@@ -43,12 +44,17 @@ object TimeLoad extends Cmd {
 
       splitSizeArgs.set
 
+      if (opts.sparkBamFirst) {
+        info("Running spark-bam first…")
+        sparkBamMS
+      }
+
       try {
         val (hadoopBamMS, hadoopBamReads) =
           time {
             val rdd =
               sc.newAPIHadoopFile(
-                path.toString(),
+                path.toString,
                 classOf[BAMInputFormat],
                 classOf[LongWritable],
                 classOf[SAMRecordWritable]

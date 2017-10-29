@@ -1,13 +1,11 @@
 package org.hammerlab.bam.check.indexed
 
-import caseapp.{ ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ ValueDescription, HelpMessage ⇒ M, Name ⇒ O }
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.ByteRanges
-import org.hammerlab.bam.check.Blocks
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.kryo.Registrar
 import org.hammerlab.magic.rdd.partitions.RangePartitionRDD._
 import org.hammerlab.magic.rdd.partitions.SortedRDD
@@ -15,7 +13,6 @@ import org.hammerlab.magic.rdd.partitions.SortedRDD.{ Bounds, bounds }
 import org.hammerlab.paths.Path
 
 import scala.collection.immutable.SortedSet
-import scala.reflect.ClassTag
 
 case class IndexedRecordPositions(rdd: RDD[Pos],
                                   bounds: Bounds[Pos])(

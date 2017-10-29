@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check.eager
 
-import caseapp.{ AppName, ProgName, ExtraName ⇒ O, HelpMessage ⇒ M, Recurse ⇒ R }
+import caseapp.{ AppName, ProgName, HelpMessage ⇒ M, Name ⇒ O, Recurse ⇒ R }
 import org.hammerlab.args.{ FindReadArgs, LogArgs, PostPartitionArgs }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ Blocks, CallPartition, CheckerApp, eager, seqdoop }

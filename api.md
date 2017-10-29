@@ -86,10 +86,10 @@ Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`]
 
 
 [`CanLoadBam`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala
-[`loadReads`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadBamIntervals`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadReadsAndPositions`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
-[`loadSplitsAndReads`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#TODO
+[`loadReads`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#L352
+[`loadBamIntervals`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#L62
+[`loadReadsAndPositions`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#L285
+[`loadSplitsAndReads`]: https://github.com/hammerlab/spark-bam/blob/master/load/src/main/scala/org/hammerlab/bam/spark/load/CanLoadBam.scala#L249
 
 [`SAMRecord`]: https://github.com/samtools/htsjdk/blob/2.9.1/src/main/java/htsjdk/samtools/SAMRecord.java
 

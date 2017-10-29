@@ -2,15 +2,13 @@ package org.hammerlab.bam.index
 
 import java.io.IOException
 
-import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O }
+import caseapp.{ AppName, ProgName, Recurse, Name ⇒ O }
 import grizzled.slf4j.Logging
 import htsjdk.samtools.util.{ RuntimeEOFException, RuntimeIOException }
 import org.hammerlab.bam.iterator.{ PosStream, RecordStream, SeekablePosStream, SeekableRecordStream }
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.cli.app
-import org.hammerlab.cli.app.{ Args, Cmd, IndexingApp }
+import org.hammerlab.cli.app.{ Cmd, IndexingApp }
 import org.hammerlab.cli.args.PrinterArgs
-import org.hammerlab.io.Printer._
 import org.hammerlab.timing.Interval.heartbeat
 
 object IndexRecords extends Cmd {

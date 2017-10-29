@@ -97,7 +97,6 @@ object Result
       maxReadSize: MaxReadSize
   ): Vector[Split] = {
     implicit val Channels(
-      _,
       compressedChannel,
       uncompressedBytes
     ) =
