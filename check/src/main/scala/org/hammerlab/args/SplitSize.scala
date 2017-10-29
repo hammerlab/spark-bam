@@ -1,6 +1,6 @@
 package org.hammerlab.args
 
-import caseapp.{ ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ ValueDescription, HelpMessage ⇒ M, Name ⇒ O }
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.hadoop.Configuration

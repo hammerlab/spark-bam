@@ -1,6 +1,6 @@
 package org.hammerlab.bam.rewrite
 
-import caseapp.{ ExtraName ⇒ O, _ }
+import caseapp.{ Name ⇒ O, _ }
 import grizzled.slf4j.Logging
 import htsjdk.samtools.{ SAMFileWriterFactory, SamReaderFactory }
 import org.hammerlab.args.IntRanges

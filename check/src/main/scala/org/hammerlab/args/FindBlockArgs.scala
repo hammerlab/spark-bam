@@ -1,6 +1,6 @@
 package org.hammerlab.args
 
-import caseapp.{ ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ ValueDescription, HelpMessage ⇒ M, Name ⇒ O }
 import org.hammerlab.bgzf.block.BGZFBlocksToCheck
 
 case class FindBlockArgs(

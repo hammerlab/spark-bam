@@ -1,6 +1,6 @@
 package org.hammerlab.bam.spark
 
-import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ AppName, ProgName, Recurse, HelpMessage ⇒ M, Name ⇒ O }
 import cats.implicits.catsStdShowForInt
 import cats.syntax.all._
 import org.hammerlab.args.SplitSize
@@ -9,7 +9,6 @@ import org.hammerlab.bytes.Bytes
 import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
-import org.hammerlab.io.Printer._
 import org.hammerlab.iterator.sorted.OrZipIterator._
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.stats.Stats

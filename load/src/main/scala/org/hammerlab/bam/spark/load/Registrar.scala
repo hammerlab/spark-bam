@@ -6,6 +6,7 @@ import org.hammerlab.bam.index.Index.Chunk
 import org.hammerlab.bam.kryo.registerSAMFileHeader
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.genomics.loci
+import org.hammerlab.hadoop.Configuration
 import org.hammerlab.kryo._
 
 import scala.collection.mutable
@@ -13,24 +14,25 @@ import scala.collection.mutable
 case class Registrar()
   extends spark.Registrar(
 
-      /** Several [[CanLoadBam]] methods broadcast [[Header]] and/or [[ContigLengths]] */
-      cls[Header],
-      cls[ContigLengths],
+        /** Several [[CanLoadBam]] methods broadcast [[Header]] and/or [[ContigLengths]] */
+        cls[Header],
+        cls[ContigLengths],
+        cls[Configuration],
 
-      /** [[CanLoadBam.loadSam]] broadcasts a [[htsjdk.samtools.SAMFileHeader]] */
-      cls[SAMFileHeader],
+        /** [[CanLoadBam.loadSam]] broadcasts a [[htsjdk.samtools.SAMFileHeader]] */
+        cls[SAMFileHeader],
 
-      /**
-       * An [[org.apache.spark.rdd.RDD]] of [[Pos]] is [[org.apache.spark.rdd.RDD.collect collect]]ed in
-       * [[CanLoadBam.loadSplitsAndReads]]
-       */
-      cls[mutable.WrappedArray.ofRef[_]],
-      arr[Pos],
+        /**
+         * An [[org.apache.spark.rdd.RDD]] of [[Pos]] is [[org.apache.spark.rdd.RDD.collect collect]]ed in
+         * [[CanLoadBam.loadSplitsAndReads]]
+         */
+        cls[mutable.WrappedArray.ofRef[_]],
+        arr[Pos],
 
-      /** [[CanLoadBam.loadBamIntervals]] broadcasts a [[org.hammerlab.genomics.loci.set.LociSet]] */
-      new loci.set.Registrar,
+        /** [[CanLoadBam.loadBamIntervals]] broadcasts a [[org.hammerlab.genomics.loci.set.LociSet]] */
+        new loci.set.Registrar,
 
-      /** [[CanLoadBam.loadBamIntervals]] [[org.apache.spark.SparkContext.parallelize parallelize]]s some [[Vector]]s */
-      arr[Vector[_]],
-      cls[Chunk]
+        /** [[CanLoadBam.loadBamIntervals]] [[org.apache.spark.SparkContext.parallelize parallelize]]s some [[Vector]]s */
+        arr[Vector[_]],
+        cls[Chunk]
   )

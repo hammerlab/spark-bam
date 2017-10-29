@@ -4,7 +4,10 @@ import grizzled.slf4j.Logging
 import htsjdk.samtools.BAMFileReader.getFileSpan
 import htsjdk.samtools.SamReaderFactory.Option._
 import htsjdk.samtools.{ QueryInterval, SAMLineParser, SAMRecord, SamReaderFactory }
+import org.apache.hadoop.fs
 import org.apache.hadoop.io.LongWritable
+import org.apache.hadoop.mapreduce.TaskAttemptID
+import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check.Checker.default
@@ -21,7 +24,7 @@ import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
 import org.hammerlab.hadoop.Configuration
-import org.hammerlab.hadoop.splits.MaxSplitSize
+import org.hammerlab.hadoop.splits.{ FileSplits, MaxSplitSize }
 import org.hammerlab.iterator.CappedCostGroupsIterator.ElementTooCostlyStrategy.EmitAlone
 import org.hammerlab.iterator.CappedCostGroupsIterator._
 import org.hammerlab.iterator.FinishingIterator._
@@ -29,10 +32,9 @@ import org.hammerlab.iterator.SimpleBufferedIterator
 import org.hammerlab.iterator.sliding.Sliding2Iterator._
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
-import org.seqdoop.hadoop_bam.{ CRAMInputFormat, SAMRecordWritable }
+import org.seqdoop.hadoop_bam.{ BAMRecordReader, CRAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
 import scala.collection.JavaConverters._
-import scala.math.min
 
 /**
  * Add a `loadBam` method to [[SparkContext]] for loading [[SAMRecord]]s from a BAM file.
@@ -177,15 +179,72 @@ trait CanLoadBam
               bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],
               readsToCheck: ReadsToCheck = default[ReadsToCheck],
               maxReadSize: MaxReadSize = default[MaxReadSize]
-             ): RDD[SAMRecord] =
-    loadReadsAndPositions(
-      path,
-      splitSize,
-      bgzfBlocksToCheck,
-      readsToCheck,
-      maxReadSize
-    )
-    .values
+             ): RDD[SAMRecord] = {
+    val headerBroadcast = sc.broadcast(Header(path))
+    val contigLengthsBroadcast = sc.broadcast(ContigLengths(path))
+
+    val fileSplitsRDD = SplitRDD(FileSplits.asJava(path, splitSize))
+
+    val hconf = conf
+
+    fileSplitsRDD
+      .flatMap {
+        case (start, end) ⇒
+          implicit val Channels(
+            compressedChannel,
+            uncompressedBytes
+          ) =
+            Channels(path)
+
+          val bgzfBlockStart =
+            FindBlockStart(
+              path,
+              start,
+              compressedChannel,
+              bgzfBlocksToCheck
+            )
+
+          val startPos =
+            FindRecordStart(
+              path,
+              bgzfBlockStart
+            )(
+              uncompressedBytes,
+              contigLengthsBroadcast.value,
+              readsToCheck,
+              maxReadSize
+            )
+
+          val endPos = Pos(end, 0)
+
+          /**
+           * [[BAMRecordReader]] is much faster than [[RecordStream]] (possibly due to reusing the same JVM object for
+           * each record); use it here since this is the most common method downstream libraries will consume, and no
+           * additional metadata (e.g. read-start [[Pos]]) is needed,
+           */
+          val split =
+            new FileVirtualSplit(
+              new fs.Path(path.uri),
+              startPos.toHTSJDK,
+              endPos.toHTSJDK,
+              Array()
+            )
+
+          val ctx = new TaskAttemptContextImpl(hconf, new TaskAttemptID)
+
+          val rr = new BAMRecordReader
+          rr.initialize(split, ctx)
+          new SimpleBufferedIterator[SAMRecord] {
+            override protected def _advance =
+              if (rr.nextKeyValue())
+                Some(
+                  rr.getCurrentValue.get()
+                )
+              else
+                None
+          }
+      }
+  }
 
   def loadSplitsAndReads(path: Path,
                          splitSize: MaxSplitSize = MaxSplitSize(),
@@ -233,29 +292,12 @@ trait CanLoadBam
     val headerBroadcast = sc.broadcast(Header(path))
     val contigLengthsBroadcast = sc.broadcast(ContigLengths(path))
 
-    val end = path.size
-    val fileSplits =
-      (0L until end by splitSize)
-        .map(
-          start ⇒
-            start →
-              min(
-                end,
-                start + splitSize.size
-              )
-        )
-
-    val fileSplitsRDD =
-      sc.parallelize(
-        fileSplits,
-        fileSplits.length
-      )
+    val fileSplitsRDD = SplitRDD(FileSplits.asJava(path, splitSize))
 
     fileSplitsRDD
       .flatMap {
         case (start, end) ⇒
           implicit val Channels(
-            _,
             compressedChannel,
             uncompressedBytes
           ) =

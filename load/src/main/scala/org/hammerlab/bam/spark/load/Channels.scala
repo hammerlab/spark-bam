@@ -6,8 +6,7 @@ import org.hammerlab.channel.SeekableByteChannel.ChannelByteChannel
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 import org.hammerlab.paths.Path
 
-case class Channels(path: Path,
-                    compressedChannel: CachingChannel[ChannelByteChannel],
+case class Channels(compressedChannel: CachingChannel[ChannelByteChannel],
                     uncompressedBytes: SeekableUncompressedBytes) {
   def close(): Unit = uncompressedBytes.close()
 }
@@ -21,7 +20,6 @@ object Channels {
       SeekableUncompressedBytes(compressedChannel)
 
     Channels(
-      path,
       compressedChannel,
       uncompressedBytes
     )

@@ -1,6 +1,6 @@
 package org.hammerlab.bam.spark.compare
 
-import caseapp.{ AppName, ProgName, Recurse, ExtraName ⇒ O }
+import caseapp.{ AppName, ProgName, Recurse, Name ⇒ O }
 import cats.Show
 import cats.syntax.all._
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }

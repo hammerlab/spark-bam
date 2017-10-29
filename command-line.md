@@ -8,6 +8,8 @@
 	- [`full-check`]
 	- [`compute-splits`]
 	- [`compare-splits`]
+	- [`count-reads`]
+	- [`time-load`]
 
 - **Single-node / Non-Spark apps**
 	- [`index-blocks`]
@@ -269,6 +271,49 @@ sorted: 11.8 12.7 12.9 16.1
  	- Relative slowness likely results from emphasis on abstraction clarity and no profiling having been done.
  	- It's not considered particularly problematic: the expectation is that parallelization more than compensates for it (e.g. a 100-core cluster would be 20x fasterwith 5x the total CPU use).
 
+## [count-reads][CountReads]
+- Count the reads in a BAM with [spark-bam] and [hadoop-bam]
+- Output the time taken by each as well as whether the counts matched
+
+### Example
+
+```bash
+spark-submit $CLI_JAR count-reads -m 100k test_bams/src/main/resources/1.bam
+…
+spark-bam read-count time: 1361
+hadoop-bam read-count time: 1784
+
+Read counts matched: 4917
+```
+
+These numbers are not very meaningful on small BAMs / local mode; Spark-setup overhead tends to differentially count against whichever side is run first ([hadoop-bam] by default, [spark-bam] when the `-s` flag is provided):
+
+```bash
+spark-submit $CLI_JAR count-reads -m 100k -s test_bams/src/main/resources/1.bam
+…
+spark-bam read-count time: 3670
+hadoop-bam read-count time: 1184
+
+Read counts matched: 4917
+```
+
+## [time-load][TimeLoad]
+- Collect the first read from every partition to the driver with each [spark-bam] and [hadoop-bam]
+- Output the time taken by each as well as any differences in the collected reads.
+
+### Example
+
+```bash
+spark-submit $CLI_JAR time-load -m 100k test_bams/src/main/resources/1.bam
+…
+spark-bam first-read collection time: 1163
+hadoop-bam first-read collection time: 2019
+
+All 6 partition-start reads matched
+```
+
+As above, larger/cluster runs will give more interesting values here, and the `-s` flag will run [spark-bam] first.
+
 ## [index-records][IndexRecords]
 
 Outputs a `.bam.records` file with "virtual offsets" of all BAM records in a `.bam` file; see [the test data][test_bams] or [`IndexRecordsTest`] for example output:
@@ -369,6 +414,12 @@ spark-submit $CLI_JAR \
 [`index-records`]: #index-records
 [IndexRecords]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/index/IndexRecords.scala
 [`IndexRecordsTest`]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/test/scala/org/hammerlab/bam/index/IndexRecordsTest.scala
+
+[`count-reads`]: #count-reads
+[CountReads]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/spark/compare/CountReads.scala
+
+[`time-load`]: #time-load
+[TimeLoad]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/spark/compare/TimeLoad.scala
 
 [`htsjdk-rewrite`]: #htsjdk-rewrite
 [rewrite/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/rewrite/Main.scala

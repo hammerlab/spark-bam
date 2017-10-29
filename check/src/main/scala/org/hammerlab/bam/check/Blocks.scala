@@ -2,7 +2,7 @@ package org.hammerlab.bam.check
 
 import java.lang.{ Long ⇒ JLong }
 
-import caseapp.{ Recurse, ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
+import caseapp.{ Recurse, ValueDescription, HelpMessage ⇒ M, Name ⇒ O }
 import cats.implicits.catsKernelStdGroupForLong
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
