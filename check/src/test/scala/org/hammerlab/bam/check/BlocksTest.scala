@@ -1,8 +1,9 @@
 package org.hammerlab.bam.check
 
 import caseapp._
-import org.hammerlab.bam.kryo.Registrar
+import scala.collection.mutable
 import org.hammerlab.bam.test.resources.{ TestBams, bam1Unindexed }
+import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.collect.CollectPartitionsRDD._
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.KryoSparkSuite
@@ -63,7 +64,11 @@ abstract class BlocksTest
 
   implicit def path: Path
 
-  register(Registrar)
+  register(
+    Blocks,
+    cls[mutable.WrappedArray.ofInt],    // collectParts[Array[Array[Long]]]
+    cls[mutable.WrappedArray.ofRef[_]]  // collectParts[Array[Array[Long]]]
+  )
 
   def check(
       args: String*
@@ -87,7 +92,7 @@ abstract class BlocksTest
             args: Blocks.Args,
             expectedBlocks: Array[Array[Int]],
             expectedBounds: (Int, Option[Int])*): Unit = {
-    val (blocks, bounds) = Blocks()
+    val Blocks(blocks, bounds) = Blocks()
 
     blocks
       .map(_.start)
@@ -107,7 +112,7 @@ abstract class BlocksTest
       "-m", "100k"
     )(
       Array(
-        Array(0, 14146, 39374, 65429, 89707),
+        Array(     0,  14146,  39374,  65429,  89707),
         Array(113583, 138333, 163285, 188181),
         Array(213608, 239479, 263656, 287709),
         Array(312794, 336825, 361204, 386382),

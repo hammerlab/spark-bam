@@ -1,11 +1,10 @@
 package org.hammerlab.bam.check
 
 import cats.Show
-import cats.syntax.all._
 import cats.Show.show
-import htsjdk.samtools.SAMRecord
+import cats.syntax.all._
+import htsjdk.samtools.{ BAMRecord, SAMFileHeader, SAMRecord, ValidationStringency }
 import org.apache.spark.broadcast.Broadcast
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.iterator.RecordStream
@@ -31,10 +30,10 @@ object PosMetadata {
       case None ⇒ "no next record"
     }
 
-  def recordPos(record: SAMRecord)(implicit contigLengthsBroadcast: Broadcast[ContigLengths]): String =
-    s"${contigLengthsBroadcast.value.apply(record.getReferenceIndex)._1}:${record.getStart}"
+  def recordPos(record: SAMRecord)(implicit contigLengths: ContigLengths): String =
+    s"${contigLengths(record.getReferenceIndex)._1}:${record.getStart}"
 
-  implicit def showRecord(implicit contigLengthsBroadcast: Broadcast[ContigLengths]): Show[SAMRecord] =
+  implicit def showRecord(implicit contigLengths: ContigLengths): Show[SAMRecord] =
     show {
       record ⇒
         record
@@ -46,7 +45,7 @@ object PosMetadata {
                 record.getReadUnmappedFlag &&
                   record.getStart >= 0 &&
                   record.getReferenceIndex >= 0 &&
-                  record.getReferenceIndex < contigLengthsBroadcast.value.size
+                  record.getReferenceIndex < contigLengths.size
               )
                 s" (placed at ${recordPos(record)})"
               else if (!record.getReadUnmappedFlag)
@@ -89,4 +88,15 @@ object PosMetadata {
       flags
     )
   }
+
+  import org.hammerlab.kryo._
+  import org.hammerlab.bam.kryo.registerSAMFileHeader
+
+  implicit val alsoRegister: AlsoRegister[PosMetadata] =
+    AlsoRegister(
+      cls[NextRecord],
+      cls[BAMRecord],
+      cls[ValidationStringency],
+      cls[SAMFileHeader]
+    )
 }

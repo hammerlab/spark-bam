@@ -1,6 +1,7 @@
 package org.hammerlab.args
 
 import caseapp.{ ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
 import org.hammerlab.bytes.Bytes
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
@@ -17,5 +18,15 @@ object SplitSize {
 
     def maxSplitSize(default: Bytes): MaxSplitSize =
       MaxSplitSize(splitSize.getOrElse(default))
+
+    def set(implicit conf: Configuration): Unit =
+      splitSize
+        .foreach(
+          conf
+            .setLong(
+              SPLIT_MAXSIZE,
+              _
+            )
+        )
   }
 }

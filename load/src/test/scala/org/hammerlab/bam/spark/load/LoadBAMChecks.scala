@@ -6,7 +6,6 @@ import org.hammerlab.bam.test.resources.TestBams
 import org.hammerlab.genomics.loci.set.test.LociSetUtil
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
-import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.KryoSparkSuite
 
 trait LoadBAMChecks

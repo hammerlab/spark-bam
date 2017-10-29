@@ -1,6 +1,7 @@
 package org.hammerlab.bam.check.eager
 
-import org.hammerlab.bam.check.Checker.{ ReadsToCheck, default }
+import org.hammerlab.bam.check.Checker.default
+import org.hammerlab.bam.check.ReadsToCheck
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes

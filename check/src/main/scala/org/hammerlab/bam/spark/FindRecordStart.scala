@@ -1,7 +1,6 @@
 package org.hammerlab.bam.spark
 
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
-import org.hammerlab.bam.check.eager.Checker
+import org.hammerlab.bam.check.{ MaxReadSize, ReadsToCheck, eager }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
@@ -38,12 +37,7 @@ object FindRecordStart {
 
     uncompressedBytes.seek(start)
 
-    val checker =
-      Checker(
-        uncompressedBytes,
-        contigLengths,
-        readsToCheck
-      )
+    val checker = eager.Checker(uncompressedBytes, contigLengths, readsToCheck)
 
     var idx = 0
     while (idx < maxReadSize.n) {

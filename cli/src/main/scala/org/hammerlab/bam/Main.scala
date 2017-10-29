@@ -1,35 +1,41 @@
 package org.hammerlab.bam
 
-import caseapp._
-import org.hammerlab.bam.check.{ eager, full }
+import caseapp.{ Recurse ⇒ R, _ }
+import org.hammerlab.bam.check.{ blocks, eager, full }
 import org.hammerlab.bam.spark.compare
 import org.hammerlab.bgzf
+import org.hammerlab.cli.app.Cmd
 
 @AppName("spark-bam")
 @ProgName("spark-bam")
-sealed abstract class Command[A](val main: CaseApp[A]) {
-  def args: A
+sealed abstract class Command[+C <: Cmd](val cmd: C) {
+  def opts: cmd.Opts
+  def apply(opts: cmd.Opts,
+            remainingArgs: RemainingArgs): Unit =
+    cmd.main.run(
+      opts,
+      remainingArgs
+    )
 }
 
-case class      CheckBam(@Recurse args:      eager.Args) extends Command(             eager.Main)
-case class     FullCheck(@Recurse args:       full.Args) extends Command(              full.Main)
-case class CompareSplits(@Recurse args:    compare.Opts) extends Command(           compare.Main)
-case class ComputeSplits(@Recurse args:      spark.Args) extends Command(             spark.Main)
-case class   IndexBlocks(@Recurse args: bgzf.index.Args) extends Command( bgzf.index.IndexBlocks)
-case class  IndexRecords(@Recurse args:      index.Args) extends Command(     index.IndexRecords)
-case class HtsjdkRewrite(@Recurse args:    rewrite.Args) extends Command(           rewrite.Main)
+case class      CheckBam(@R opts:         eager.CheckBam.Opts) extends Command(         eager.CheckBam)
+case class   CheckBlocks(@R opts:     blocks.CheckBlocks.Opts) extends Command(     blocks.CheckBlocks)
+case class    CountReads(@R opts:     compare.CountReads.Opts) extends Command(     compare.CountReads)
+case class      TimeLoad(@R opts:       compare.TimeLoad.Opts) extends Command(       compare.TimeLoad)
+case class     FullCheck(@R opts:         full.FullCheck.Opts) extends Command(         full.FullCheck)
+case class CompareSplits(@R opts:  compare.CompareSplits.Opts) extends Command(  compare.CompareSplits)
+case class ComputeSplits(@R opts:    spark.ComputeSplits.Opts) extends Command(    spark.ComputeSplits)
+case class   IndexBlocks(@R opts: bgzf.index.IndexBlocks.Opts) extends Command( bgzf.index.IndexBlocks)
+case class  IndexRecords(@R opts:     index.IndexRecords.Opts) extends Command(     index.IndexRecords)
+case class HtsjdkRewrite(@R opts:  rewrite.HTSJDKRewrite.Opts) extends Command(  rewrite.HTSJDKRewrite)
 
 object Main
-  extends CommandApp[Command[_]] {
-  override def run(cmd: Command[_],
+  extends CommandApp[Command[Cmd]] {
+
+  override def run(cmd: Command[Cmd],
                    remainingArgs: RemainingArgs): Unit =
-    cmd match {
-      case c @      CheckBam(args) ⇒ c.main.run(args, remainingArgs)
-      case c @     FullCheck(args) ⇒ c.main.run(args, remainingArgs)
-      case c @ CompareSplits(args) ⇒ c.main.run(args, remainingArgs)
-      case c @ ComputeSplits(args) ⇒ c.main.run(args, remainingArgs)
-      case c @   IndexBlocks(args) ⇒ c.main.run(args, remainingArgs)
-      case c @  IndexRecords(args) ⇒ c.main.run(args, remainingArgs)
-      case c @ HtsjdkRewrite(args) ⇒ c.main.run(args, remainingArgs)
-    }
+    cmd(
+      cmd.opts,
+      remainingArgs
+    )
 }

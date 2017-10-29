@@ -20,7 +20,7 @@ class APITest
 
     import org.hammerlab.bytes._
     sc.loadBam(path, splitSize = 32.MB)
-    sc.loadBam(path, splitSize = 1 << 25)
+    sc.loadBam(path, 1 << 25)
   }
 
 }

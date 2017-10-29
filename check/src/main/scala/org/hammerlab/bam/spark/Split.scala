@@ -3,9 +3,10 @@ package org.hammerlab.bam.spark
 import cats.Show
 import cats.Show.show
 import cats.syntax.all._
-import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
-import org.seqdoop.hadoop_bam.FileVirtualSplit
 import org.hammerlab.bam.check.Checker.default
+import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
+import org.hammerlab.kryo._
+import org.seqdoop.hadoop_bam.FileVirtualSplit
 
 case class Split(start: Pos,
                  end: Pos) {
@@ -26,4 +27,9 @@ object Split {
       case Split(start, end) ⇒
         show"$start-$end"
     }
+
+  implicit val alsoRegister: AlsoRegister[Split] =
+    AlsoRegister(
+      cls[Pos]
+    )
 }

@@ -7,7 +7,8 @@ import htsjdk.samtools.{ QueryInterval, SAMLineParser, SAMRecord, SamReaderFacto
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck, default }
+import org.hammerlab.bam.check.Checker.default
+import org.hammerlab.bam.check.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.header.ContigLengths.readSAMHeaderFromStream
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.index.Index.Chunk
@@ -16,12 +17,11 @@ import org.hammerlab.bam.spark.{ BAMRecordRDD, FindRecordStart, Split }
 import org.hammerlab.bgzf.block.{ BGZFBlocksToCheck, FindBlockStart, SeekableUncompressedBytes }
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.channel.CachingChannel._
-import org.hammerlab.channel.SeekableByteChannel.ChannelByteChannel
-import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
+import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
 import org.hammerlab.hadoop.Configuration
-import org.hammerlab.hadoop.splits.{ FileSplits, MaxSplitSize }
+import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.iterator.CappedCostGroupsIterator.ElementTooCostlyStrategy.EmitAlone
 import org.hammerlab.iterator.CappedCostGroupsIterator._
 import org.hammerlab.iterator.FinishingIterator._
@@ -32,7 +32,7 @@ import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.{ CRAMInputFormat, SAMRecordWritable }
 
 import scala.collection.JavaConverters._
-
+import scala.math.min
 
 /**
  * Add a `loadBam` method to [[SparkContext]] for loading [[SAMRecord]]s from a BAM file.
@@ -173,33 +173,33 @@ trait CanLoadBam
   }
 
   def loadBam(path: Path,
+              splitSize: MaxSplitSize = MaxSplitSize(),
               bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],
               readsToCheck: ReadsToCheck = default[ReadsToCheck],
-              maxReadSize: MaxReadSize = default[MaxReadSize],
-              splitSize: MaxSplitSize = MaxSplitSize()
+              maxReadSize: MaxReadSize = default[MaxReadSize]
              ): RDD[SAMRecord] =
     loadReadsAndPositions(
       path,
+      splitSize,
       bgzfBlocksToCheck,
       readsToCheck,
-      maxReadSize,
-      splitSize
+      maxReadSize
     )
     .values
 
   def loadSplitsAndReads(path: Path,
+                         splitSize: MaxSplitSize = MaxSplitSize(),
                          bgzfBlocksToCheck: BGZFBlocksToCheck = default[BGZFBlocksToCheck],
                          readsToCheck: ReadsToCheck = default[ReadsToCheck],
-                         maxReadSize: MaxReadSize = default[MaxReadSize],
-                         splitSize: MaxSplitSize = MaxSplitSize()
+                         maxReadSize: MaxReadSize = default[MaxReadSize]
                         ): BAMRecordRDD = {
     val positionsAndReadsRDD =
       loadReadsAndPositions(
         path,
+        splitSize,
         bgzfBlocksToCheck,
         readsToCheck,
-        maxReadSize,
-        splitSize
+        maxReadSize
       )
 
     val endPos = Pos(path.size, 0)
@@ -224,25 +224,26 @@ trait CanLoadBam
   }
 
   def loadReadsAndPositions(path: Path,
+                            splitSize: MaxSplitSize,
                             bgzfBlocksToCheck: BGZFBlocksToCheck,
                             readsToCheck: ReadsToCheck,
-                            maxReadSize: MaxReadSize,
-                            splitSize: MaxSplitSize
+                            maxReadSize: MaxReadSize
                            ): RDD[(Pos, SAMRecord)] = {
 
     val headerBroadcast = sc.broadcast(Header(path))
     val contigLengthsBroadcast = sc.broadcast(ContigLengths(path))
 
+    val end = path.size
     val fileSplits =
-      FileSplits(
-        path,
-        splitSize
-      )
-      .map(
-        split ⇒
-          split.start →
-            split.end
-      )
+      (0L until end by splitSize)
+        .map(
+          start ⇒
+            start →
+              min(
+                end,
+                start + splitSize.size
+              )
+        )
 
     val fileSplitsRDD =
       sc.parallelize(
@@ -320,10 +321,10 @@ trait CanLoadBam
       case "bam" ⇒
         loadBam(
           path,
+          splitSize,
           bgzfBlocksToCheck,
           readsToCheck,
-          maxReadSize,
-          splitSize
+          maxReadSize
         )
       case "cram" ⇒
         // Delegate to hadoop-bam
@@ -390,26 +391,4 @@ object CanLoadBam {
           Locus(record.getEnd)
         )
     )
-}
-
-case class Channels(path: Path,
-                    compressedChannel: CachingChannel[ChannelByteChannel],
-                    uncompressedBytes: SeekableUncompressedBytes) {
-  def close(): Unit = uncompressedBytes.close()
-}
-
-object Channels {
-  def apply(path: Path): Channels = {
-    val compressedChannel =
-      SeekableByteChannel(path).cache
-
-    val uncompressedBytes =
-      SeekableUncompressedBytes(compressedChannel)
-
-    Channels(
-      path,
-      compressedChannel,
-      uncompressedBytes
-    )
-  }
 }

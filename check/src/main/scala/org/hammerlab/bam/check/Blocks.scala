@@ -4,16 +4,15 @@ import java.lang.{ Long ⇒ JLong }
 
 import caseapp.{ Recurse, ValueDescription, ExtraName ⇒ O, HelpMessage ⇒ M }
 import cats.implicits.catsKernelStdGroupForLong
-import com.esotericsoftware.kryo.Kryo
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.hammerlab.args.ByteRanges
-import org.hammerlab.args.{ FindBlockArgs, SplitSize }
+import org.hammerlab.args.{ ByteRanges, FindBlockArgs, SplitSize }
 import org.hammerlab.bgzf.block.{ FindBlockStart, Metadata, MetadataStream }
 import org.hammerlab.bytes._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.guava.collect.Range.closedOpen
 import org.hammerlab.iterator.FinishingIterator._
+import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
 import org.hammerlab.magic.rdd.partitions.SortedRDD.Bounds
 import org.hammerlab.magic.rdd.scan.ScanLeftValuesRDD._
@@ -21,7 +20,13 @@ import org.hammerlab.magic.rdd.scan.ScanValuesRDD
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
 
-object Blocks {
+case class Blocks(blocks: RDD[Metadata],
+                  bounds: Bounds[Long])
+
+object Blocks
+  extends Registrar {
+
+  implicit def toBlocks(blocks: Blocks): RDD[Metadata] = blocks.blocks
 
   case class Args(
     @Recurse findBlockArgs: FindBlockArgs,
@@ -45,7 +50,7 @@ object Blocks {
       sc: SparkContext,
       path: Path,
       args: Args
-  ): (RDD[Metadata], Bounds[Long]) = {
+  ): Blocks = {
 
     val blocksPath: Path =
       args
@@ -119,7 +124,7 @@ object Blocks {
           }
           .partitionByKey(numPartitions)
 
-      (
+      Blocks(
         repartitionedBlocks,
         Bounds(
           (0 until numPartitions)
@@ -185,7 +190,7 @@ object Blocks {
                 .finish(in.close())
           }
 
-      (
+      Blocks(
         blocks,
         Bounds(
           splitIdxs
@@ -203,7 +208,8 @@ object Blocks {
     }
   }
 
-  def register(implicit kryo: Kryo): Unit = {
-    kryo.register(classOf[Range])
-  }
+  register(
+    cls[ByteRanges],  // broadcast
+    cls[Metadata]     // scanLeftValues
+  )
 }

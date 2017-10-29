@@ -2,7 +2,8 @@ package org.hammerlab.bam.check.full
 
 import java.nio.channels.FileChannel
 
-import org.hammerlab.bam.check.Checker.{ ReadsToCheck, default }
+import org.hammerlab.bam.check.Checker.default
+import org.hammerlab.bam.check.ReadsToCheck
 import org.hammerlab.bam.check.full.error.{ Flags, InvalidCigarOp, NoReadName, Result, Success }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bam.test.resources.bam2

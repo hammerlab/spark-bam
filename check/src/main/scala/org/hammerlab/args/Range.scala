@@ -7,6 +7,7 @@ import cats.syntax.all._
 import org.hammerlab.args.Range.parserFromStringPair
 import org.hammerlab.guava.collect.Range.closedOpen
 import org.hammerlab.guava.{ collect ⇒ guava }
+import org.hammerlab.kryo.{ AlsoRegister, cls }
 
 sealed trait Range[T]
 
@@ -81,6 +82,13 @@ object Range {
       case (Left(fromErr), _) ⇒ Left(fromErr)
       case (_, Left(untilErr)) ⇒ Left(untilErr)
     }
+
+  implicit def alsoRegisterRange[_]: AlsoRegister[Range[_]] =
+    AlsoRegister(
+      cls[Endpoints[_]],
+      cls[OffsetLength[_]],
+      cls[Point[_]]
+    )
 }
 
 case class Endpoints[T](start: T, end: T) extends Range[T]

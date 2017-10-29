@@ -1,7 +1,7 @@
 package org.hammerlab.args
 
 import caseapp.{ ValueDescription, HelpMessage ⇒ M }
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
+import org.hammerlab.bam.check.{ MaxReadSize, ReadsToCheck }
 
 case class FindReadArgs(
     @ValueDescription("num=10000000")

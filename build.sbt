@@ -1,30 +1,21 @@
-
-lazy val spark_bam =
-  rootProject(
-    bgzf,
-    check,
-    cli,
-    load,
-    seqdoop,
-    test_bams
-  )
+import org.hammerlab.sbt.deps.Dep
 
 lazy val bgzf = project.settings(
   version := "1.0.0-SNAPSHOT",
-  deps ++= Seq(
+  deps ++= Seq[Dep](
     case_app,
-    case_cli ^ "1.0.0-SNAPSHOT",
     cats,
-    channel % "1.1.0-SNAPSHOT",
-    io % "1.2.0",
-    iterators % "1.4.0",
-    math % "2.0.0",
-    paths % "1.2.1-SNAPSHOT",
-    slf4j % "1.3.1",
-    spark_util % "1.3.0",
-    stats % "1.0.1"
+    channel ^ "1.1.0",
+    io % "2.1.0",
+    iterators ^ "1.4.0",
+    math ^ "2.0.0",
+    paths ^ "1.3.1",
+    slf4j,
+    spark_util % "2.0.1",
+    stats ^ "1.1.0"
   ),
-  addSparkDeps
+  addSparkDeps,
+  compileAndTestDeps += case_cli ^ "2.0.0"
 ).dependsOn(
   test_bams % "test"
 )
@@ -33,19 +24,23 @@ lazy val check = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
+    bytes ^ "1.0.2",
     case_app,
     cats,
-    channel % "1.1.0-SNAPSHOT",
+    channel ^ "1.1.0",
     htsjdk,
-    magic_rdds % "3.0.0-SNAPSHOT",
-    paths % "1.2.1-SNAPSHOT",
+    magic_rdds ^ "3.1.0",
+    paths ^ "1.3.1",
     seqdoop_hadoop_bam,
-    slf4j % "1.3.1",
-    spark_util % "1.3.0"
+    slf4j,
+    spark_util % "2.0.1"
   ),
   fork := true,  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
   addSparkDeps,
-  compileAndTestDeps += loci % "2.0.1"
+  compileAndTestDeps ++= Seq(
+    case_cli ^ "2.0.0",
+    loci ^ "2.0.1"
+  )
 ).dependsOn(
   bgzf,
   test_bams % "test"
@@ -56,18 +51,21 @@ lazy val cli = project.settings(
   version := "1.0.0-SNAPSHOT",
 
   deps ++= Seq(
-    hammerlab_hadoop_bam ^ "7.9.0",
+    bytes ^ "1.0.2",
     case_app,
-    case_cli ^ "1.0.0-SNAPSHOT",
     cats,
-    channel % "1.1.0-SNAPSHOT",
-    iterators % "1.4.0",
-    magic_rdds % "3.0.0-SNAPSHOT",
-    paths % "1.2.1-SNAPSHOT",
+    channel ^ "1.1.0",
+    hammerlab_hadoop_bam ^ "7.9.0",
+    io % "2.1.0",
+    iterators ^ "1.4.0",
+    magic_rdds ^ "3.1.0",
+    paths ^ "1.3.1",
     shapeless,
-    spark_util % "1.3.0",
-    stats % "1.0.1"
+    spark_util ^ "2.0.1",
+    stats ^ "1.1.0"
   ),
+
+  compileAndTestDeps += case_cli ^ "2.0.0",
 
   // Bits that depend on the seqdoop module use org.hammerlab:hadoop-bam; make sure we don't get the org.seqdoop one.
   excludes += seqdoop_hadoop_bam,
@@ -102,20 +100,26 @@ lazy val cli = project.settings(
 lazy val load = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
+
+  // When running all tests in this project with `sbt test`, sometimes a Kryo
+  // "Class is not registered: org.hammerlab.genomics.loci.set.LociSet" exception is thrown by
+  // LoadBAMTest:"indexed disjoint regions"; this works around it.
+  fork := true,
+
   deps ++= Seq(
-    channel % "1.1.0-SNAPSHOT",
+    channel ^ "1.1.0",
     htsjdk,
-    iterators % "1.4.0",
-    math % "2.0.0",
-    paths % "1.2.1-SNAPSHOT",
-    reference % "1.4.0",
+    iterators ^ "1.4.0",
+    math ^ "2.0.0",
+    paths ^ "1.3.1",
+    reference ^ "1.4.0",
     seqdoop_hadoop_bam,
-    slf4j % "1.3.1",
-    spark_util % "1.3.0"
+    slf4j,
+    spark_util ^ "2.0.1"
   ),
-  compileAndTestDeps += loci % "2.0.1",
+  compileAndTestDeps += loci ^ "2.0.1",
   addSparkDeps,
-  testDeps += magic_rdds % "3.0.0-SNAPSHOT"
+  testDeps += magic_rdds ^ "3.1.0"
 ).dependsOn(
   bgzf,
   check,
@@ -126,10 +130,10 @@ lazy val seqdoop = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    channel % "1.1.0-SNAPSHOT",
+    channel ^ "1.1.0",
     htsjdk,
-    paths % "1.2.1-SNAPSHOT",
-    hammerlab_hadoop_bam % "7.9.0"
+    paths ^ "1.3.1",
+    hammerlab_hadoop_bam ^ "7.9.0"
   ),
   // Make sure we get org.hammerlab:hadoop-bam, not org.seqdoop
   excludes += seqdoop_hadoop_bam,
@@ -145,8 +149,27 @@ lazy val test_bams = project.settings(
   name := "test-bams",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    paths ^ "1.2.1-SNAPSHOT",
+    paths ^ "1.3.1",
     testUtils
   ),
   testDeps := Nil
 )
+
+// named this module "metrics" instead of "benchmarks" to work around bizarre IntelliJ-scala-plugin bug, cf.
+// https://youtrack.jetbrains.com/issue/SCL-12628#comment=27-2439322
+lazy val metrics = project.in(file("benchmarks")).settings(
+  deps ++= Seq(
+    paths ^ "1.3.1",
+    bytes ^ "1.0.2"
+  )
+)
+
+lazy val spark_bam =
+  rootProject(
+    bgzf,
+    check,
+    cli,
+    load,
+    seqdoop,
+    test_bams
+  )

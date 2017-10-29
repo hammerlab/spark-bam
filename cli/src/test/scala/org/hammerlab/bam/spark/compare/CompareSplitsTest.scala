@@ -1,20 +1,17 @@
 package org.hammerlab.bam.spark.compare
 
-import org.hammerlab.bam.kryo.Registrar
 import org.hammerlab.bam.test.resources._
-import org.hammerlab.spark.test.suite.MainSuite
-import org.hammerlab.test.linesMatch
+import org.hammerlab.cli.app.MainSuite
+import org.hammerlab.test.matchers.lines.Chars
 import org.hammerlab.test.matchers.lines.Line._
-import org.hammerlab.test.matchers.lines.{ Chars, Digits }
 
-class MainTest
-  extends MainSuite(classOf[Registrar]) {
+class CompareSplitsTest
+  extends MainSuite(CompareSplits) {
 
   val ratio = Chars("0123456789.")
   val elemsOrSorted = Chars(" delmorst")
 
   test("230KB, 2 bams") {
-    val outPath = tmpPath()
     val bamsPath = tmpPath()
     bamsPath.writeLines(
       Seq(
@@ -22,24 +19,20 @@ class MainTest
         bam2.toString
       )
     )
-    Main.main(
-      Array(
-        "-m", "230k",
-        "-o", outPath.toString,
-        bamsPath.toString
-      )
-    )
 
-    outPath.read should linesMatch(
+    checkAllLines(
+      "-m", "230k",
+      bamsPath
+    )(
       "1 of 2 BAMs' splits didn't match (totals: 6, 6; 1, 1 unmatched)",
       "",
       "Total split-computation time:",
-      "	hadoop-bam:	" ++ Digits,
-      "	spark-bam:	" ++ Digits,
+      l"	hadoop-bam:	$d",
+      l"	spark-bam:	$d",
       "",
       "Ratios:",
-      "N: 2, μ/σ: " ++ ratio ++ "/" ++ ratio,
-      elemsOrSorted ++ ": " ++ ratio ++ " " ++ ratio,
+      l"N: 2, μ/σ: $ratio/$ratio",
+      l"$elemsOrSorted: $ratio $ratio",
       "",
       "	1.bam: 2 splits differ (totals: 3, 3; mismatched: 1, 1):",
       "			239479:311-471040:65535",
@@ -50,25 +43,20 @@ class MainTest
   }
 
   test("100KB, 1 bam, no errors") {
-    val outPath = tmpPath()
     val bamsPath = tmpPath()
     bamsPath.write(bam2.toString)
-    Main.main(
-      Array(
-        "-m", "100k",
-        "-o", outPath.toString,
-        bamsPath.toString
-      )
-    )
 
-    outPath.read should linesMatch(
+    checkAllLines(
+      "-m", "100k",
+      bamsPath
+    )(
       "All 1 BAMs' splits (totals: 6, 6) matched!",
       "",
       "Total split-computation time:",
-      "	hadoop-bam:	" ++ Digits,
-      "	spark-bam:	" ++ Digits,
+      l"	hadoop-bam:	$d",
+      l"	spark-bam:	$d",
       "",
-      "Ratio: " ++ ratio,
+      l"Ratio: $ratio",
       "",
       ""
     )

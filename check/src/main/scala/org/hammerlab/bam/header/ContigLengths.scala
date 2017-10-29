@@ -11,6 +11,7 @@ import org.hammerlab.bam.header.ContigLengths.ContigLengthsT
 import org.hammerlab.genomics.reference
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
 import org.hammerlab.hadoop.Configuration
+import org.hammerlab.kryo.AlsoRegister
 import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader._
 
@@ -121,4 +122,10 @@ object ContigLengths {
       )
     }
   }
+
+  import org.hammerlab.kryo._
+  implicit val alsoRegister: AlsoRegister[ContigLengths] =
+    AlsoRegister(
+      cls[ContigName]
+    )
 }

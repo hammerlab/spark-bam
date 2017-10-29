@@ -1,0 +1,17 @@
+docs_list_title: Pages
+docs:
+
+- title: Home
+  url: ''
+
+- title: API
+  url: api
+
+- title: Motivation
+  url: motivation
+
+- title: Benchmarks
+  url: benchmarks
+
+- title: Command-line
+  url: command-line

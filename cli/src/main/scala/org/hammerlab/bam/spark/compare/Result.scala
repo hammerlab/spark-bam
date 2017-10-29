@@ -1,41 +1,43 @@
-package org.hammerlab.bam.spark
-
-import java.lang.System.currentTimeMillis
+package org.hammerlab.bam.spark.compare
 
 import org.apache.hadoop.fs
 import org.apache.hadoop.mapreduce.lib.input
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths
 import org.apache.hadoop.mapreduce.{ InputSplit, Job }
-import org.hammerlab.bam.check.Checker.{ MaxReadSize, ReadsToCheck }
+import org.hammerlab.bam.check.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.header.Header
 import org.hammerlab.bam.spark.load.Channels
+import org.hammerlab.bam.spark.{ FindRecordStart, Split }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ BGZFBlocksToCheck, FindBlockStart }
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.{ FileSplit, FileSplits, MaxSplitSize }
 import org.hammerlab.iterator.sliding.Sliding2Iterator._
 import org.hammerlab.iterator.sorted.OrZipIterator._
+import org.hammerlab.kryo._
 import org.hammerlab.paths.Path
+import org.hammerlab.timing.Timer
 import org.hammerlab.types.{ Both, L, R }
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 import shapeless.Generic
 
 import scala.collection.JavaConverters._
 
-package object compare {
+case class Result(numSparkSplits: Int,
+                  numHadoopSplits: Int,
+                  diffs: Vector[Either[Split, Split]],
+                  numSparkOnlySplits: Int,
+                  numHadoopOnlySplits: Int,
+                  hadoopBamMS: Int,
+                  sparkBamMS: Int
+                 )
 
-  case class Result(numSparkSplits: Int,
-                    numHadoopSplits: Int,
-                    diffs: Vector[Either[Split, Split]],
-                    numSparkOnlySplits: Int,
-                    numHadoopOnlySplits: Int,
-                    hadoopBamMS: Int,
-                    sparkBamMS: Int
-                   )
+object Result
+  extends Timer {
 
   val gen = Generic[Result]
 
-  def getPathResult(path: Path)(
+  def apply(path: Path)(
       implicit
       conf: Configuration,
       splitSize: MaxSplitSize,
@@ -50,18 +52,9 @@ package object compare {
         splitSize
       )
 
-    val before = currentTimeMillis()
+    val (hadoopBamMS, hadoopBamSplits) = time { getHadoopBamSplits(path, fileSplits) }
 
-    val hadoopBamSplits = getHadoopBamSplits(path, fileSplits)
-
-    val between = currentTimeMillis()
-
-    val  sparkBamSplits =  getSparkBamSplits(path, fileSplits)
-
-    val after = currentTimeMillis()
-
-    val hadoopBamMS = (between - before).toInt
-    val sparkBamMS = (after - between).toInt
+    val (sparkBamMS, sparkBamSplits) =  time { getSparkBamSplits(path, fileSplits) }
 
     implicit def toStart(split: Split): Pos = split.start
 
@@ -90,8 +83,8 @@ package object compare {
       diffs,
       numSparkOnlySplits,
       numHadoopOnlySplits,
-      hadoopBamMS,
-      sparkBamMS
+      hadoopBamMS.toInt,
+      sparkBamMS.toInt
     )
   }
 
@@ -109,6 +102,12 @@ package object compare {
       uncompressedBytes
     ) =
       Channels(path)
+
+    /**
+     * It's ok for different BAMs in one run to have contigs from different references / in different formats
+     * ([[Header]] below instantiates [[org.hammerlab.genomics.reference.ContigName]]s).
+     */
+    import org.hammerlab.genomics.reference.ContigName.Normalization.Lenient
 
     val header = Header(path)
     val endPos = Pos(path.size, 0)
@@ -141,8 +140,8 @@ package object compare {
 
   def getHadoopBamSplits(path: Path,
                          fileSplits: Seq[FileSplit])(
-      implicit conf: Configuration
-  ): Vector[Split] = {
+                            implicit conf: Configuration
+                        ): Vector[Split] = {
 
     val ifmt = new BAMInputFormat
     val job = Job.getInstance(conf, s"$path:file-splits")
@@ -163,4 +162,9 @@ package object compare {
       .toVector
       .map(_.asInstanceOf[FileVirtualSplit]: Split)
   }
+
+  implicit val alsoRegister: AlsoRegister[Result] =
+    AlsoRegister(
+      cls[Split]
+    )
 }
