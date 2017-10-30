@@ -1,9 +1,8 @@
 package org.hammerlab.bam.check.full
 
 import caseapp.{ AppName, ProgName, Recurse }
-import cats.instances.long.{ catsKernelStdGroupForLong, catsStdShowForLong }
-import cats.instances.map.catsKernelStdMonoidForMap
-import cats.syntax.all._
+import hammerlab.monoid._
+import hammerlab.show._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.{ FindReadArgs, LogArgs, PostPartitionArgs }
@@ -11,7 +10,7 @@ import org.hammerlab.bam.check.PosMetadata.showRecord
 import org.hammerlab.bam.check.full.error.Flags.TooFewFixedBlockBytes
 import org.hammerlab.bam.check.full.error.{ Counts, Flags, Result }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
-import org.hammerlab.bam.check.{ CallPartition, Blocks, CheckerApp, MaxReadSize, PosMetadata, ReadsToCheck }
+import org.hammerlab.bam.check.{ Blocks, CallPartition, CheckerApp, MaxReadSize, PosMetadata, ReadsToCheck }
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.spark.Split
 import org.hammerlab.bgzf.Pos
@@ -24,7 +23,6 @@ import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.paths.Path
-import org.hammerlab.types.Monoid._
 
 import scala.collection.immutable.SortedMap
 import scala.collection.mutable
@@ -40,8 +38,6 @@ object FullCheck extends Cmd {
                   @Recurse partitioning: PostPartitionArgs,
                   @Recurse findReadArgs: FindReadArgs
                  )
-
-  import CallPartition._
 
   def closeCallsWithMetadata(it: Iterator[(Int, (Pos, Flags))])(implicit 
                                                                 path: Path,

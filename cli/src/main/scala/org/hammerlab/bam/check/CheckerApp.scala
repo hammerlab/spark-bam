@@ -1,7 +1,6 @@
 package org.hammerlab.bam.check
 
-import cats.implicits.catsStdShowForLong
-import cats.syntax.all._
+import hammerlab.show._
 import org.apache.log4j.Level.WARN
 import org.apache.log4j.Logger.getRootLogger
 import org.apache.spark.rdd.RDD
@@ -40,6 +39,7 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
     findFindReads: Find[Opts, FindReadArgs]
 )
   extends PathApp(args, reg)
+    with hammerlab.show
     with Serializable {
 
   implicit val blocksArgs = args.findt[Blocks.Args]

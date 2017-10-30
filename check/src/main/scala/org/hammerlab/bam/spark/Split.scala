@@ -1,8 +1,6 @@
 package org.hammerlab.bam.spark
 
-import cats.Show
-import cats.Show.show
-import cats.syntax.all._
+import hammerlab.show._
 import org.hammerlab.bam.check.Checker.default
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.kryo._

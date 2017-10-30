@@ -1,8 +1,8 @@
 package org.hammerlab.bam.check.blocks
 
-import cats.Show
-import cats.Show.show
-import cats.implicits.{ catsStdShowForInt, catsStdShowForLong }
+//import cats.implicits.{ catsKernelStdMonoidForTuple2 }
+import hammerlab.monoid._
+import hammerlab.show._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.eager.CheckBam
@@ -110,9 +110,6 @@ object CheckBlocks
       badBlocks
         .setName("bad-blocks")
         .cache
-
-      import cats.implicits.{ catsKernelStdGroupForLong, catsKernelStdMonoidForTuple2 }
-      import cats.syntax.all._
 
       val (numWrongCompressedPositions, numWrongBlocks) =
         badBlocks

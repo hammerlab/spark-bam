@@ -3,8 +3,7 @@ package org.hammerlab.bgzf.block
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
 
-import cats.implicits.catsStdShowForInt
-import cats.syntax.all._
+import hammerlab.show._
 import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.stats.Stats
 import org.hammerlab.test.Suite

@@ -1,10 +1,8 @@
 package org.hammerlab.bam.spark.compare
 
 import caseapp.{ Name ⇒ O, Recurse ⇒ R }
-import cats.Show
-import cats.Show.show
-import cats.implicits.{ catsKernelStdGroupForInt, catsKernelStdMonoidForMap, catsStdShowForInt, catsStdShowForLong }
-import cats.syntax.all._
+import hammerlab.monoid._
+import hammerlab.show._
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bam.spark._
 import org.hammerlab.cli.app.Cmd
@@ -129,7 +127,7 @@ object CountReads extends Cmd {
     }
 
     implicit def showReadsCountsMap(implicit p: Printer): Show[Map[Long, Int]] =
-      show[Map[Long, Int]] {
+      show {
         _
           .map {
             case (numReads, numRuns) ⇒

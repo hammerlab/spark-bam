@@ -1,8 +1,6 @@
 package org.hammerlab.bam.spark.compare
 
-import caseapp.{ AppName, ProgName, Recurse, Name ⇒ O }
-import cats.Show
-import cats.syntax.all._
+import caseapp.{ AppName, ProgName, Name ⇒ O, Recurse ⇒ R }
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
 import org.hammerlab.bam.kryo._
 import org.hammerlab.cli.app.Cmd
@@ -20,10 +18,10 @@ object CompareSplits extends Cmd {
 
   @AppName("Compare splits computed from many BAM files listed in a given file")
   @ProgName("… org.hammerlab.bam.spark.compare")
-  case class Opts(@Recurse printLimit: PrintLimitArgs,
-                  @Recurse splitSizeArgs: SplitSize.Args,
-                  @Recurse findReadArgs: FindReadArgs,
-                  @Recurse findBlockArgs: FindBlockArgs,
+  case class Opts(@R printLimit: PrintLimitArgs,
+                  @R splitSizeArgs: SplitSize.Args,
+                  @R findReadArgs: FindReadArgs,
+                  @R findBlockArgs: FindBlockArgs,
 
                   @O("r")
                   fileRanges: Option[IntRanges] = None
@@ -59,9 +57,9 @@ object CompareSplits extends Cmd {
         new PathChecks(lines, numBams)
           .results
 
-      import cats.implicits.{ catsKernelStdGroupForInt, catsKernelStdMonoidForVector }
-      import org.hammerlab.types.Monoid._
-      import shapeless._
+      import cats.implicits.catsKernelStdMonoidForVector
+      import hammerlab.monoid._
+      import hammerlab.show._
 
       val (
         (timingRatios: Seq[Double]) ::  // IntelliJ needs some help on the type inference here 🤷🏼️
@@ -87,9 +85,6 @@ object CompareSplits extends Cmd {
         pathResults
           .filter(_._2.diffs.nonEmpty)
           .collect
-
-      import cats.Show.show
-      import org.hammerlab.io.show.int
 
       implicit val showDouble: Show[Double] =
         show {
@@ -170,6 +165,4 @@ object CompareSplits extends Cmd {
     HNil.getClass,
     cls[Result]
   )
-
-//  object Main extends app.Main(App)
 }

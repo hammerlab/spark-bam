@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check.full
 
-import cats.syntax.all._
+import hammerlab.show._
 import org.hammerlab.bam.check.full.error.Flags
 import org.hammerlab.test.Suite
 

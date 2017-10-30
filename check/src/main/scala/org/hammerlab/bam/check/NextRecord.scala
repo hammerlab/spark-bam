@@ -1,9 +1,6 @@
 package org.hammerlab.bam.check
 
-import cats.Show
-import cats.implicits.catsStdShowForInt
-import cats.Show.show
-import cats.syntax.all._
+import hammerlab.show._
 import htsjdk.samtools.SAMRecord
 
 case class NextRecord(record: SAMRecord, delta: Int)
