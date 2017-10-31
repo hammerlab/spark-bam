@@ -2,7 +2,7 @@ package org.hammerlab.bam.check.full
 
 import caseapp.{ AppName, ProgName, Recurse }
 import hammerlab.monoid._
-import hammerlab.show._
+import magic_rdds.sample._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.{ FindReadArgs, LogArgs, PostPartitionArgs }
@@ -21,7 +21,6 @@ import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
-import org.hammerlab.magic.rdd.SampleRDD._
 import org.hammerlab.paths.Path
 
 import scala.collection.immutable.SortedMap

@@ -2,7 +2,9 @@ package org.hammerlab.bam.check.blocks
 
 //import cats.implicits.{ catsKernelStdMonoidForTuple2 }
 import hammerlab.monoid._
-import hammerlab.show._
+import magic_rdds.sample._
+import magic_rdds.sliding._
+import magic_rdds.zip._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.eager.CheckBam
@@ -17,9 +19,6 @@ import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.cli.app.Cmd
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
-import org.hammerlab.magic.rdd.SampleRDD._
-import org.hammerlab.magic.rdd.sliding.SlidingRDD._
-import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
 import org.hammerlab.paths.Path
 import org.hammerlab.spark.accumulator.Histogram
 import org.hammerlab.stats.Stats
@@ -119,8 +118,6 @@ object CheckBlocks
 
       val numBlocks = numBlocksAccumulator.value
       val blocksFirstOffsets = blockFirstOffsetsAccumulator.value
-
-      import org.hammerlab.io.Printer._
 
       /**
        * Print special messages if all BGZF blocks' first read-starts are at the start of the block (additionally

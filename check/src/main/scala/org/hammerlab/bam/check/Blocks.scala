@@ -13,9 +13,9 @@ import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.guava.collect.Range.closedOpen
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
-import org.hammerlab.magic.rdd.partitions.PartitionByKeyRDD._
-import org.hammerlab.magic.rdd.partitions.SortedRDD.Bounds
-import org.hammerlab.magic.rdd.scan.ScanLeftValuesRDD._
+import magic_rdds.partitions._
+import magic_rdds.scan._
+import org.hammerlab.magic.rdd.ordered.SortedRDD.Bounds
 import org.hammerlab.magic.rdd.scan.ScanValuesRDD
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path

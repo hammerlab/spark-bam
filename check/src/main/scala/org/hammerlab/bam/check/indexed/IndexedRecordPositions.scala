@@ -7,13 +7,19 @@ import org.apache.spark.rdd.RDD
 import org.hammerlab.args.ByteRanges
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.kryo.Registrar
-import org.hammerlab.magic.rdd.partitions.RangePartitionRDD._
-import org.hammerlab.magic.rdd.partitions.SortedRDD
-import org.hammerlab.magic.rdd.partitions.SortedRDD.{ Bounds, bounds }
+import magic_rdds.ordered._
+import org.hammerlab.magic.rdd.ordered.SortedRDD
+import org.hammerlab.magic.rdd.ordered.SortedRDD.{ Bounds, bounds }
 import org.hammerlab.paths.Path
 
 import scala.collection.immutable.SortedSet
 
+/**
+ * Store record-start positions as read from an index built via [[org.hammerlab.bam.index.IndexRecords]]
+ *
+ * Positions are sorted and partitioned for an efficient ordered-join against corresponding BGZF-blocks, to validate a
+ * [[Checker]] against ground-truth.
+ */
 case class IndexedRecordPositions(rdd: RDD[Pos],
                                   bounds: Bounds[Pos])(
     implicit val ord: Ordering[Pos]
@@ -27,8 +33,7 @@ case class IndexedRecordPositions(rdd: RDD[Pos],
 
 }
 
-object IndexedRecordPositions
-  extends Registrar {
+object IndexedRecordPositions {
 
   case class Args(
       @O("r")
@@ -41,6 +46,9 @@ object IndexedRecordPositions
         .getOrElse(bamPath + ".records")
   }
 
+  /**
+   * Load an ordered set of indexed record-positions and their partition information
+   */
   def apply(path: Path)(
       implicit
       sc: SparkContext,

@@ -1,7 +1,9 @@
 package org.hammerlab.bam.spark
 
 import caseapp.{ AppName, ProgName, HelpMessage ⇒ M, Name ⇒ O, Recurse ⇒ R }
+import hammerlab.either._
 import hammerlab.show._
+import magic_rdds.partitions._
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bytes.Bytes
@@ -9,10 +11,8 @@ import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.iterator.sorted.OrZipIterator._
-import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.stats.Stats
 import org.hammerlab.timing.Timer
-import org.hammerlab.types._
 
 object ComputeSplits extends Cmd {
 

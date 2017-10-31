@@ -1,5 +1,6 @@
 package org.hammerlab.bam.check
 
+import magic_rdds.zip._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Checker.MakeChecker
@@ -12,7 +13,6 @@ import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
-import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
 import org.hammerlab.paths.Path
 
 import scala.collection.mutable
@@ -69,7 +69,6 @@ trait CallPartition {
 object CallPartition
   extends spark.Registrar(
     cls[Path],
-    IndexedRecordPositions,
     cls[mutable.WrappedArray.ofRef[_]],
     cls[mutable.WrappedArray.ofInt],
     cls[Flags]

@@ -58,7 +58,6 @@ object BlocksAndIndexedRecords
   }
 
   register(
-    Blocks,
-    IndexedRecordPositions
+    Blocks
   )
 }
