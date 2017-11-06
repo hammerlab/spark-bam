@@ -1,11 +1,11 @@
 package org.hammerlab.bam.check.indexed
 
+import hammerlab.iterator._
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.{ MaxReadSize, ReadStartFinder }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
-import org.hammerlab.iterator.HeadOptionIterator
 
 import scala.collection.immutable.SortedSet
 

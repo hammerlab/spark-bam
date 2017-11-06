@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check
 
-//import hammerlab.show._
+import hammerlab.iterator._
 import magic_rdds.sample._
 import magic_rdds.size._
 import org.apache.log4j.Level.WARN
@@ -20,7 +20,6 @@ import org.hammerlab.cli.app.HasPrintLimit.PrintLimit
 import org.hammerlab.cli.app.OutPathApp.HasOverwrite
 import org.hammerlab.cli.app.close.Closeable
 import org.hammerlab.cli.app.spark.{ PathApp, Registrar }
-import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
 import org.hammerlab.shapeless._
 import org.hammerlab.shapeless.hlist.Find

@@ -1,6 +1,7 @@
 package org.hammerlab.bam.spark.load
 
 import grizzled.slf4j.Logging
+import hammerlab.iterator._
 import htsjdk.samtools.BAMFileReader.getFileSpan
 import htsjdk.samtools.SamReaderFactory.Option._
 import htsjdk.samtools.{ QueryInterval, SAMLineParser, SAMRecord, SamReaderFactory }
@@ -25,11 +26,7 @@ import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.{ FileSplits, MaxSplitSize }
-import org.hammerlab.iterator.CappedCostGroupsIterator.ElementTooCostlyStrategy.EmitAlone
-import org.hammerlab.iterator.CappedCostGroupsIterator._
-import org.hammerlab.iterator.FinishingIterator._
-import org.hammerlab.iterator.SimpleBufferedIterator
-import org.hammerlab.iterator.sliding.Sliding2Iterator._
+import org.hammerlab.iterator.group.ElementTooCostlyStrategy.EmitAlone
 import org.hammerlab.math.ceil
 import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.{ BAMRecordReader, CRAMInputFormat, FileVirtualSplit, SAMRecordWritable }
@@ -87,7 +84,6 @@ trait CanLoadBam
 
     val chunkPartitions =
       chunks
-        .iterator
         .cappedCostGroups(
           _.size(estimatedCompressionRatio),
           splitSize.toDouble
@@ -115,7 +111,7 @@ trait CanLoadBam
               chunk ⇒
                 records.seek(chunk.start)
 
-                new SimpleBufferedIterator[SAMRecord] {
+                new SimpleIterator[SAMRecord] {
                   override protected def _advance: Option[SAMRecord] =
                     if (records.hasNext) {
                       val (pos, record) = records.next
@@ -234,7 +230,7 @@ trait CanLoadBam
 
           val rr = new BAMRecordReader
           rr.initialize(split, ctx)
-          new SimpleBufferedIterator[SAMRecord] {
+          new SimpleIterator[SAMRecord] {
             override protected def _advance =
               if (rr.nextKeyValue())
                 Some(

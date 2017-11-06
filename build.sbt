@@ -2,11 +2,11 @@ import org.hammerlab.sbt.deps.Dep
 
 lazy val bgzf = project.settings(
   version := "1.0.0-SNAPSHOT",
-  deps ++= Seq[Dep](
+  deps ++= Seq(
     case_app,
     cats,
     channel % "1.1.1",
-    io % "3.0.0-SNAPSHOT",
+    io % "3.0.0",
     iterators % "2.0.0-SNAPSHOT",
     math % "2.0.0",
     paths % "1.3.1",
@@ -24,13 +24,14 @@ lazy val check = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    bytes % "1.0.2",
+    bytes % "1.0.3",
     case_app,
     cats,
     channel % "1.1.1",
     htsjdk,
+    iterators % "2.0.0-SNAPSHOT",
     magic_rdds % "4.0.0-SNAPSHOT",
-    io % "3.0.0-SNAPSHOT",
+    io % "3.0.0",
     paths % "1.3.1",
     seqdoop_hadoop_bam,
     slf4j,
@@ -52,19 +53,19 @@ lazy val cli = project.settings(
   version := "1.0.0-SNAPSHOT",
 
   deps ++= Seq(
-    bytes % "1.0.2",
+    bytes % "1.0.3",
     case_app,
     cats,
     channel % "1.1.1",
     hammerlab_hadoop_bam % "7.9.0",
-    io % "3.0.0-SNAPSHOT",
+    io % "3.0.0",
     iterators % "2.0.0-SNAPSHOT",
     magic_rdds % "4.0.0-SNAPSHOT",
     paths % "1.3.1",
     shapeless,
     spark_util % "2.0.1",
     stats % "1.1.1-SNAPSHOT",
-    types % "1.0.0-SNAPSHOT"
+    types % "1.0.1"
   ),
 
   compileAndTestDeps += case_cli % "2.0.0",
@@ -162,7 +163,7 @@ lazy val test_bams = project.settings(
 lazy val metrics = project.in(file("benchmarks")).settings(
   deps ++= Seq(
     paths % "1.3.1",
-    bytes % "1.0.2"
+    bytes % "1.0.3"
   )
 )
 

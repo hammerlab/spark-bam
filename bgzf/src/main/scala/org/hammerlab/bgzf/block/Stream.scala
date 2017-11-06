@@ -3,10 +3,10 @@ package org.hammerlab.bgzf.block
 import java.io.{ Closeable, EOFException, IOException, InputStream }
 import java.util.zip.Inflater
 
+import hammerlab.iterator.SimpleIterator
 import org.hammerlab.bgzf.block.Block.{ FOOTER_SIZE, MAX_BLOCK_SIZE }
 import org.hammerlab.channel.{ ByteChannel, SeekableByteChannel }
 import org.hammerlab.io.Buffer
-import org.hammerlab.iterator.SimpleBufferedIterator
 
 import scala.collection.mutable
 
@@ -14,7 +14,7 @@ import scala.collection.mutable
  * Iterator over BGZF [[Block]]s pointed to by a BGZF-compressed [[InputStream]]
  */
 trait StreamI
-  extends SimpleBufferedIterator[Block]
+  extends SimpleIterator[Block]
     with Closeable {
 
   def compressedBytes: ByteChannel

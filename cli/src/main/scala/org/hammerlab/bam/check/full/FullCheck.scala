@@ -1,6 +1,7 @@
 package org.hammerlab.bam.check.full
 
 import caseapp.{ AppName, ProgName, Recurse }
+import hammerlab.iterator._
 import hammerlab.monoid._
 import magic_rdds.sample._
 import org.apache.spark.broadcast.Broadcast
@@ -19,7 +20,6 @@ import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.args.PrintLimitArgs
-import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
 import org.hammerlab.paths.Path
 

@@ -2,11 +2,11 @@ package org.hammerlab.bgzf.block
 
 import java.io.{ Closeable, EOFException }
 
+import hammerlab.iterator.SimpleIterator
 import org.hammerlab.bgzf.block.Block.FOOTER_SIZE
 import org.hammerlab.bgzf.block.Header.EXPECTED_HEADER_SIZE
 import org.hammerlab.channel.ByteChannel
 import org.hammerlab.io.Buffer
-import org.hammerlab.iterator.SimpleBufferedIterator
 
 /**
  * Iterator over bgzf-block [[Metadata]]; useful when loading/decompressing [[Block]] payloads is unnecessary.
@@ -14,7 +14,7 @@ import org.hammerlab.iterator.SimpleBufferedIterator
  * @param ch input stream/channel containing compressed bgzf data
  */
 case class MetadataStream(ch: ByteChannel)
-  extends SimpleBufferedIterator[Metadata]
+  extends SimpleIterator[Metadata]
     with Closeable {
 
   // Buffer for the standard bits of the header that we care about
