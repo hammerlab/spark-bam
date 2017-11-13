@@ -5,14 +5,14 @@ lazy val bgzf = project.settings(
   deps ++= Seq(
     case_app,
     cats,
-    channel % "1.1.1",
+    channel % "1.2.0",
     io % "3.0.0",
-    iterators % "2.0.0-SNAPSHOT",
-    math % "2.0.0",
+    iterators % "2.0.0",
+    math % "2.1.0",
     paths % "1.3.1",
     slf4j,
     spark_util % "2.0.1",
-    stats % "1.1.1-SNAPSHOT"
+    stats % "1.1.1"
   ),
   addSparkDeps,
   compileAndTestDeps += case_cli % "2.0.0"
@@ -27,10 +27,10 @@ lazy val check = project.settings(
     bytes % "1.0.3",
     case_app,
     cats,
-    channel % "1.1.1",
+    channel % "1.2.0",
     htsjdk,
-    iterators % "2.0.0-SNAPSHOT",
-    magic_rdds % "4.0.0-SNAPSHOT",
+    iterators % "2.0.0",
+    magic_rdds % "4.0.0",
     io % "3.0.0",
     paths % "1.3.1",
     seqdoop_hadoop_bam,
@@ -56,15 +56,15 @@ lazy val cli = project.settings(
     bytes % "1.0.3",
     case_app,
     cats,
-    channel % "1.1.1",
+    channel % "1.2.0",
     hammerlab_hadoop_bam % "7.9.0",
     io % "3.0.0",
-    iterators % "2.0.0-SNAPSHOT",
-    magic_rdds % "4.0.0-SNAPSHOT",
+    iterators % "2.0.0",
+    magic_rdds % "4.0.0",
     paths % "1.3.1",
     shapeless,
     spark_util % "2.0.1",
-    stats % "1.1.1-SNAPSHOT",
+    stats % "1.1.1",
     types % "1.0.1"
   ),
 
@@ -110,10 +110,10 @@ lazy val load = project.settings(
   fork := true,
 
   deps ++= Seq(
-    channel % "1.1.1",
+    channel % "1.2.0",
     htsjdk,
-    iterators % "2.0.0-SNAPSHOT",
-    math % "2.0.0",
+    iterators % "2.0.0",
+    math % "2.1.0",
     paths % "1.3.1",
     reference % "1.4.0",
     seqdoop_hadoop_bam,
@@ -122,7 +122,7 @@ lazy val load = project.settings(
   ),
   compileAndTestDeps += loci % "2.0.1",
   addSparkDeps,
-  testDeps += magic_rdds % "4.0.0-SNAPSHOT"
+  testDeps += magic_rdds % "4.0.0"
 ).dependsOn(
   bgzf,
   check,
@@ -133,7 +133,7 @@ lazy val seqdoop = project.settings(
   organization := "org.hammerlab.bam",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    channel % "1.1.1",
+    channel % "1.2.0",
     htsjdk,
     paths % "1.3.1",
     hammerlab_hadoop_bam % "7.9.0"

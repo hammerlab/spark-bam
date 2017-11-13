@@ -105,7 +105,7 @@ object Blocks
                   .compressedSize
                   .toLong
           }
-          .scanLeftValues()
+          .scanLeftValues
 
       val numPartitions =
         ceil(
