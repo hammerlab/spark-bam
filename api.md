@@ -100,9 +100,9 @@ Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`]
 
 [`compute-splits`]: cli#compute-splits
 
-[`org.hammerlab.paths.Path`]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala
-[Path NIO ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L14
-[Path URI ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L157
-[Path String ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L145-L155
+[`hammerlab.paths.Path`]: https://github.com/hammerlab/path-utils/blob/1.4.0/src/main/scala/org/hammerlab/paths/Path.scala
+[Path NIO ctor]: https://github.com/hammerlab/path-utils/blob/1.4.0/src/main/scala/org/hammerlab/paths/Path.scala#L14
+[Path URI ctor]: https://github.com/hammerlab/path-utils/blob/1.4.0/src/main/scala/org/hammerlab/paths/Path.scala#L157
+[Path String ctor]: https://github.com/hammerlab/path-utils/blob/1.4.0/src/main/scala/org/hammerlab/paths/Path.scala#L145-L155
 
 [linking]: index#linking
