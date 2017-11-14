@@ -186,10 +186,7 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
       val sampledPositions =
         fpsWithMetadata
           // Optimization: convert to strings before collecting, otherwise reads can be huge due to denormalized headers
-          .map {
-            fp ⇒
-              fp.show
-          }
+          .map { _.show }
           .sample(numFalsePositives)
 
       print(

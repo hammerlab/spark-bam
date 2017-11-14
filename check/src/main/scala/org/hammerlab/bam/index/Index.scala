@@ -2,11 +2,11 @@ package org.hammerlab.bam.index
 
 import java.io.IOException
 
+import hammerlab.path._
 import org.hammerlab.bam.index.Index.{ Bin, Chunk, Reference }
 import org.hammerlab.bam.index.Read._
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.channel.ByteChannel
-import org.hammerlab.paths.Path
 
 case class Index(references: Seq[Reference]) {
   @transient lazy val offsets = references.flatMap(_.offsets)

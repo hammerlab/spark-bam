@@ -6,8 +6,7 @@ http://hammerlab.org/spark-bam/
 $ spark-shell --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
 ```
 ```scala
-import org.hammerlab.bam.spark._
-import org.hammerlab.paths.Path
+import spark_bam._, hammerlab.path._
 
 val path = Path("test_bams/src/main/resources/2.bam")
 
@@ -27,13 +26,13 @@ sc.loadReads(path, splitSize = 16 MB)
 
 ## Linking
 
-### In SBT
+### SBT
 
 ```scala
 libraryDependencies += "org.hammerlab.bam" %% "load" % "1.0.0-SNAPSHOT"
 ```
 
-### In Maven
+### Maven
 
 ```xml
 <dependency>
@@ -47,13 +46,6 @@ libraryDependencies += "org.hammerlab.bam" %% "load" % "1.0.0-SNAPSHOT"
 
 ```bash
 spark-shell --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
-```
-
-```scala
-import org.hammerlab.bam.spark._
-import org.hammerlab.paths.Path
-val reads = sc.loadBam(Path("test_bams/src/main/resources/2.bam"))  // RDD[SAMRecord]
-reads.count  // Long: 2500
 ```
 
 ### On Google Cloud
@@ -72,8 +64,8 @@ Then include it in your `--jars` list when running `spark-shell` or `spark-submi
 ```bash
 spark-shell --jars $GOOGLE_CLOUD_NIO_JAR --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
 …
-import org.hammerlab.bam.spark._
-import org.hammerlab.paths.Path
+import spark_bam._, hammerlab.path._
+
 val reads = sc.loadBam(Path("gs://bucket/my.bam"))
 ```
 

@@ -3,9 +3,9 @@ package org.hammerlab.bam
 import java.util
 
 import com.esotericsoftware.kryo.Serializer
+import hammerlab.path._
 import htsjdk.samtools._
 import org.hammerlab.kryo.{ AlsoRegister, serializeAs }
-import org.hammerlab.paths.Path
 
 package object kryo {
   implicit val registerSAMFileHeader =

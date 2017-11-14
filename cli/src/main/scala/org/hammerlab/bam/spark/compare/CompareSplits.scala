@@ -2,13 +2,11 @@ package org.hammerlab.bam.spark.compare
 
 import caseapp.{ AppName, ProgName, Name ⇒ O, Recurse ⇒ R }
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
-import org.hammerlab.bam.kryo._
 import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import org.hammerlab.kryo._
-import org.hammerlab.paths.Path
 import org.hammerlab.stats.Stats
 import shapeless._
 
@@ -62,7 +60,7 @@ object CompareSplits extends Cmd {
       import hammerlab.show._
 
       val (
-        (timingRatios: Seq[Double]) ::  // IntelliJ needs some help on the type inference here 🤷🏼️
+        (timingRatios: Seq[Double]) ::  // IntelliJ needs some help on the type inference here 🤷
         numSparkBamSplits ::
         numHadoopBamSplits ::
         sparkOnlySplits ::
@@ -86,10 +84,7 @@ object CompareSplits extends Cmd {
           .filter(_._2.diffs.nonEmpty)
           .collect
 
-      implicit val showDouble: Show[Double] =
-        show {
-          "%.1f".format(_)
-        }
+      implicit val showDouble: Show[Double] = show { "%.1f".format(_) }
 
       def printTimings(): Unit = {
         echo(
@@ -156,6 +151,10 @@ object CompareSplits extends Cmd {
       }
     }
   )
+
+  /** Import this here to avoid conflict with [[shapeless.Path]] */
+  import hammerlab.path.Path
+  import org.hammerlab.bam.kryo.pathSerializer
 
   case class Registrar() extends spark.Registrar(
     cls[mutable.WrappedArray.ofRef[_]],

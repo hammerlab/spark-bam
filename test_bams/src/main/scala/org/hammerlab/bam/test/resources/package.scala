@@ -1,6 +1,6 @@
 package org.hammerlab.bam.test
 
-import org.hammerlab.paths.Path
+import hammerlab.path._
 import org.hammerlab.test.Suite
 import org.hammerlab.test.resources.Url
 

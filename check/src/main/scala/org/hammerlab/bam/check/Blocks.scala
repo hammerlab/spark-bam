@@ -5,6 +5,8 @@ import java.lang.{ Long ⇒ JLong }
 import caseapp.{ Recurse, ValueDescription, HelpMessage ⇒ M, Name ⇒ O }
 import cats.implicits.catsKernelStdGroupForLong
 import hammerlab.iterator._
+import hammerlab.path._
+import magic_rdds._
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.{ ByteRanges, FindBlockArgs, SplitSize }
@@ -13,12 +15,9 @@ import org.hammerlab.bytes._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.guava.collect.Range.closedOpen
 import org.hammerlab.kryo._
-import magic_rdds.partitions._
-import magic_rdds.scan._
 import org.hammerlab.magic.rdd.ordered.SortedRDD.Bounds
 import org.hammerlab.magic.rdd.scan.ScanValuesRDD
 import org.hammerlab.math.ceil
-import org.hammerlab.paths.Path
 
 case class Blocks(blocks: RDD[Metadata],
                   bounds: Bounds[Long])

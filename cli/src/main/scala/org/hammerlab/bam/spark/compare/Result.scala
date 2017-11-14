@@ -2,6 +2,7 @@ package org.hammerlab.bam.spark.compare
 
 import hammerlab.iterator._
 import hammerlab.or._
+import hammerlab.path._
 import org.apache.hadoop.fs
 import org.apache.hadoop.mapreduce.lib.input
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths
@@ -15,7 +16,6 @@ import org.hammerlab.bgzf.block.{ BGZFBlocksToCheck, FindBlockStart }
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.{ FileSplit, FileSplits, MaxSplitSize }
 import org.hammerlab.kryo._
-import org.hammerlab.paths.Path
 import org.hammerlab.timing.Timer
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 import shapeless.Generic

@@ -1,6 +1,6 @@
 package org.hammerlab.bam.benchmarks
 
-import org.hammerlab.paths.Path
+import hammerlab.path._
 
 case class Datasets(datasets: Map[Dataset, Seq[BAM]])
 

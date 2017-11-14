@@ -2,6 +2,7 @@ package org.hammerlab.bam.spark.load
 
 import grizzled.slf4j.Logging
 import hammerlab.iterator._
+import hammerlab.path._
 import htsjdk.samtools.BAMFileReader.getFileSpan
 import htsjdk.samtools.SamReaderFactory.Option._
 import htsjdk.samtools.{ QueryInterval, SAMLineParser, SAMRecord, SamReaderFactory }
@@ -28,7 +29,6 @@ import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.{ FileSplits, MaxSplitSize }
 import org.hammerlab.iterator.group.ElementTooCostlyStrategy.EmitAlone
 import org.hammerlab.math.ceil
-import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.{ BAMRecordReader, CRAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
 import scala.collection.JavaConverters._

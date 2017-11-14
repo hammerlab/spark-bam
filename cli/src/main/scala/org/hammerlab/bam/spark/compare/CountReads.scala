@@ -4,7 +4,7 @@ import caseapp.{ Name ⇒ O, Recurse ⇒ R }
 import hammerlab.monoid._
 import hammerlab.show._
 import org.hammerlab.args.SplitSize
-import org.hammerlab.bam.spark._
+import org.hammerlab.bam.spark.{ LoadReads, load }
 import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
@@ -12,6 +12,7 @@ import org.hammerlab.exception.Error
 import org.hammerlab.io.{ Print, Printer }
 import org.hammerlab.stats.{ Empty, Stats }
 import org.hammerlab.timing.Timer
+import spark_bam._
 
 import scala.util.{ Failure, Success, Try }
 

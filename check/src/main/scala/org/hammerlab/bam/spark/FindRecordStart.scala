@@ -1,10 +1,10 @@
 package org.hammerlab.bam.spark
 
+import hammerlab.path._
 import org.hammerlab.bam.check.{ MaxReadSize, ReadsToCheck, eager }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
-import org.hammerlab.paths.Path
 
 object FindRecordStart {
 

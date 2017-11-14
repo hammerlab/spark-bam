@@ -1,19 +1,19 @@
 package org.hammerlab.bam.check
 
 import hammerlab.iterator._
+import hammerlab.path._
 import magic_rdds.zip._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.full.error.Flags
-import org.hammerlab.bam.check.indexed.{ BlocksAndIndexedRecords, IndexedRecordPositions }
+import org.hammerlab.bam.check.indexed.BlocksAndIndexedRecords
 import org.hammerlab.bam.kryo.pathSerializer
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, PosIterator }
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.kryo._
-import org.hammerlab.paths.Path
 
 import scala.collection.mutable
 

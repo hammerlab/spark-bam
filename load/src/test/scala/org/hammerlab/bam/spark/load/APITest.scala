@@ -12,7 +12,7 @@ class APITest
 
   test("sample load calls") {
 
-    import org.hammerlab.bam.spark._
+    import spark_bam._
 
     val path = bam2
 

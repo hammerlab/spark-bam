@@ -9,13 +9,13 @@ lazy val bgzf = project.settings(
     io % "3.0.0",
     iterators % "2.0.0",
     math % "2.1.0",
-    paths % "1.3.1",
+    paths % "1.4.0-SNAPSHOT",
     slf4j,
     spark_util % "2.0.1",
     stats % "1.1.1"
   ),
   addSparkDeps,
-  compileAndTestDeps += case_cli % "2.0.0"
+  compileAndTestDeps += case_cli % "2.1.0"
 ).dependsOn(
   test_bams % "test"
 )
@@ -32,7 +32,7 @@ lazy val check = project.settings(
     iterators % "2.0.0",
     magic_rdds % "4.0.0",
     io % "3.0.0",
-    paths % "1.3.1",
+    paths % "1.4.0-SNAPSHOT",
     seqdoop_hadoop_bam,
     slf4j,
     spark_util % "2.0.1"
@@ -40,7 +40,7 @@ lazy val check = project.settings(
   fork := true,  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
   addSparkDeps,
   compileAndTestDeps ++= Seq(
-    case_cli % "2.0.0",
+    case_cli % "2.1.0",
     loci % "2.0.1"
   )
 ).dependsOn(
@@ -61,14 +61,14 @@ lazy val cli = project.settings(
     io % "3.0.0",
     iterators % "2.0.0",
     magic_rdds % "4.0.0",
-    paths % "1.3.1",
+    paths % "1.4.0-SNAPSHOT",
     shapeless,
     spark_util % "2.0.1",
     stats % "1.1.1",
     types % "1.0.1"
   ),
 
-  compileAndTestDeps += case_cli % "2.0.0",
+  compileAndTestDeps += case_cli % "2.1.0",
 
   // Bits that depend on the seqdoop module use org.hammerlab:hadoop-bam; make sure we don't get the org.seqdoop one.
   excludes += seqdoop_hadoop_bam,
@@ -114,7 +114,7 @@ lazy val load = project.settings(
     htsjdk,
     iterators % "2.0.0",
     math % "2.1.0",
-    paths % "1.3.1",
+    paths % "1.4.0-SNAPSHOT",
     reference % "1.4.0",
     seqdoop_hadoop_bam,
     slf4j,
@@ -135,7 +135,7 @@ lazy val seqdoop = project.settings(
   deps ++= Seq(
     channel % "1.2.0",
     htsjdk,
-    paths % "1.3.1",
+    paths % "1.4.0-SNAPSHOT",
     hammerlab_hadoop_bam % "7.9.0"
   ),
   // Make sure we get org.hammerlab:hadoop-bam, not org.seqdoop
@@ -152,7 +152,7 @@ lazy val test_bams = project.settings(
   name := "test-bams",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    paths % "1.3.1",
+    paths % "1.4.0-SNAPSHOT",
     testUtils
   ),
   testDeps := Nil
@@ -162,7 +162,7 @@ lazy val test_bams = project.settings(
 // https://youtrack.jetbrains.com/issue/SCL-12628#comment=27-2439322
 lazy val metrics = project.in(file("benchmarks")).settings(
   deps ++= Seq(
-    paths % "1.3.1",
+    paths % "1.4.0-SNAPSHOT",
     bytes % "1.0.3"
   )
 )

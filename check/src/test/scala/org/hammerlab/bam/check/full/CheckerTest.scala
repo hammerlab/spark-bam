@@ -2,6 +2,7 @@ package org.hammerlab.bam.check.full
 
 import java.nio.channels.FileChannel
 
+import hammerlab.path._
 import org.hammerlab.bam.check.Checker.default
 import org.hammerlab.bam.check.ReadsToCheck
 import org.hammerlab.bam.check.full.error.{ Flags, InvalidCigarOp, NoReadName, Result, Success }
@@ -11,7 +12,6 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.channel.SeekableByteChannel.ChannelByteChannel
 import org.hammerlab.hadoop.Configuration
-import org.hammerlab.paths.Path
 import org.hammerlab.test.Suite
 
 class CheckerTest

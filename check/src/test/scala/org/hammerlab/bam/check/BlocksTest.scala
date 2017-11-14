@@ -1,10 +1,10 @@
 package org.hammerlab.bam.check
 
 import caseapp._
+import hammerlab.path._
 import magic_rdds.collect._
 import org.hammerlab.bam.test.resources.{ TestBams, bam1Unindexed }
 import org.hammerlab.kryo._
-import org.hammerlab.paths.Path
 import org.hammerlab.spark.test.suite.KryoSparkSuite
 
 import scala.collection.mutable

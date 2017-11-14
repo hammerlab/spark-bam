@@ -1,16 +1,15 @@
 package org.hammerlab.bam.check.indexed
 
 import caseapp.{ ValueDescription, HelpMessage ⇒ M, Name ⇒ O }
+import hammerlab.path._
+import magic_rdds.ordered._
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.ByteRanges
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.kryo.Registrar
-import magic_rdds.ordered._
 import org.hammerlab.magic.rdd.ordered.SortedRDD
 import org.hammerlab.magic.rdd.ordered.SortedRDD.{ Bounds, bounds }
-import org.hammerlab.paths.Path
 
 import scala.collection.immutable.SortedSet
 
