@@ -399,7 +399,7 @@ spark-submit $CLI_JAR \
 [blocks/MainTest]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/test/scala/org/hammerlab/bam/check/blocks/MainTest.scala
 
 [`full-check`]: #full-check
-[full/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/check/full/Main.scalaz
+[full/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/check/full/Main.scala
 
 [`compute-splits`]: #compute-splits
 [spark/Main]: https://github.com/hammerlab/spark-bam/blob/master/cli/src/main/scala/org/hammerlab/bam/spark/Main.scala
