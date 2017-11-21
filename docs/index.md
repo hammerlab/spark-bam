@@ -15,7 +15,7 @@ val reads = sc.loadReads(path)
 reads.count
 // 2500
 
-import org.hammerlab.bytes._
+import hammerlab.bytes._
 
 // Configure maximum split size
 sc.loadReads(path, splitSize = 16 MB)

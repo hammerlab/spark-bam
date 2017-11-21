@@ -103,7 +103,7 @@ class LoadBAMTest
   }
 
   test("1.bam") {
-    import org.hammerlab.bytes._
+    import hammerlab.bytes._
 
     sc
       .loadBam(

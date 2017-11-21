@@ -73,6 +73,8 @@ object CountReads extends Cmd {
 
   case class Result(sparkBam: Reads, hadoopBam: Try[Reads])
 
+  import hammerlab.indent.tab
+
   object Result {
     implicit val showResult: Show[Result] =
       Print[Result] {
@@ -204,7 +206,7 @@ object CountReads extends Cmd {
                   "",
                   s"hadoop-bam: ${hadoopBamNumReads.head._1}"
                 )
-            case (1, n) ⇒
+            case (1, _) ⇒
               echo(
                 s"spark-bam: ${sparkBamNumReads.head._1}",
                 "",

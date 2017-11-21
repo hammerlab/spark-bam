@@ -1,7 +1,7 @@
 package org.hammerlab.args
 
+import hammerlab.bytes._
 import org.apache.spark.serializer.KryoSerializer
-import org.hammerlab.bytes._
 import org.hammerlab.spark.confs
 import org.hammerlab.spark.test.serde.KryoSerialization.kryoBytes
 import org.hammerlab.spark.test.suite.SparkSuite

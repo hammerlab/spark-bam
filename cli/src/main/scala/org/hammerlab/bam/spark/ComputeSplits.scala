@@ -1,13 +1,13 @@
 package org.hammerlab.bam.spark
 
 import caseapp.{ AppName, ProgName, HelpMessage ⇒ M, Name ⇒ O, Recurse ⇒ R }
+import hammerlab.bytes._
 import hammerlab.iterator._
 import hammerlab.or._
 import hammerlab.show._
 import magic_rdds.partitions._
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bytes.Bytes
 import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs

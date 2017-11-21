@@ -1,5 +1,6 @@
 package org.hammerlab.bam.check
 
+import hammerlab.bytes._
 import hammerlab.iterator._
 import magic_rdds.sample._
 import magic_rdds.size._
@@ -12,7 +13,6 @@ import org.hammerlab.bam.check.indexed.{ BlocksAndIndexedRecords, IndexedRecordP
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
-import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.cli.app.Args

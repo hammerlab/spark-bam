@@ -277,18 +277,18 @@ object FullCheck extends Cmd {
               closePositions.sample(numCloseCalls),
               numCloseCalls,
               s"$numCloseCalls positions where exactly two checks failed:",
-              n ⇒ s"$n of $numCloseCalls positions where exactly two checks failed:",
-              indent = "\t"
+              n ⇒ s"$n of $numCloseCalls positions where exactly two checks failed:"
             )
             echo("")
 
             if (closeCallHist.head._1 > 1) {
-              print(
-                closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
-                "\tHistogram:",
-                _ ⇒ "\tHistogram:",
-                indent = "\t\t"
-              )
+              indent {
+                print(
+                  closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
+                  "Histogram:",
+                  _ ⇒ "Histogram:"
+                )
+              }
               echo("")
             }
 

@@ -1,8 +1,8 @@
 package org.hammerlab.args
 
 import caseapp.{ ValueDescription, HelpMessage ⇒ M, Name ⇒ O }
+import hammerlab.bytes._
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.SPLIT_MAXSIZE
-import org.hammerlab.bytes.Bytes
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.MaxSplitSize
 

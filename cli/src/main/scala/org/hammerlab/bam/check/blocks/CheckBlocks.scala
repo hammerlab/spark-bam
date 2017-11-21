@@ -1,5 +1,6 @@
 package org.hammerlab.bam.check.blocks
 
+import hammerlab.bytes._
 import hammerlab.iterator._
 import hammerlab.monoid._
 import hammerlab.path._
@@ -12,7 +13,6 @@ import org.hammerlab.bam.check.{ Blocks, CheckerApp, ReadStartFinder, eager, ind
 import org.hammerlab.bam.kryo.pathSerializer
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
-import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.cli.app.Cmd
