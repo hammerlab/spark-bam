@@ -1,27 +1,26 @@
 package org.hammerlab.bam.spark
 
-import caseapp.{ AppName, ProgName, Recurse, HelpMessage ⇒ M, Name ⇒ O }
-import cats.implicits.catsStdShowForInt
-import cats.syntax.all._
+import caseapp.{ AppName, ProgName, HelpMessage ⇒ M, Name ⇒ O, Recurse ⇒ R }
+import hammerlab.bytes._
+import hammerlab.iterator._
+import hammerlab.or._
+import hammerlab.show._
+import magic_rdds.partitions._
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.bytes.Bytes
 import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
-import org.hammerlab.iterator.sorted.OrZipIterator._
-import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
 import org.hammerlab.stats.Stats
 import org.hammerlab.timing.Timer
-import org.hammerlab.types._
 
 object ComputeSplits extends Cmd {
 
   @AppName("Compute and print BAM-splits using spark-bam and/or hadoop-bam; if both, compare the two as well")
   @ProgName("… org.hammerlab.bam.spark.Main")
   case class Opts(
-      @Recurse printLimit: PrintLimitArgs,
-      @Recurse splitSizeArgs: SplitSize.Args,
+      @R printLimit: PrintLimitArgs,
+      @R splitSizeArgs: SplitSize.Args,
 
       @O("g")
       @M("Set the buffer size (fs.gs.io.buffersize) used by the GCS-HDFS connector")
@@ -40,10 +39,6 @@ object ComputeSplits extends Cmd {
       hadoopBam: Boolean = false
   )
 
-//  object Main extends app.Main(App)
-
-//  val fn: () ⇒ load.Registrar = load.Registrar
-  
   val main = Main(
     args ⇒ new PathApp(args, load.Registrar)
       with Timer
@@ -118,7 +113,7 @@ object ComputeSplits extends Cmd {
           val diffs =
             our
               .splits
-              .sortedOrZip[Split, Pos](their.splits)
+              .orMerge[Split, Pos](their.splits)
               .flatMap {
                 case Both(_, _) ⇒ None
                 case L(ours) ⇒ Some(Left(ours))
@@ -130,10 +125,8 @@ object ComputeSplits extends Cmd {
             print(
               diffs
                 .map {
-                case Left(ours) ⇒
-                  ours.show
-                case Right(theirs) ⇒
-                  show"\t$theirs"
+                case Left(ours) ⇒ ours.show
+                case Right(theirs) ⇒ show"\t$theirs"
               },
               s"${diffs.length} splits differ (totals: ${our.splits.size}, ${their.splits.length}):",
               n ⇒ s"First $n of ${diffs.length} splits that differ (totals: ${our.splits.size}, ${their.splits.length}):"

@@ -1,8 +1,8 @@
 package org.hammerlab.bam.spark
 
+import hammerlab.path._
 import org.hammerlab.bam.test.resources.bam1
 import org.hammerlab.cli.app.MainSuite
-import org.hammerlab.paths.Path
 
 class ComputeSplitsTest
   extends MainSuite(ComputeSplits) {

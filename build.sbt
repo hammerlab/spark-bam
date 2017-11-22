@@ -1,71 +1,92 @@
-import org.hammerlab.sbt.deps.Dep
+import org.hammerlab.sbt.deps.Configuration
+
+val defaults = Seq(
+  versions ++= Seq(
+                   bytes → "1.1.0",
+                case_cli → "2.1.1",
+                 channel → "1.2.1",
+    hammerlab_hadoop_bam → "7.9.0",
+                      io → "3.1.0",
+               iterators → "2.0.0",
+                    loci → "2.0.1",
+              magic_rdds → "4.0.0",
+                    math → "2.1.0",
+                   paths → "1.4.0",
+               reference → "1.4.0",
+              spark_util → "2.0.1",
+                   stats → "1.1.1",
+                   types → "1.0.1"
+  ),
+  organization := "org.hammerlab.bam"
+)
 
 lazy val bgzf = project.settings(
+  defaults,
+  organization := "org.hammerlab",
   version := "1.0.0-SNAPSHOT",
-  deps ++= Seq[Dep](
+  deps ++= Seq(
     case_app,
+    case_cli + testtest,
     cats,
-    channel ^ "1.1.0",
-    io % "2.1.0",
-    iterators ^ "1.4.0",
-    math ^ "2.0.0",
-    paths ^ "1.3.1",
+    channel,
+    io,
+    iterators,
+    math,
+    paths,
     slf4j,
-    spark_util % "2.0.1",
-    stats ^ "1.1.0"
+    spark_util,
+    stats
   ),
-  addSparkDeps,
-  compileAndTestDeps += case_cli ^ "2.0.0"
+  addSparkDeps
 ).dependsOn(
   test_bams % "test"
 )
 
 lazy val check = project.settings(
-  organization := "org.hammerlab.bam",
+  defaults,
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    bytes ^ "1.0.2",
+    bytes,
     case_app,
+    case_cli + testtest,
     cats,
-    channel ^ "1.1.0",
+    channel,
     htsjdk,
-    magic_rdds ^ "3.1.0",
-    paths ^ "1.3.1",
+    iterators,
+    loci + testtest,
+    magic_rdds,
+    io,
+    paths,
     seqdoop_hadoop_bam,
     slf4j,
-    spark_util % "2.0.1"
+    spark_util
   ),
-  fork := true,  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
   addSparkDeps,
-  compileAndTestDeps ++= Seq(
-    case_cli ^ "2.0.0",
-    loci ^ "2.0.1"
-  )
+  fork := true  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
 ).dependsOn(
   bgzf,
   test_bams % "test"
 )
 
 lazy val cli = project.settings(
-  organization := "org.hammerlab.bam",
+  defaults,
   version := "1.0.0-SNAPSHOT",
 
   deps ++= Seq(
-    bytes ^ "1.0.2",
+    bytes,
     case_app,
+    case_cli + testtest,
     cats,
-    channel ^ "1.1.0",
-    hammerlab_hadoop_bam ^ "7.9.0",
-    io % "2.2.0",
-    iterators ^ "1.4.0",
-    magic_rdds ^ "3.1.0",
-    paths ^ "1.3.1",
-    shapeless,
-    spark_util ^ "2.0.1",
-    stats ^ "1.1.0"
+    channel,
+    hammerlab_hadoop_bam,
+    io,
+    iterators,
+    magic_rdds,
+    paths,
+    spark_util,
+    stats,
+    types
   ),
-
-  compileAndTestDeps += case_cli ^ "2.0.0",
 
   // Bits that depend on the seqdoop module use org.hammerlab:hadoop-bam; make sure we don't get the org.seqdoop one.
   excludes += seqdoop_hadoop_bam,
@@ -76,9 +97,7 @@ lazy val cli = project.settings(
 
   // Spark 2.1.0 (spark-submit is an easy way to run this library's Main) puts shapeless 2.0.0 on the classpath, but we
   // need 2.3.2.
-  shadeRenames ++= Seq(
-    "shapeless.**" → "shaded.shapeless.@1"
-  ),
+  shadeRenames += "shapeless.**" → "shaded.shapeless.@1",
 
   main := "org.hammerlab.bam.Main",
 
@@ -98,7 +117,7 @@ lazy val cli = project.settings(
 )
 
 lazy val load = project.settings(
-  organization := "org.hammerlab.bam",
+  defaults,
   version := "1.0.0-SNAPSHOT",
 
   // When running all tests in this project with `sbt test`, sometimes a Kryo
@@ -107,19 +126,19 @@ lazy val load = project.settings(
   fork := true,
 
   deps ++= Seq(
-    channel ^ "1.1.0",
+    channel,
     htsjdk,
-    iterators ^ "1.4.0",
-    math ^ "2.0.0",
-    paths ^ "1.3.1",
-    reference ^ "1.4.0",
+    iterators,
+    loci + testtest,
+    magic_rdds % tests,
+    math,
+    paths,
+    reference,
     seqdoop_hadoop_bam,
     slf4j,
-    spark_util ^ "2.0.1"
+    spark_util
   ),
-  compileAndTestDeps += loci ^ "2.0.1",
-  addSparkDeps,
-  testDeps += magic_rdds ^ "3.1.0"
+  addSparkDeps
 ).dependsOn(
   bgzf,
   check,
@@ -127,13 +146,13 @@ lazy val load = project.settings(
 )
 
 lazy val seqdoop = project.settings(
-  organization := "org.hammerlab.bam",
+  defaults,
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    channel ^ "1.1.0",
+    channel,
+    hammerlab_hadoop_bam,
     htsjdk,
-    paths ^ "1.3.1",
-    hammerlab_hadoop_bam ^ "7.9.0"
+    paths
   ),
   // Make sure we get org.hammerlab:hadoop-bam, not org.seqdoop
   excludes += seqdoop_hadoop_bam,
@@ -145,11 +164,11 @@ lazy val seqdoop = project.settings(
 )
 
 lazy val test_bams = project.settings(
-  organization := "org.hammerlab.bam",
+  defaults,
   name := "test-bams",
   version := "1.0.0-SNAPSHOT",
   deps ++= Seq(
-    paths ^ "1.3.1",
+    paths,
     testUtils
   ),
   testDeps := Nil
@@ -158,9 +177,10 @@ lazy val test_bams = project.settings(
 // named this module "metrics" instead of "benchmarks" to work around bizarre IntelliJ-scala-plugin bug, cf.
 // https://youtrack.jetbrains.com/issue/SCL-12628#comment=27-2439322
 lazy val metrics = project.in(file("benchmarks")).settings(
+  defaults,
   deps ++= Seq(
-    paths ^ "1.3.1",
-    bytes ^ "1.0.2"
+    paths,
+    bytes
   )
 )
 

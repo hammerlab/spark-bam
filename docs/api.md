@@ -3,7 +3,7 @@
 With [spark-bam on the classpath][linking], a `SparkContext` can be "enriched" with relevant methods for loading BAM files by importing:
    
 ```scala
-import org.hammerlab.bam.spark._
+import spark_bam._
 ```
 
 ## [loadReads][`loadReads`]
@@ -18,11 +18,11 @@ sc.loadReads(path)
 Arguments:
 
 - `path` (required)
-	- an [`org.hammerlab.paths.Path`]
+	- an [`hammerlab.paths.Path`]
 	- can be constructed [from a `URI`][Path URI ctor], [`String` (representing a `URI`)][Path String ctor], [or `java.nio.file.Path`][Path NIO ctor]:
 
 		```scala
-		import org.hammerlab.paths.Path
+		import hammerlab.path._
 		val path = Path("test_bams/src/main/resources/2.bam")
 		```
 - `bgzfBlocksToCheck`: optional (default: 5)
@@ -100,9 +100,9 @@ Primarly useful for analyzing split-computations, e.g. in the [`compute-splits`]
 
 [`compute-splits`]: cli#compute-splits
 
-[`org.hammerlab.paths.Path`]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala
-[Path NIO ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L14
-[Path URI ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L157
-[Path String ctor]: https://github.com/hammerlab/path-utils/blob/1.2.0/src/main/scala/org/hammerlab/paths/Path.scala#L145-L155
+[`hammerlab.paths.Path`]: https://github.com/hammerlab/path-utils/blob/1.4.0/src/main/scala/org/hammerlab/paths/Path.scala
+[Path NIO ctor]: https://github.com/hammerlab/path-utils/blob/1.4.0/src/main/scala/org/hammerlab/paths/Path.scala#L14
+[Path URI ctor]: https://github.com/hammerlab/path-utils/blob/1.4.0/src/main/scala/org/hammerlab/paths/Path.scala#L157
+[Path String ctor]: https://github.com/hammerlab/path-utils/blob/1.4.0/src/main/scala/org/hammerlab/paths/Path.scala#L145-L155
 
 [linking]: index#linking

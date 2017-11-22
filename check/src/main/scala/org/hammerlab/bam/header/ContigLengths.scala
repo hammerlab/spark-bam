@@ -4,15 +4,14 @@ import java.io.InputStream
 
 import com.esotericsoftware.kryo.io.{ Input, Output }
 import com.esotericsoftware.kryo.{ Kryo, Serializer }
+import hammerlab.path._
 import htsjdk.samtools.SamReaderFactory.Option.EAGERLY_DECODE
 import htsjdk.samtools.SamReaderFactory.makeDefault
-import htsjdk.samtools.{ SAMFileHeader, SAMSequenceDictionary, SAMSequenceRecord, SamInputResource, SamReaderFactory }
+import htsjdk.samtools.{ SAMFileHeader, SAMSequenceDictionary, SAMSequenceRecord, SamInputResource }
 import org.hammerlab.bam.header.ContigLengths.ContigLengthsT
 import org.hammerlab.genomics.reference
 import org.hammerlab.genomics.reference.{ ContigName, NumLoci }
 import org.hammerlab.hadoop.Configuration
-import org.hammerlab.kryo.AlsoRegister
-import org.hammerlab.paths.Path
 import org.seqdoop.hadoop_bam.util.SAMHeaderReader._
 
 import scala.collection.JavaConverters._

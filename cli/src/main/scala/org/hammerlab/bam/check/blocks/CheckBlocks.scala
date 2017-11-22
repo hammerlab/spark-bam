@@ -1,8 +1,10 @@
 package org.hammerlab.bam.check.blocks
 
-import cats.Show
-import cats.Show.show
-import cats.implicits.{ catsStdShowForInt, catsStdShowForLong }
+import hammerlab.bytes._
+import hammerlab.iterator._
+import hammerlab.monoid._
+import hammerlab.path._
+import magic_rdds._
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.check.Checker.MakeChecker
 import org.hammerlab.bam.check.eager.CheckBam
@@ -11,16 +13,10 @@ import org.hammerlab.bam.check.{ Blocks, CheckerApp, ReadStartFinder, eager, ind
 import org.hammerlab.bam.kryo.pathSerializer
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
-import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.cli.app.Cmd
-import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
-import org.hammerlab.magic.rdd.SampleRDD._
-import org.hammerlab.magic.rdd.sliding.SlidingRDD._
-import org.hammerlab.magic.rdd.zip.ZipPartitionsRDD._
-import org.hammerlab.paths.Path
 import org.hammerlab.spark.accumulator.Histogram
 import org.hammerlab.stats.Stats
 
@@ -111,9 +107,6 @@ object CheckBlocks
         .setName("bad-blocks")
         .cache
 
-      import cats.implicits.{ catsKernelStdGroupForLong, catsKernelStdMonoidForTuple2 }
-      import cats.syntax.all._
-
       val (numWrongCompressedPositions, numWrongBlocks) =
         badBlocks
           .values
@@ -122,8 +115,6 @@ object CheckBlocks
 
       val numBlocks = numBlocksAccumulator.value
       val blocksFirstOffsets = blockFirstOffsetsAccumulator.value
-
-      import org.hammerlab.io.Printer._
 
       /**
        * Print special messages if all BGZF blocks' first read-starts are at the start of the block (additionally

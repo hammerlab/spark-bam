@@ -3,7 +3,7 @@ package org.hammerlab.args
 import caseapp.core.ArgParser
 import caseapp.core.ArgParser.instance
 import cats.Monoid
-import cats.syntax.all._
+import cats.syntax.either._
 import org.hammerlab.args.Range.parserFromStringPair
 import org.hammerlab.guava.collect.Range.closedOpen
 import org.hammerlab.guava.{ collect ⇒ guava }

@@ -1,7 +1,7 @@
 package org.hammerlab.bam.benchmarks
 
-import org.hammerlab.bytes.Bytes
-import org.hammerlab.paths.Path
+import hammerlab.bytes._
+import hammerlab.path._
 
 /**
  * synthesize spreadsheet rows by parsing stats from files output by `check-bam` and `check-blocks`

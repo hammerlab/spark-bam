@@ -1,8 +1,6 @@
 package org.hammerlab.bam.check
 
-import cats.Show
-import cats.Show.show
-import cats.syntax.all._
+import hammerlab.show._
 import htsjdk.samtools.{ BAMRecord, SAMFileHeader, SAMRecord, ValidationStringency }
 import org.apache.spark.broadcast.Broadcast
 import org.hammerlab.bam.check.full.error.Flags

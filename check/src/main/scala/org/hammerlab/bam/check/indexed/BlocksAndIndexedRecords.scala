@@ -1,5 +1,6 @@
 package org.hammerlab.bam.check.indexed
 
+import hammerlab.path._
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -8,7 +9,6 @@ import org.hammerlab.bam.check.Blocks
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.kryo.Registrar
-import org.hammerlab.paths.Path
 
 import scala.collection.immutable.SortedSet
 import scala.reflect.ClassTag
@@ -58,7 +58,6 @@ object BlocksAndIndexedRecords
   }
 
   register(
-    Blocks,
-    IndexedRecordPositions
+    Blocks
   )
 }

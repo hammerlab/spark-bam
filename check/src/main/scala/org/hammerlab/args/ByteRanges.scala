@@ -3,8 +3,8 @@ package org.hammerlab.args
 import java.lang.{ Long ⇒ JLong }
 
 import caseapp.core.ArgParser
+import hammerlab.bytes._
 import org.hammerlab.args.ByteRanges.bytesToJLong
-import org.hammerlab.bytes.Bytes
 
 case class ByteRanges(ranges: Seq[Range[Bytes]])
   extends Ranges[Bytes, JLong] {
@@ -18,7 +18,7 @@ object ByteRanges {
   implicit val parser: ArgParser[ByteRanges] =
     Ranges.parser[ByteRanges, Bytes, JLong]
 
-  import org.hammerlab.bytes._
+  import hammerlab.bytes._
   import org.hammerlab.kryo._
 
   implicit val alsoRegisterBytes: AlsoRegister[Bytes] =

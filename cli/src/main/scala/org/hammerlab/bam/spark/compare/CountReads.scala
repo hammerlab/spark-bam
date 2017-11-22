@@ -1,12 +1,10 @@
 package org.hammerlab.bam.spark.compare
 
 import caseapp.{ Name ⇒ O, Recurse ⇒ R }
-import cats.Show
-import cats.Show.show
-import cats.implicits.{ catsKernelStdGroupForInt, catsKernelStdMonoidForMap, catsStdShowForInt, catsStdShowForLong }
-import cats.syntax.all._
+import hammerlab.monoid._
+import hammerlab.show._
 import org.hammerlab.args.SplitSize
-import org.hammerlab.bam.spark._
+import org.hammerlab.bam.spark.{ LoadReads, load }
 import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
@@ -14,6 +12,7 @@ import org.hammerlab.exception.Error
 import org.hammerlab.io.{ Print, Printer }
 import org.hammerlab.stats.{ Empty, Stats }
 import org.hammerlab.timing.Timer
+import spark_bam._
 
 import scala.util.{ Failure, Success, Try }
 
@@ -74,6 +73,8 @@ object CountReads extends Cmd {
 
   case class Result(sparkBam: Reads, hadoopBam: Try[Reads])
 
+  import hammerlab.indent.tab
+
   object Result {
     implicit val showResult: Show[Result] =
       Print[Result] {
@@ -129,7 +130,7 @@ object CountReads extends Cmd {
     }
 
     implicit def showReadsCountsMap(implicit p: Printer): Show[Map[Long, Int]] =
-      show[Map[Long, Int]] {
+      show {
         _
           .map {
             case (numReads, numRuns) ⇒
@@ -205,7 +206,7 @@ object CountReads extends Cmd {
                   "",
                   s"hadoop-bam: ${hadoopBamNumReads.head._1}"
                 )
-            case (1, n) ⇒
+            case (1, _) ⇒
               echo(
                 s"spark-bam: ${sparkBamNumReads.head._1}",
                 "",

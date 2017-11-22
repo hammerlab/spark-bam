@@ -5,15 +5,3 @@ plugins:
 
 title: spark-bam
 description: Load genomic BAM files using Apache Spark
-
-exclude:
-- bgzf
-- check
-- cli
-- load
-- seqdoop
-- test_bams
-- project
-- lib
-- build.sbt
-- LICENSE

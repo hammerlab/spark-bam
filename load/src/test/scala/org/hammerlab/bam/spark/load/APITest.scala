@@ -12,13 +12,13 @@ class APITest
 
   test("sample load calls") {
 
-    import org.hammerlab.bam.spark._
+    import spark_bam._
 
     val path = bam2
 
     sc.loadBam(path)
 
-    import org.hammerlab.bytes._
+    import hammerlab.bytes._
     sc.loadBam(path, splitSize = 32.MB)
     sc.loadBam(path, 1 << 25)
   }

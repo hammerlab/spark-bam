@@ -1,10 +1,8 @@
-package org.hammerlab.bam
-
 import org.apache.spark.SparkContext
 import org.hammerlab.bam.spark.load.CanLoadBam
 import org.hammerlab.spark.Context
 
-package object spark {
+package object spark_bam {
   implicit class LoadBamSparkContext(val sc: SparkContext)
     extends CanLoadBam
 

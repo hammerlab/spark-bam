@@ -1,10 +1,10 @@
 package org.hammerlab.bam.spark.load
 
+import hammerlab.path._
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel.ChannelByteChannel
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
-import org.hammerlab.paths.Path
 
 case class Channels(compressedChannel: CachingChannel[ChannelByteChannel],
                     uncompressedBytes: SeekableUncompressedBytes) {

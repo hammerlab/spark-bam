@@ -2,9 +2,9 @@ package org.hammerlab.bam.spark.load
 
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
-import org.hammerlab.bam.spark._
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.hadoop.splits.MaxSplitSize
+import spark_bam._
 
 class LoadSAMTest
   extends LoadBAMChecks {

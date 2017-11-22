@@ -5,7 +5,8 @@ import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.test.resources.TestBams
 import org.hammerlab.genomics.loci.set.test.LociSetUtil
 import org.hammerlab.hadoop.splits.MaxSplitSize
-import org.hammerlab.magic.rdd.partitions.PartitionSizesRDD._
+import magic_rdds.partitions._
+import org.hammerlab.magic.rdd.partitions.PartitionSizes
 import org.hammerlab.spark.test.suite.KryoSparkSuite
 
 trait LoadBAMChecks
@@ -16,8 +17,7 @@ trait LoadBAMChecks
   register(
     new Registrar,
 
-    /** [[org.hammerlab.magic.rdd.partitions.PartitionSizesRDD.partitionSizes]] collects integers */
-    classOf[Array[Int]],
+    PartitionSizes,
 
     /** We [[RDD.take]] some read-names below */
     classOf[Array[String]]

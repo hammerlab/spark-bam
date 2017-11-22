@@ -1,7 +1,9 @@
 package org.hammerlab.bam.check
 
-import cats.implicits.catsStdShowForLong
-import cats.syntax.all._
+import hammerlab.bytes._
+import hammerlab.iterator._
+import magic_rdds.sample._
+import magic_rdds.size._
 import org.apache.log4j.Level.WARN
 import org.apache.log4j.Logger.getRootLogger
 import org.apache.spark.rdd.RDD
@@ -11,7 +13,6 @@ import org.hammerlab.bam.check.indexed.{ BlocksAndIndexedRecords, IndexedRecordP
 import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
-import org.hammerlab.bytes.Bytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
 import org.hammerlab.cli.app.Args
@@ -19,10 +20,7 @@ import org.hammerlab.cli.app.HasPrintLimit.PrintLimit
 import org.hammerlab.cli.app.OutPathApp.HasOverwrite
 import org.hammerlab.cli.app.close.Closeable
 import org.hammerlab.cli.app.spark.{ PathApp, Registrar }
-import org.hammerlab.iterator.FinishingIterator._
 import org.hammerlab.kryo._
-import org.hammerlab.magic.rdd.SampleRDD._
-import org.hammerlab.magic.rdd.size._
 import org.hammerlab.shapeless._
 import org.hammerlab.shapeless.hlist.Find
 
@@ -40,6 +38,7 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
     findFindReads: Find[Opts, FindReadArgs]
 )
   extends PathApp(args, reg)
+    with hammerlab.show
     with Serializable {
 
   implicit val blocksArgs = args.findt[Blocks.Args]
@@ -187,10 +186,7 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
       val sampledPositions =
         fpsWithMetadata
           // Optimization: convert to strings before collecting, otherwise reads can be huge due to denormalized headers
-          .map {
-            fp ⇒
-              fp.show
-          }
+          .map { _.show }
           .sample(numFalsePositives)
 
       print(

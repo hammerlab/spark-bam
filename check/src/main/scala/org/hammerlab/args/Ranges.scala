@@ -2,13 +2,10 @@ package org.hammerlab.args
 
 import caseapp.core.ArgParser
 import caseapp.core.ArgParser.instance
-import cats.syntax.all._
-import org.hammerlab.bytes.Bytes
-import org.hammerlab.guava.collect.Range.closedOpen
+import cats.syntax.either._
+import org.hammerlab.args.Range.toGuavaRange
 import org.hammerlab.guava.collect.{ RangeSet, TreeRangeSet }
 import shapeless._
-import spire.math.{ Algebraic, ConvertableFrom, ConvertableTo, Rational, Real }
-import Range.toGuavaRange
 
 trait Integral[T] {
   def +(a: T, b: T): T

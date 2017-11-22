@@ -1,5 +1,8 @@
 package org.hammerlab.bam.spark.compare
 
+import hammerlab.iterator._
+import hammerlab.or._
+import hammerlab.path._
 import org.apache.hadoop.fs
 import org.apache.hadoop.mapreduce.lib.input
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths
@@ -12,12 +15,8 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ BGZFBlocksToCheck, FindBlockStart }
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.hadoop.splits.{ FileSplit, FileSplits, MaxSplitSize }
-import org.hammerlab.iterator.sliding.Sliding2Iterator._
-import org.hammerlab.iterator.sorted.OrZipIterator._
 import org.hammerlab.kryo._
-import org.hammerlab.paths.Path
 import org.hammerlab.timing.Timer
-import org.hammerlab.types.{ Both, L, R }
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit }
 import shapeless.Generic
 
@@ -60,7 +59,7 @@ object Result
 
     val diffs =
       sparkBamSplits
-        .sortedOrZip[Split, Pos](hadoopBamSplits)
+        .orMerge[Split, Pos](hadoopBamSplits)
         .flatMap {
           case Both(_, _) ⇒ None
           case L(ours) ⇒ Some(Left(ours))

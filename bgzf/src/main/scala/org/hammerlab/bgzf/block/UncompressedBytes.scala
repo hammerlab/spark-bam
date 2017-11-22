@@ -2,20 +2,19 @@ package org.hammerlab.bgzf.block
 
 import java.io.Closeable
 
+import hammerlab.iterator._
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.channel.{ ByteChannel, SeekableByteChannel }
-import org.hammerlab.iterator.FlatteningIterator._
-import org.hammerlab.iterator.SimpleBufferedIterator
 
 /**
  * [[Iterator]] of bgzf-decompressed bytes from a [[Stream]] of [[Block]]s.
  * @tparam BlockStream underlying [[Block]]-[[Stream]] type (basically: seekable or not?).
  */
 trait UncompressedBytesI[BlockStream <: StreamI]
-  extends SimpleBufferedIterator[Byte]
+  extends SimpleIterator[Byte]
     with Closeable {
   def blockStream: BlockStream
-  val uncompressedBytes = blockStream.smush
+  val uncompressedBytes = blockStream.level
   def curBlock: Option[Block] = uncompressedBytes.cur
   def curPos: Option[Pos] = curBlock.map(_.pos)
 

@@ -2,6 +2,7 @@ package org.hammerlab.bam.check.seqdoop
 
 import java.io.Closeable
 
+import hammerlab.path._
 import htsjdk.samtools.SAMFormatException
 import htsjdk.samtools.seekablestream.SeekableStream
 import htsjdk.samtools.util.RuntimeIOException
@@ -13,9 +14,8 @@ import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
-import org.hammerlab.paths.Path
+import org.seqdoop.hadoop_bam.BAMPosGuesser
 import org.seqdoop.hadoop_bam.BAMSplitGuesser.MAX_BYTES_READ
-import org.seqdoop.hadoop_bam.{ BAMPosGuesser, BAMSplitGuesser }
 
 import scala.math.min
 

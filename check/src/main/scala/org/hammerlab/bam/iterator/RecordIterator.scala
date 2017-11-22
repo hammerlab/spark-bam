@@ -2,18 +2,18 @@ package org.hammerlab.bam.iterator
 
 import java.io.{ Closeable, InputStream }
 
+import hammerlab.iterator.SimpleIterator
 import org.hammerlab.bam.header.Header
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Block, UncompressedBytesI }
 import org.hammerlab.channel.ByteChannel
-import org.hammerlab.iterator.SimpleBufferedIterator
 
 /**
  * Interface for iterators that wrap a (compressed) BAM-file [[InputStream]] and emit one object for each underlying
  * record.
  */
 trait RecordIterator[T, UncompressedBytes <: UncompressedBytesI[_]]
-  extends SimpleBufferedIterator[T]
+  extends SimpleIterator[T]
     with Closeable {
 
   // Uncompressed bytes; also exposes pointer to current-block
