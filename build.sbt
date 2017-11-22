@@ -23,7 +23,7 @@ val defaults = Seq(
 lazy val bgzf = project.settings(
   defaults,
   organization := "org.hammerlab",
-  version := "1.0.0-SNAPSHOT",
+  version := "1.0.0",
   deps ++= Seq(
     case_app,
     case_cli + testtest,
@@ -44,7 +44,7 @@ lazy val bgzf = project.settings(
 
 lazy val check = project.settings(
   defaults,
-  version := "1.0.0-SNAPSHOT",
+  version := "1.0.0",
   deps ++= Seq(
     bytes,
     case_app,
@@ -70,7 +70,7 @@ lazy val check = project.settings(
 
 lazy val cli = project.settings(
   defaults,
-  version := "1.0.0-SNAPSHOT",
+  version := "1.0.0",
 
   deps ++= Seq(
     bytes,
@@ -118,7 +118,7 @@ lazy val cli = project.settings(
 
 lazy val load = project.settings(
   defaults,
-  version := "1.0.0-SNAPSHOT",
+  version := "1.0.0",
 
   // When running all tests in this project with `sbt test`, sometimes a Kryo
   // "Class is not registered: org.hammerlab.genomics.loci.set.LociSet" exception is thrown by
@@ -147,7 +147,7 @@ lazy val load = project.settings(
 
 lazy val seqdoop = project.settings(
   defaults,
-  version := "1.0.0-SNAPSHOT",
+  version := "1.0.0",
   deps ++= Seq(
     channel,
     hammerlab_hadoop_bam,
@@ -166,7 +166,7 @@ lazy val seqdoop = project.settings(
 lazy val test_bams = project.settings(
   defaults,
   name := "test-bams",
-  version := "1.0.0-SNAPSHOT",
+  version := "1.0.0",
   deps ++= Seq(
     paths,
     testUtils
