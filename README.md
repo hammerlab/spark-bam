@@ -10,3 +10,7 @@ To build them locally:
 cd docs
 jekyll serve -H 0.0.0.0
 ```
+
+[Apache Spark]: https://spark.apache.org/
+[SAM spec]: http://samtools.github.io/hts-specs/SAMv1.pdf
+[hadoop-bam]: https://github.com/HadoopGenomics/Hadoop-BAM
