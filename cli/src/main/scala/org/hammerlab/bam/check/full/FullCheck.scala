@@ -147,6 +147,8 @@ object FullCheck extends Cmd {
               None
           }
           .keyBy(_._2.numNonZeroFields)
+          .setName("flagsByCount")
+          .cache
 
       /**
        * How many times each flag correctly rules out a [[Pos]], grouped by how many total flags rule out that [[Pos]].
@@ -215,6 +217,7 @@ object FullCheck extends Cmd {
                 }
                 .finish(uncompressedBytes.close())
           }
+          .setName("closeCalls")
           .cache
 
         /**
