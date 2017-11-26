@@ -1,7 +1,7 @@
 Process [BAM files][SAM spec] using [Apache Spark] and [HTSJDK]; inspired by [hadoop-bam].
 
 ```bash
-$ spark-shell --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
+$ spark-shell --packages=org.hammerlab.bam:load:1.0.0
 ```
 ```scala
 import spark_bam._, hammerlab.path._
@@ -27,7 +27,7 @@ sc.loadReads(path, splitSize = 16 MB)
 ### SBT
 
 ```scala
-libraryDependencies += "org.hammerlab.bam" %% "load" % "1.0.0-SNAPSHOT"
+libraryDependencies += "org.hammerlab.bam" %% "load" % "1.0.0"
 ```
 
 ### Maven
@@ -36,14 +36,14 @@ libraryDependencies += "org.hammerlab.bam" %% "load" % "1.0.0-SNAPSHOT"
 <dependency>
        <groupId>org.hammerlab.bam</groupId>
        <artifactId>load_2.11</artifactId>
-       <version>1.0.0-SNAPSHOT</version>
+       <version>1.0.0</version>
 </dependency>
 ```
 
 ### From `spark-shell`
 
 ```bash
-spark-shell --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
+spark-shell --packages=org.hammerlab.bam:load:1.0.0
 ```
 
 ### On Google Cloud
@@ -60,7 +60,7 @@ wget https://oss.sonatype.org/content/repositories/releases/com/google/cloud/goo
 Then include it in your `--jars` list when running `spark-shell` or `spark-submit`:
 
 ```bash
-spark-shell --jars $GOOGLE_CLOUD_NIO_JAR --packages=org.hammerlab.bam:load:1.0.0-SNAPSHOT
+spark-shell --jars $GOOGLE_CLOUD_NIO_JAR --packages=org.hammerlab.bam:load:1.0.0
 …
 import spark_bam._, hammerlab.path._
 
