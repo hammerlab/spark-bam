@@ -11,7 +11,7 @@ val defaults = Seq(
                iterators → "2.0.0",
                     loci → "2.0.1",
               magic_rdds → "4.1.0-SNAPSHOT",
-                    math → "2.1.0",
+                    math → "2.1.2-SNAPSHOT",
                    paths → "1.4.0",
                reference → "1.4.0",
               spark_util → "2.0.1",
