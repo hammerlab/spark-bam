@@ -1,29 +1,28 @@
-import org.hammerlab.sbt.deps.Configuration
 
 val defaults = Seq(
+  organization := "org.hammerlab.bam",
+  version := "1.1.0-SNAPSHOT",
   versions ++= Seq(
                    bytes → "1.1.0",
-                case_cli → "2.1.1",
-                 channel → "1.2.1",
+                case_cli → "2.2.0-SNAPSHOT",
+                 channel → "1.3.0-SNAPSHOT",
     hammerlab_hadoop_bam → "7.9.0",
-                      io → "3.1.0",
+                      io → "4.0.0-SNAPSHOT",
                iterators → "2.0.0",
                     loci → "2.0.1",
-              magic_rdds → "4.0.0",
+              magic_rdds → "4.1.0-SNAPSHOT",
                     math → "2.1.0",
                    paths → "1.4.0",
                reference → "1.4.0",
               spark_util → "2.0.1",
-                   stats → "1.1.1",
+                   stats → "1.2.0-SNAPSHOT",
                    types → "1.0.1"
-  ),
-  organization := "org.hammerlab.bam"
+  )
 )
 
 lazy val bgzf = project.settings(
   defaults,
   organization := "org.hammerlab",
-  version := "1.0.0",
   deps ++= Seq(
     case_app,
     case_cli + testtest,
@@ -44,7 +43,6 @@ lazy val bgzf = project.settings(
 
 lazy val check = project.settings(
   defaults,
-  version := "1.0.0",
   deps ++= Seq(
     bytes,
     case_app,
@@ -70,8 +68,6 @@ lazy val check = project.settings(
 
 lazy val cli = project.settings(
   defaults,
-  version := "1.0.0",
-
   deps ++= Seq(
     bytes,
     case_app,
@@ -118,7 +114,6 @@ lazy val cli = project.settings(
 
 lazy val load = project.settings(
   defaults,
-  version := "1.0.0",
 
   // When running all tests in this project with `sbt test`, sometimes a Kryo
   // "Class is not registered: org.hammerlab.genomics.loci.set.LociSet" exception is thrown by
@@ -147,7 +142,6 @@ lazy val load = project.settings(
 
 lazy val seqdoop = project.settings(
   defaults,
-  version := "1.0.0",
   deps ++= Seq(
     channel,
     hammerlab_hadoop_bam,

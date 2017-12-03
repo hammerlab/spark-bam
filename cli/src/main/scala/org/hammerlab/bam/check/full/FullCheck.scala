@@ -4,6 +4,7 @@ import caseapp.{ AppName, ProgName, Recurse }
 import hammerlab.iterator._
 import hammerlab.monoid._
 import hammerlab.path._
+import hammerlab.print._
 import magic_rdds.sample._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -230,7 +231,7 @@ object FullCheck extends Cmd {
 
             echo(
               "Critical error counts (true negatives where only one check failed):",
-              criticalCounts.show(includeZeros = false),
+              criticalCounts.lines(includeZeros = false),
               ""
             )
 
@@ -295,16 +296,13 @@ object FullCheck extends Cmd {
               echo("")
             }
 
-            echo(
-              "\tPer-flag totals:",
-              s"${
-                counts.show(
-                  indent = "\t",
-                  includeZeros = false
-                )
-              }",
-              ""
-            )
+            indent {
+              echo(
+                "Per-flag totals:",
+                counts.lines(includeZeros = false)
+              )
+            }
+            echo("")
           case None ⇒
             echo(
               "No positions where exactly two checks failed",
@@ -319,7 +317,7 @@ object FullCheck extends Cmd {
 
       echo(
         "Total error counts:",
-        totalErrorCounts.show(hideTooFewFixedBlockBytes = true),
+        totalErrorCounts.lines(hideTooFewFixedBlockBytes = true),
         ""
       )
     }

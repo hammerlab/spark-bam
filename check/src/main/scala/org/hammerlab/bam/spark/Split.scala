@@ -21,7 +21,7 @@ object Split {
     )
 
   implicit def makeShow(implicit showPos: Show[Pos]): Show[Split] =
-    show {
+    Show {
       case Split(start, end) ⇒
         show"$start-$end"
     }

@@ -2,6 +2,7 @@ package org.hammerlab.bam.spark.compare
 
 import caseapp.{ Name ⇒ O, Recurse ⇒ R }
 import hammerlab.monoid._
+import hammerlab.print._
 import hammerlab.show._
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bam.spark.{ LoadReads, load }
@@ -9,14 +10,15 @@ import org.hammerlab.cli.app.Cmd
 import org.hammerlab.cli.app.spark.PathApp
 import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.exception.Error
-import org.hammerlab.io.{ Print, Printer }
 import org.hammerlab.stats.{ Empty, Stats }
 import org.hammerlab.timing.Timer
 import spark_bam._
 
 import scala.util.{ Failure, Success, Try }
 
-object CountReads extends Cmd {
+object CountReads
+  extends Cmd {
+
   case class Opts(@R printLimit: PrintLimitArgs,
                   @R splitSizeArgs: SplitSize.Args,
                   @O("s") sparkBamFirst: Boolean = false,
@@ -73,36 +75,33 @@ object CountReads extends Cmd {
 
   case class Result(sparkBam: Reads, hadoopBam: Try[Reads])
 
-  import hammerlab.indent.tab
+  import hammerlab.indent.implicits.tab
 
   object Result {
-    implicit val showResult: Show[Result] =
-      Print[Result] {
-        new Print(_) {
-          val Result(sparkBam, hadoopBam) = t
-          echo(s"spark-bam read-count time: ${sparkBam.timeMS}")
-          hadoopBam match {
-            case Success(hadoopBam) ⇒
-              echo(
-                s"hadoop-bam read-count time: ${hadoopBam.timeMS}",
-                ""
-              )
+    implicit val showResult: ToLines[Result] =
+      new Print(_: Result) {
+        val Result(sparkBam, hadoopBam) = t
+        echo(s"spark-bam read-count time: ${sparkBam.timeMS}")
+        hadoopBam match {
+          case Success(hadoopBam) ⇒
+            echo(
+              s"hadoop-bam read-count time: ${hadoopBam.timeMS}",
+              ""
+            )
 
-              if (sparkBam.numReads == hadoopBam.numReads)
-                echo(s"Read counts matched: ${sparkBam.numReads}")
-              else
-                echo(s"Read counts mismatched: ${sparkBam.numReads} via spark-bam, ${hadoopBam.numReads} via hadoop-bam")
-            case Failure(e) ⇒
-              echo(
-                "",
-                s"spark-bam found ${sparkBam.numReads} reads, hadoop-bam threw exception:",
-                Error(e)
-              )
-          }
-          bytes.toString
+            if (sparkBam.numReads == hadoopBam.numReads)
+              echo(s"Read counts matched: ${sparkBam.numReads}")
+            else
+              echo(s"Read counts mismatched: ${sparkBam.numReads} via spark-bam, ${hadoopBam.numReads} via hadoop-bam")
+          case Failure(e) ⇒
+            echo(
+              "",
+              s"spark-bam found ${sparkBam.numReads} reads, hadoop-bam threw exception:",
+              Error(e)
+            )
         }
       }
-  }
+    }
 
   case class Results(numRuns: Int,
                      failures: Seq[Throwable],
@@ -130,7 +129,7 @@ object CountReads extends Cmd {
     }
 
     implicit def showReadsCountsMap(implicit p: Printer): Show[Map[Long, Int]] =
-      show {
+      Show {
         _
           .map {
             case (numReads, numRuns) ⇒
@@ -139,81 +138,79 @@ object CountReads extends Cmd {
           .mkString("\n")
       }
 
-    implicit val showResults: Show[Results] =
-      Print[Results] {
-        new Print(_) {
-          val Results(
-            numRuns,
-            failures,
-            sparkBamTimes,
-            hadoopBamTimes,
-            sparkBamNumReads,
-            hadoopBamNumReads
-          ) = t
-          if (failures.nonEmpty) {
-            echo(
-              s"hadoop-bam failed on ${failures.size} of $numRuns runs:",
-              ""
-            )
-            failures.foreach {
-              e ⇒
-                echo(
-                  Error(e),
-                  ""
-                )
-            }
-          }
-
+    implicit val showResults: ToLines[Results] =
+      new Print(_: Results) {
+        val Results(
+          numRuns,
+          failures,
+          sparkBamTimes,
+          hadoopBamTimes,
+          sparkBamNumReads,
+          hadoopBamNumReads
+        ) = t
+        if (failures.nonEmpty) {
           echo(
-            "spark-bam times (ms):",
-            sparkBamTimes,
+            s"hadoop-bam failed on ${failures.size} of $numRuns runs:",
             ""
           )
-
-          hadoopBamTimes match {
-            case Empty() ⇒
-            case _ ⇒
+          failures.foreach {
+            e ⇒
               echo(
-                "hadoop-bam times (ms):",
-                hadoopBamTimes,
+                Error(e),
                 ""
               )
           }
+        }
 
-          (sparkBamNumReads.size, hadoopBamNumReads.size) match {
-            case (1, 1) ⇒
-              val sparkBamReads = sparkBamNumReads.head
-              val hadoopBamReads = hadoopBamNumReads.head
-              if (sparkBamReads == hadoopBamReads)
-                echo(
-                  s"Read counts matched: ${sparkBamReads._1}"
-                )
-              else if (sparkBamReads._1 == hadoopBamReads._1)
-                echo(
-                  s"${sparkBamReads._2} spark-bam runs matched ${hadoopBamReads._2} hadoop-bam runs: ${sparkBamReads._1}"
-                )
-              else
-                echo(
-                  s"Read counts mismatched: ${sparkBamReads._1} via spark-bam, ${hadoopBamReads._1} via hadoop-bam"
-                )
-            case (n, 0|1) if n > 1 ⇒
+        echo(
+          "spark-bam times (ms):",
+          sparkBamTimes,
+          ""
+        )
+
+        hadoopBamTimes match {
+          case Empty() ⇒
+          case _ ⇒
+            echo(
+              "hadoop-bam times (ms):",
+              hadoopBamTimes,
+              ""
+            )
+        }
+
+        (sparkBamNumReads.size, hadoopBamNumReads.size) match {
+          case (1, 1) ⇒
+            val sparkBamReads = sparkBamNumReads.head
+            val hadoopBamReads = hadoopBamNumReads.head
+            if (sparkBamReads == hadoopBamReads)
               echo(
-                "spark-bam read-counts:",
-                sparkBamNumReads
+                s"Read counts matched: ${sparkBamReads._1}"
               )
-              if (hadoopBamNumReads.size == 1)
-                echo(
-                  "",
-                  s"hadoop-bam: ${hadoopBamNumReads.head._1}"
-                )
-            case (1, _) ⇒
+            else if (sparkBamReads._1 == hadoopBamReads._1)
               echo(
-                s"spark-bam: ${sparkBamNumReads.head._1}",
+                s"${sparkBamReads._2} spark-bam runs matched ${hadoopBamReads._2} hadoop-bam runs: ${sparkBamReads._1}"
+              )
+            else
+              echo(
+                s"Read counts mismatched: ${sparkBamReads._1} via spark-bam, ${hadoopBamReads._1} via hadoop-bam"
+              )
+          case (n, 0|1) if n > 1 ⇒
+            echo(
+              "spark-bam read-counts:",
+              sparkBamNumReads
+            )
+            if (hadoopBamNumReads.size == 1)
+              echo(
                 "",
-                "hadoop-bam read-counts:",
-                hadoopBamNumReads
+                s"hadoop-bam: ${hadoopBamNumReads.head._1}"
               )
-          }
+          case (1, _) ⇒
+            echo(
+              s"spark-bam: ${sparkBamNumReads.head._1}",
+              "",
+              "hadoop-bam read-counts:",
+              hadoopBamNumReads
+            )
         }
       }
   }
