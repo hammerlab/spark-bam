@@ -1,21 +1,21 @@
 
 val defaults = Seq(
   organization := "org.hammerlab.bam",
-  version := "1.1.0-SNAPSHOT",
+  v"1.1.0",
   versions ++= Seq(
-                   bytes → "1.1.0",
-                case_cli → "2.2.0-SNAPSHOT",
-                 channel → "1.3.0-SNAPSHOT",
-    hammerlab_hadoop_bam → "7.9.0",
-                      io → "4.0.0-SNAPSHOT",
-               iterators → "2.0.0",
-                    loci → "2.0.1",
-              magic_rdds → "4.1.0-SNAPSHOT",
-                    math → "2.1.2-SNAPSHOT",
-                   paths → "1.4.0",
-               reference → "1.4.0",
-              spark_util → "2.0.1",
-                   stats → "1.2.0-SNAPSHOT",
+                   bytes → "1.1.0"           ,
+                case_cli → "2.2.0" snapshot  ,
+                 channel → "1.3.0" snapshot  ,
+    hammerlab_hadoop_bam → "7.9.0"           ,
+                      io → "4.0.0" snapshot  ,
+               iterators → "2.0.0"           ,
+                    loci → "2.0.1"           ,
+              magic_rdds → "4.1.0" snapshot  ,
+                    math → "2.1.2" snapshot  ,
+                   paths → "1.4.0"           ,
+               reference → "1.4.0"           ,
+              spark_util → "2.0.1"           ,
+                   stats → "1.2.0" snapshot  ,
                    types → "1.0.1"
   )
 )
@@ -23,7 +23,7 @@ val defaults = Seq(
 lazy val bgzf = project.settings(
   defaults,
   organization := "org.hammerlab",
-  deps ++= Seq(
+  dep(
     case_app,
     case_cli + testtest,
     cats,
@@ -38,12 +38,12 @@ lazy val bgzf = project.settings(
   ),
   addSparkDeps
 ).dependsOn(
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val check = project.settings(
   defaults,
-  deps ++= Seq(
+  dep(
     bytes,
     case_app,
     case_cli + testtest,
@@ -63,12 +63,12 @@ lazy val check = project.settings(
   fork := true  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
 ).dependsOn(
   bgzf,
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val cli = project.settings(
   defaults,
-  deps ++= Seq(
+  dep(
     bytes,
     case_app,
     case_cli + testtest,
@@ -103,13 +103,15 @@ lazy val cli = project.settings(
   // google-cloud-nio).
   assemblyExcludeLib,
 
-  publishAssemblyJar
+  publishAssemblyJar,
+
+  consolePkg("spark_bam")
 ).dependsOn(
   bgzf,
   check,
   load,
   seqdoop,
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val load = project.settings(
@@ -120,7 +122,7 @@ lazy val load = project.settings(
   // LoadBAMTest:"indexed disjoint regions"; this works around it.
   fork := true,
 
-  deps ++= Seq(
+  dep(
     channel,
     htsjdk,
     iterators,
@@ -137,12 +139,12 @@ lazy val load = project.settings(
 ).dependsOn(
   bgzf,
   check,
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val seqdoop = project.settings(
   defaults,
-  deps ++= Seq(
+  dep(
     channel,
     hammerlab_hadoop_bam,
     htsjdk,
@@ -154,14 +156,14 @@ lazy val seqdoop = project.settings(
 ).dependsOn(
   bgzf,
   check,
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val test_bams = project.settings(
   defaults,
   name := "test-bams",
-  version := "1.0.0",
-  deps ++= Seq(
+  r"1.0.0",
+  dep(
     paths,
     testUtils
   ),
@@ -172,7 +174,7 @@ lazy val test_bams = project.settings(
 // https://youtrack.jetbrains.com/issue/SCL-12628#comment=27-2439322
 lazy val metrics = project.in(file("benchmarks")).settings(
   defaults,
-  deps ++= Seq(
+  dep(
     paths,
     bytes
   )

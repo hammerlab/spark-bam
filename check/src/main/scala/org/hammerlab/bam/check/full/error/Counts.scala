@@ -1,5 +1,6 @@
 package org.hammerlab.bam.check.full.error
 
+import hammerlab.bool._
 import hammerlab.print._
 import hammerlab.show._
 import shapeless.labelled.FieldType
@@ -82,7 +83,7 @@ object Counts {
                          hideTooFewFixedBlockBytes: Boolean = false)(
       implicit _indent: Indent
   ): ToLines[Counts] =
-    new Print(_: Counts) {
+    (t: Counts) ⇒ {
       val dc = t.descCounts
 
       val stringPairs =
@@ -115,19 +116,15 @@ object Counts {
       val maxKeySize = stringPairs.map(_._1.length).max
       val maxValSize = stringPairs.map(_._2.length).max
 
-      if (wrapFields)
-        write("Errors(")
-
-      ind {
-        stringPairs foreach {
-          case (k, v) ⇒
-            write(
+      Lines(
+        wrapFields | "Errors(",
+        indent {
+          stringPairs map {
+            case (k, v) ⇒
               s"${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
-            )
-        }
-      }
-
-      if (wrapFields)
-        write(")")
+          }
+        },
+        wrapFields | ")"
+      )
   }
 }
