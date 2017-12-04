@@ -142,7 +142,7 @@ object CheckBlocks
                   case (Some(k), v) ⇒ k → v
                 }
 
-              implicit val truncatedDouble: Show[Double] = show { math.round(_).show }
+              implicit val truncatedDouble: Show[Double] = Show { math.round(_).show }
 
               echo(
                 "",
@@ -167,7 +167,7 @@ object CheckBlocks
         echo("")
 
         implicit val showPosOpt: Show[Option[Pos]] =
-          show {
+          Show {
             _.map(_.toString).getOrElse("-")
           }
 

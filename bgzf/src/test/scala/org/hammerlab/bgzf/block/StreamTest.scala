@@ -3,6 +3,8 @@ package org.hammerlab.bgzf.block
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
 
+import hammerlab.indent.implicits.tab
+import hammerlab.print._
 import hammerlab.show._
 import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.stats.Stats
@@ -12,7 +14,7 @@ class StreamTest
   extends Suite {
 
   def check(stats: Stats[Int, Int], expectedStr: String): Unit = {
-    stats.show should be(
+    stats.showLines should be(
       expectedStr
         .stripMargin
         .trim

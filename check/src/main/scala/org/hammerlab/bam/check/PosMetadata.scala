@@ -17,13 +17,13 @@ case class PosMetadata(pos: Pos,
 object PosMetadata {
 
   implicit def defaultShow(implicit showRecord: Show[SAMRecord]): Show[PosMetadata] =
-    show {
+    Show {
       case PosMetadata(pos, recordOpt, flags) ⇒
         show"$pos:\t$recordOpt. Failing checks: $flags"
     }
 
   implicit def showNextRecordOpt(implicit showNextRecord: Show[NextRecord]): Show[Option[NextRecord]] =
-    show {
+    Show {
       case Some(nextRecord) ⇒ nextRecord.show
       case None ⇒ "no next record"
     }
@@ -32,7 +32,7 @@ object PosMetadata {
     s"${contigLengths(record.getReferenceIndex)._1}:${record.getStart}"
 
   implicit def showRecord(implicit contigLengths: ContigLengths): Show[SAMRecord] =
-    show {
+    Show {
       record ⇒
         record
           .toString
@@ -41,9 +41,9 @@ object PosMetadata {
               // Append info about mapped/placed location
               if (
                 record.getReadUnmappedFlag &&
-                  record.getStart >= 0 &&
-                  record.getReferenceIndex >= 0 &&
-                  record.getReferenceIndex < contigLengths.size
+                record.getStart >= 0 &&
+                record.getReferenceIndex >= 0 &&
+                record.getReferenceIndex < contigLengths.size
               )
                 s" (placed at ${recordPos(record)})"
               else if (!record.getReadUnmappedFlag)

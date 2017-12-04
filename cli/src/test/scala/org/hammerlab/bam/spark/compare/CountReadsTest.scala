@@ -16,7 +16,6 @@ class CountReadsTest
       l"hadoop-bam read-count time: $d",
       "",
       "Read counts matched: 4917",
-      "",
       ""
     )
   }

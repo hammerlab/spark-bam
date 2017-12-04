@@ -1,42 +1,44 @@
 package org.hammerlab.bam.check.full.error
 
-import cats.Show
-import cats.Show.show
+import hammerlab.bool._
+import hammerlab.print._
+import hammerlab.show._
 import shapeless.labelled.FieldType
 
-case class Counts(tooFewFixedBlockBytes      : Long,
-                  negativeReadIdx            : Long,
-                  tooLargeReadIdx            : Long,
-                  negativeReadPos            : Long,
-                  tooLargeReadPos            : Long,
-                  negativeNextReadIdx        : Long,
-                  tooLargeNextReadIdx        : Long,
-                  negativeNextReadPos        : Long,
-                  tooLargeNextReadPos        : Long,
-                  tooFewBytesForReadName     : Long,
-                  nonNullTerminatedReadName  : Long,
-                  nonASCIIReadName           : Long,
-                  noReadName                 : Long,
-                  emptyReadName              : Long,
-                  tooFewBytesForCigarOps     : Long,
-                  invalidCigarOp             : Long,
-                  emptyMappedCigar           : Long,
-                  emptyMappedSeq             : Long,
-                  tooFewRemainingBytesImplied: Long,
-                  readsBeforeError           : Map[Int, Long]
+case class Counts(tooFewFixedBlockBytes       : Long,
+                  negativeReadIdx             : Long,
+                  tooLargeReadIdx             : Long,
+                  negativeReadPos             : Long,
+                  tooLargeReadPos             : Long,
+                  negativeNextReadIdx         : Long,
+                  tooLargeNextReadIdx         : Long,
+                  negativeNextReadPos         : Long,
+                  tooLargeNextReadPos         : Long,
+                  tooFewBytesForReadName      : Long,
+                  nonNullTerminatedReadName   : Long,
+                  nonASCIIReadName            : Long,
+                  noReadName                  : Long,
+                  emptyReadName               : Long,
+                  tooFewBytesForCigarOps      : Long,
+                  invalidCigarOp              : Long,
+                  emptyMappedCigar            : Long,
+                  emptyMappedSeq              : Long,
+                  tooFewRemainingBytesImplied : Long,
+                  readsBeforeError            : Map[Int, Long]
                  )
   extends Error[Long] {
-  def show(indent: String = "",
-           wrapFields: Boolean = false,
-           includeZeros: Boolean = true,
-           hideTooFewFixedBlockBytes: Boolean = false): String =
-    Counts.makeShow(
-      indent,
+  def lines(wrapFields: Boolean = false,
+            includeZeros: Boolean = true,
+            hideTooFewFixedBlockBytes: Boolean = false)(
+      implicit indent: Indent
+  ): Lines =
+    Counts.makeLines(
       wrapFields,
       includeZeros,
       hideTooFewFixedBlockBytes
+    ).apply(
+      this
     )
-    .show(this)
 }
 
 object Counts {
@@ -76,64 +78,53 @@ object Counts {
   /**
    * Pretty-print an [[Counts]]
    */
-  implicit def makeShow(indent: String = "",
-                        wrapFields: Boolean = false,
-                        includeZeros: Boolean = true,
-                        hideTooFewFixedBlockBytes: Boolean = false): Show[Counts] =
-    show {
-      counts ⇒
+  implicit def makeLines(wrapFields: Boolean = false,
+                         includeZeros: Boolean = true,
+                         hideTooFewFixedBlockBytes: Boolean = false)(
+      implicit _indent: Indent
+  ): ToLines[Counts] =
+    (t: Counts) ⇒ {
+      val dc = t.descCounts
 
-        val dc = counts.descCounts
+      val stringPairs =
+        (
+          for {
+            (k, v) ← dc
+            if (v > 0 || includeZeros) && (k != "tooFewFixedBlockBytes" || !hideTooFewFixedBlockBytes)
+          } yield
+            k → v.toString
+        ) ++
+        (
+          t
+            .readsBeforeError
+            .toVector
+            .sorted match {
+              case Vector() ⇒ Nil
+              case readsBeforeError ⇒
+                List(
+                  "readsBeforeError" →
+                    readsBeforeError
+                      .map {
+                        case (reads, num) ⇒
+                          s"${reads}ⅹ$num"
+                      }
+                      .mkString(" ")
+                )
+            }
+        )
 
-        val stringPairs =
-          (
-            for {
-              (k, v) ← dc
-              if (v > 0 || includeZeros) && (k != "tooFewFixedBlockBytes" || !hideTooFewFixedBlockBytes)
-            } yield
-              k → v.toString
-          ) ++
-          (
-            counts
-              .readsBeforeError
-              .toVector
-              .sorted match {
-                case Vector() ⇒ Nil
-                case readsBeforeError ⇒
-                  List(
-                    "readsBeforeError" →
-                      readsBeforeError
-                        .map {
-                          case (reads, num) ⇒
-                            s"${reads}ⅹ$num"
-                        }
-                        .mkString(" ")
-                  )
-              }
-          )
+      val maxKeySize = stringPairs.map(_._1.length).max
+      val maxValSize = stringPairs.map(_._2.length).max
 
-        val maxKeySize = stringPairs.map(_._1.length).max
-        val maxValSize = stringPairs.map(_._2.length).max
-
-        val lines =
-          stringPairs.map {
+      Lines(
+        wrapFields | "Errors(",
+        indent {
+          stringPairs map {
             case (k, v) ⇒
-              s"\t${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
+              s"${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
           }
-
-        if (wrapFields)
-          lines
-            .mkString(
-              s"${indent}Errors(\n\t$indent",
-              s"\n\t$indent",
-              s"\n$indent)"
-            )
-        else
-          lines
-            .mkString(
-              indent,
-              s"\n$indent",
-              ""
-            )
-    }
+        },
+        wrapFields | ")"
+      )
+  }
 }

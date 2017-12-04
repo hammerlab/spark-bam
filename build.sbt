@@ -1,30 +1,29 @@
-import org.hammerlab.sbt.deps.Configuration
 
 val defaults = Seq(
+  organization := "org.hammerlab.bam",
+  v"1.1.0",
   versions ++= Seq(
-                   bytes → "1.1.0",
-                case_cli → "2.1.1",
-                 channel → "1.2.1",
-    hammerlab_hadoop_bam → "7.9.0",
-                      io → "3.1.0",
-               iterators → "2.0.0",
-                    loci → "2.0.1",
-              magic_rdds → "4.0.0",
-                    math → "2.1.0",
-                   paths → "1.4.0",
-               reference → "1.4.0",
-              spark_util → "2.0.1",
-                   stats → "1.1.1",
+                   bytes → "1.1.0"           ,
+                case_cli → "2.2.0"           ,
+                 channel → "1.3.0"           ,
+    hammerlab_hadoop_bam → "7.9.0"           ,
+                      io → "4.0.0"           ,
+               iterators → "2.0.0"           ,
+                    loci → "2.0.1"           ,
+              magic_rdds → "4.1.0"           ,
+                    math → "2.1.2"           ,
+                   paths → "1.4.0"           ,
+               reference → "1.4.0"           ,
+              spark_util → "2.0.1"           ,
+                   stats → "1.2.0"           ,
                    types → "1.0.1"
-  ),
-  organization := "org.hammerlab.bam"
+  )
 )
 
 lazy val bgzf = project.settings(
   defaults,
   organization := "org.hammerlab",
-  version := "1.0.0",
-  deps ++= Seq(
+  dep(
     case_app,
     case_cli + testtest,
     cats,
@@ -39,13 +38,12 @@ lazy val bgzf = project.settings(
   ),
   addSparkDeps
 ).dependsOn(
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val check = project.settings(
   defaults,
-  version := "1.0.0",
-  deps ++= Seq(
+  dep(
     bytes,
     case_app,
     case_cli + testtest,
@@ -65,14 +63,12 @@ lazy val check = project.settings(
   fork := true  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
 ).dependsOn(
   bgzf,
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val cli = project.settings(
   defaults,
-  version := "1.0.0",
-
-  deps ++= Seq(
+  dep(
     bytes,
     case_app,
     case_cli + testtest,
@@ -107,25 +103,26 @@ lazy val cli = project.settings(
   // google-cloud-nio).
   assemblyExcludeLib,
 
-  publishAssemblyJar
+  publishAssemblyJar,
+
+  consolePkg("spark_bam")
 ).dependsOn(
   bgzf,
   check,
   load,
   seqdoop,
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val load = project.settings(
   defaults,
-  version := "1.0.0",
 
   // When running all tests in this project with `sbt test`, sometimes a Kryo
   // "Class is not registered: org.hammerlab.genomics.loci.set.LociSet" exception is thrown by
   // LoadBAMTest:"indexed disjoint regions"; this works around it.
   fork := true,
 
-  deps ++= Seq(
+  dep(
     channel,
     htsjdk,
     iterators,
@@ -142,13 +139,12 @@ lazy val load = project.settings(
 ).dependsOn(
   bgzf,
   check,
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val seqdoop = project.settings(
   defaults,
-  version := "1.0.0",
-  deps ++= Seq(
+  dep(
     channel,
     hammerlab_hadoop_bam,
     htsjdk,
@@ -160,14 +156,14 @@ lazy val seqdoop = project.settings(
 ).dependsOn(
   bgzf,
   check,
-  test_bams % "test"
+  test_bams test
 )
 
 lazy val test_bams = project.settings(
   defaults,
   name := "test-bams",
-  version := "1.0.0",
-  deps ++= Seq(
+  r"1.0.0",
+  dep(
     paths,
     testUtils
   ),
@@ -178,7 +174,7 @@ lazy val test_bams = project.settings(
 // https://youtrack.jetbrains.com/issue/SCL-12628#comment=27-2439322
 lazy val metrics = project.in(file("benchmarks")).settings(
   defaults,
-  deps ++= Seq(
+  dep(
     paths,
     bytes
   )

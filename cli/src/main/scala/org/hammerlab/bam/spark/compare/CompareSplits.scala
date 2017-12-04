@@ -84,7 +84,7 @@ object CompareSplits extends Cmd {
           .filter(_._2.diffs.nonEmpty)
           .collect
 
-      implicit val showDouble: Show[Double] = show { "%.1f".format(_) }
+      implicit val showDouble: Show[Double] = Show { "%.1f".format(_) }
 
       def printTimings(): Unit = {
         echo(
