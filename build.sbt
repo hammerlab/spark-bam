@@ -1,7 +1,7 @@
 
 val defaults = Seq(
   organization := "org.hammerlab.bam",
-  v"1.1.0",
+  r"1.1.0",
   versions ++= Seq(
                    bytes → "1.1.0"           ,
                 case_cli → "2.2.0"           ,
