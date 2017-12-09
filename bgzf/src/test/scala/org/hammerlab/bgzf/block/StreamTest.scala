@@ -1,6 +1,5 @@
 package org.hammerlab.bgzf.block
 
-import java.io.FileInputStream
 import java.nio.channels.FileChannel
 
 import hammerlab.indent.implicits.tab
