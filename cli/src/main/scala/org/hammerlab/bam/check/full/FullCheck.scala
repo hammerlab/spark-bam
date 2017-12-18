@@ -333,6 +333,4 @@ object FullCheck extends Cmd {
     arr[Split],
     cls[mutable.WrappedArray.ofInt]
   )
-
-//  object Main extends app.Main(App)
 }
