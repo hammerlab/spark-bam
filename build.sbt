@@ -1,25 +1,24 @@
 
 // most modules in this project are published with this group
-build(
-  group("org.hammerlab.bam")
-)
-
-github.repo("spark-bam")
-versions(
-                 bytes → "1.1.0"           ,
-              case_cli → "2.2.0"           ,
-               channel → "1.3.0"           ,
-  hammerlab_hadoop_bam → "7.9.0"           ,
-              io_utils → "4.0.0"           ,
-             iterators → "2.0.0"           ,
-                  loci → "2.0.1"           ,
-            magic_rdds → "4.1.0"           ,
-                  math → "2.1.2"           ,
-                 paths → "1.4.0"           ,
-             reference → "1.4.0"           ,
-            spark_util → "2.0.1"           ,
-                 stats → "1.2.0"           ,
-                 types → "1.0.1"
+default(
+  group("org.hammerlab.bam"),
+  github.repo("spark-bam"),
+  versions(
+                   bytes → "1.1.0"           ,
+                case_cli → "2.2.0"           ,
+                 channel → "1.3.0"           ,
+    hammerlab_hadoop_bam → "7.9.0"           ,
+                io_utils → "4.0.0"           ,
+               iterators → "2.0.0"           ,
+                    loci → "2.0.1"           ,
+              magic_rdds → "4.1.0"           ,
+                    math → "2.1.2"           ,
+                   paths → "1.4.0"           ,
+               reference → "1.4.0"           ,
+              spark_util → "2.0.1"           ,
+                   stats → "1.2.0"           ,
+                   types → "1.0.1"
+  )
 )
 
 lazy val bgzf = project.settings(
