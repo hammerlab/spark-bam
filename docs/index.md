@@ -20,6 +20,10 @@ import hammerlab.bytes._
 // Configure maximum split size
 sc.loadReads(path, splitSize = 16 MB)
 // RDD[SAMRecord]
+
+// Only load reads in specific intervals
+sc.loadBamIntervals(path)("1:13000-14000", "1:60000-61000").count
+// 129
 ```
 
 ## Linking
@@ -34,9 +38,9 @@ libraryDependencies += "org.hammerlab.bam" %% "load" % "1.1.0"
 
 ```xml
 <dependency>
-       <groupId>org.hammerlab.bam</groupId>
-       <artifactId>load_2.11</artifactId>
-       <version>1.1.0</version>
+  <groupId>org.hammerlab.bam</groupId>
+  <artifactId>load_2.11</artifactId>
+  <version>1.1.0</version>
 </dependency>
 ```
 

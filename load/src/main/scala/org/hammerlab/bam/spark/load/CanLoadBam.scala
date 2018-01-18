@@ -23,6 +23,7 @@ import org.hammerlab.bgzf.block.{ BGZFBlocksToCheck, FindBlockStart, SeekableUnc
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
+import org.hammerlab.genomics.loci.parsing.ParsedLoci
 import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.genomics.reference.{ Locus, Region }
 import org.hammerlab.hadoop.Configuration
@@ -32,6 +33,7 @@ import org.hammerlab.math.ceil
 import org.seqdoop.hadoop_bam.{ BAMRecordReader, CRAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 
 import scala.collection.JavaConverters._
+import scala.math.max
 
 /**
  * Add a `loadBam` method to [[SparkContext]] for loading [[SAMRecord]]s from a BAM file.
@@ -57,9 +59,25 @@ trait CanLoadBam
    * @return [[RDD]] of [[SAMRecord]]s that overlap the provided [[LociSet]]
    */
   def loadBamIntervals(path: Path,
-                       intervals: LociSet,
                        splitSize: MaxSplitSize = MaxSplitSize(),
-                       estimatedCompressionRatio: EstimatedCompressionRatio = default[EstimatedCompressionRatio]): RDD[SAMRecord] = {
+                       estimatedCompressionRatio: EstimatedCompressionRatio = default[EstimatedCompressionRatio]
+  )(
+      intervals: String*
+  ): RDD[SAMRecord] =
+    loadBamIntervals(
+      path,
+      LociSet(
+        ParsedLoci(intervals.iterator),
+        ContigLengths(path)
+      ),
+      splitSize,
+      estimatedCompressionRatio
+    )
+
+  def loadBamIntervals(path: Path,
+                       intervals: LociSet,
+                       splitSize: MaxSplitSize,
+                       estimatedCompressionRatio: EstimatedCompressionRatio): RDD[SAMRecord] = {
 
     val intervalsBroadcast = sc.broadcast(intervals)
 
@@ -94,7 +112,10 @@ trait CanLoadBam
     sc
       .parallelize(
         chunkPartitions,
-        chunkPartitions.size
+        max(
+          1,
+          chunkPartitions.size
+        )
       )
       .flatMap(chunks ⇒ chunks)
       .mapPartitions {

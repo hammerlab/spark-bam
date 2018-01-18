@@ -45,11 +45,11 @@ class LoadBAMTest
   }
 
   test("indexed all") {
-    val intervals: LociSet = "1:0-100000"
+    val interval = "1:0-100000"
 
     getIntevalChunks(
       path,
-      intervals
+      interval
     ) should be(
       Seq(
         Chunk(
@@ -59,31 +59,26 @@ class LoadBAMTest
       )
     )
 
-    val records =
-      sc.loadBamIntervals(path, intervals)
+    val records = sc.loadBamIntervals(path)(interval)
 
     records.count should be(2450)  // 2500 reads, 50 unmapped
   }
 
   test("indexed disjoint regions") {
-    val intervals: LociSet = "1:13000-14000,1:60000-61000"
+    val intervals = "1:13000-14000,1:60000-61000"
 
     getIntevalChunks(
       path,
       intervals
     ) should be(
       Seq(
-        Chunk(Pos(0, 5650),Pos(314028, 45444)),
-        Chunk(Pos(439897, 20150),Pos(439897, 39777))
+        Chunk(Pos(     0,  5650), Pos(314028, 45444)),
+        Chunk(Pos(439897, 20150), Pos(439897, 39777))
       )
     )
 
     {
-      val records =
-        sc.loadBamIntervals(
-          path,
-          intervals
-        )
+      val records = sc.loadBamIntervals(path)(intervals)
 
       records.getNumPartitions should be(1)
       records.count should be(129)
@@ -93,13 +88,28 @@ class LoadBAMTest
       val records =
         sc.loadBamIntervals(
           path,
-          intervals,
           splitSize = MaxSplitSize(10000)
+        )(
+          intervals
         )
 
       records.getNumPartitions should be(2)
       records.count should be(129)
     }
+  }
+
+  test("indexed intervals empty result") {
+    val intervals = "1:2000000-3000000"
+
+    getIntevalChunks(
+      path,
+      intervals
+    ) should be(
+      Nil
+    )
+
+    val records = sc.loadBamIntervals(path)(intervals)
+    records.count should be(0)
   }
 
   test("1.bam") {

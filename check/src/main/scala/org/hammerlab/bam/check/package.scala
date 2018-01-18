@@ -26,6 +26,6 @@ package object check {
       }
 
     implicit val default: Default[MaxReadSize] =
-      Default.instance(10000000)
+      Default.instance(100000000)
   }
 }

@@ -34,15 +34,10 @@ class LoadSAMTest
   }
 
   test("indexed disjoint regions") {
-    val intervals: LociSet = "1:13000-14000,1:28000-29000"
+    val intervals = "1:13000-14000,1:28000-29000"
 
     {
-      val records = 
-        sc.loadBamIntervals(
-          path, 
-          intervals
-        )
-
+      val records = sc.loadBamIntervals(path)(intervals)
       records.getNumPartitions should be(1)
       records.count should be(125)
     }
@@ -51,8 +46,9 @@ class LoadSAMTest
       val records =
         sc.loadBamIntervals(
           path,
-          intervals,
           splitSize = MaxSplitSize(100000)
+        )(
+          intervals
         )
 
       records.getNumPartitions should be(19)
