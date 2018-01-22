@@ -4,7 +4,7 @@ jdk:
   - oraclejdk8
 
 scala:
-  - 2.11.8
+  - 2.11.12
 
 # Skip collecting+reporting coverage data because full.MainTest takes extremely long when collecting coverage data
 # (30mins for full-bam test cases), and because scoverage doesn't have a way to count a downstream module's tests as

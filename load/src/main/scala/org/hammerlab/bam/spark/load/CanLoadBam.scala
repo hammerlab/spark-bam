@@ -95,6 +95,8 @@ trait CanLoadBam
              }
     }
 
+    // TODO: cram
+
     val header = Header(path)
     val headerBroadcast = sc.broadcast(header)
 
