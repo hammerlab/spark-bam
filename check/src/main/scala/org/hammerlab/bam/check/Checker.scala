@@ -1,6 +1,6 @@
 package org.hammerlab.bam.check
 
-import caseapp.core.Default
+import caseapp.core.default._
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 
@@ -24,5 +24,5 @@ object Checker {
     extends ((CachingChannel[SeekableByteChannel]) ⇒ C)
       with Serializable
 
-  def default[T]()(implicit d: Default[T]): T = d.apply()
+  def default[T]()(implicit d: Default[T]): T = d.value
 }

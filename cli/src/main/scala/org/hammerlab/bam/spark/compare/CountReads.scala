@@ -3,6 +3,7 @@ package org.hammerlab.bam.spark.compare
 import caseapp.{ Name ⇒ O, Recurse ⇒ R }
 import hammerlab.bool._
 import hammerlab.monoid._
+import hammerlab.lines._
 import hammerlab.print._
 import hammerlab.show._
 import org.hammerlab.args.SplitSize

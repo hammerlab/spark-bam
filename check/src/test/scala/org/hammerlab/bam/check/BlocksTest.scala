@@ -81,7 +81,7 @@ abstract class BlocksTest
       parser: Parser[Blocks.Args]
   ): Unit =
     check(
-      parser(args)
+      parser.parse(args)
         .right
         .get
         ._1,

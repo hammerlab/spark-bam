@@ -6,6 +6,7 @@ import caseapp.{ Recurse, ValueDescription, HelpMessage ⇒ M, Name ⇒ O }
 import cats.implicits.catsKernelStdGroupForLong
 import hammerlab.bytes._
 import hammerlab.iterator._
+import hammerlab.math.ceil
 import hammerlab.path._
 import magic_rdds._
 import org.apache.spark.SparkContext
@@ -17,7 +18,6 @@ import org.hammerlab.guava.collect.Range.closedOpen
 import org.hammerlab.kryo._
 import org.hammerlab.magic.rdd.ordered.SortedRDD.Bounds
 import org.hammerlab.magic.rdd.scan.ScanValuesRDD
-import org.hammerlab.math.ceil
 
 case class Blocks(blocks: RDD[Metadata],
                   bounds: Bounds[Long])

@@ -14,7 +14,7 @@ object ParallelConfig {
   implicit def materialize(config: ParallelConfig)(implicit sc: SparkContext): parallel.Config =
     config match {
       case Spark(ps) ⇒
-        parallel.Spark(sc, ps)
+        parallel.spark.apply(sc, ps)
       case Threads(numThreads) ⇒
         parallel.Threads(numThreads)
     }

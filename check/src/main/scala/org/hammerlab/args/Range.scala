@@ -1,7 +1,8 @@
 package org.hammerlab.args
 
-import caseapp.core.ArgParser
-import caseapp.core.ArgParser.instance
+import caseapp.core.Error
+import caseapp.core.Error.UnrecognizedValue
+import caseapp.core.argparser._
 import cats.Monoid
 import cats.syntax.either._
 import org.hammerlab.args.Range.parserFromStringPair
@@ -35,19 +36,16 @@ object Range {
                             elemParser: ArgParser[T],
                             monoid: Monoid[T] = null,
                             integral: Integral[T] = null): ArgParser[Range[T]] =
-    instance("endpoint-range") {
+    SimpleArgParser.from("endpoint-range") {
       str ⇒
         implicitly[ArgParser[Endpoints[T]]]
-          .apply(None, str, mandatory = false)
-          .map(_._2)
+          .apply(None, str)
           .orElse(
             implicitly[ArgParser[OffsetLength[T]]]
-              .apply(None, str, mandatory = false)
-              .map(_._2)
+              .apply(None, str)
               .orElse(
                 implicitly[ArgParser[Point[T]]]
-                  .apply(None, str, mandatory = false)
-                  .map(_._2)
+                  .apply(None, str)
               )
           )
     }
@@ -56,22 +54,20 @@ object Range {
                               str2: String)(
       implicit
       elemParser: ArgParser[T]
-  ): Either[String, (T, T)] =
+  ): Either[Error, (T, T)] =
     (
       elemParser(
         None,
-        str1,
-        mandatory = false
+        str1
       ),
       elemParser(
         None,
-        str2,
-        mandatory = false
+        str2
       )
     ) match {
       case (
-        Right((_, from)),
-        Right((_, until))
+        Right( from),
+        Right(until)
         ) ⇒
         Right(
           (
@@ -79,7 +75,7 @@ object Range {
             until
           )
         )
-      case (Left(fromErr), _) ⇒ Left(fromErr)
+      case (Left(fromErr), _ ) ⇒ Left( fromErr)
       case (_, Left(untilErr)) ⇒ Left(untilErr)
     }
 
@@ -97,7 +93,7 @@ object Endpoints {
   val regex = """(.*)-(.*)""".r
 
   implicit def parser[T](implicit elemParser: ArgParser[T]): ArgParser[Endpoints[T]] =
-    instance("endpoint-range") {
+    SimpleArgParser.from("endpoint-range") {
       case regex(fromStr, untilStr) ⇒
         parserFromStringPair[T](fromStr, untilStr)
           .map {
@@ -105,7 +101,7 @@ object Endpoints {
               Endpoints(from, until)
           }
       case str ⇒
-        Left(s"Not a valid start-end range: $str")
+        Left(UnrecognizedValue(s"Not a valid start-end range: $str"))
     }
 }
 
@@ -117,7 +113,7 @@ object OffsetLength {
   val regex = """(.+)\+(.+)""".r
 
   implicit def parser[T: Monoid](implicit elemParser: ArgParser[T]): ArgParser[OffsetLength[T]] =
-    instance("endpoint-range") {
+    SimpleArgParser.from("endpoint-range") {
       case regex(fromStr, untilStr) ⇒
         parserFromStringPair[T](fromStr, untilStr)
           .map {
@@ -125,7 +121,7 @@ object OffsetLength {
               OffsetLength(from, until)
           }
       case str ⇒
-        Left(s"Not a valid start+length range: $str")
+        Left(UnrecognizedValue(s"Not a valid start+length range: $str"))
     }
 }
 
@@ -136,11 +132,10 @@ object Point {
   implicit def parser[T](implicit
                          elemParser: ArgParser[T],
                          integral: Integral[T] = null): ArgParser[Point[T]] =
-    instance("point-range") {
+    SimpleArgParser.from("point-range") {
       str ⇒
         elemParser
-          .apply(None, str, mandatory = false)
-          .map(_._2)
+          .apply(None, str)
           .map(Point(_))
     }
 }

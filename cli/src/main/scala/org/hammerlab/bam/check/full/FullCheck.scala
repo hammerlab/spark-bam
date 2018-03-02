@@ -2,6 +2,7 @@ package org.hammerlab.bam.check.full
 
 import caseapp.{ AppName, ProgName, Recurse }
 import hammerlab.iterator._
+import hammerlab.lines._
 import hammerlab.monoid._
 import hammerlab.path._
 import hammerlab.print._
@@ -286,23 +287,23 @@ object FullCheck extends Cmd {
             echo("")
 
             if (closeCallHist.head._1 > 1) {
-              indent {
-                print(
+              print(
+                indent(
                   closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
                   "Histogram:",
                   _ ⇒ "Histogram:"
-                )
-              }
-              echo("")
-            }
-
-            indent {
-              echo(
-                "Per-flag totals:",
-                counts.lines(includeZeros = false)
+                ),
+                ""
               )
             }
-            echo("")
+
+            echo(
+              indent(
+                "Per-flag totals:",
+                counts.lines(includeZeros = false)
+              ),
+              ""
+            )
           case None ⇒
             echo(
               "No positions where exactly two checks failed",

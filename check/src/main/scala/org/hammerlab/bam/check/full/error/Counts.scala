@@ -1,6 +1,7 @@
 package org.hammerlab.bam.check.full.error
 
 import hammerlab.bool._
+import hammerlab.lines._
 import hammerlab.print._
 import hammerlab.show._
 import shapeless.labelled.FieldType

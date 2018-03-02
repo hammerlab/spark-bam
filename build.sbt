@@ -4,20 +4,20 @@ default(
   group("org.hammerlab.bam"),
   github.repo("spark-bam"),
   versions(
-                   bytes → "1.1.0"           ,
-                case_cli → "2.2.0"           ,
-                 channel → "1.3.0"           ,
-    hammerlab_hadoop_bam → "7.9.0"           ,
-                io_utils → "4.0.0"           ,
-               iterators → "2.0.0"           ,
-                    loci → "2.0.3"           ,
-              magic_rdds → "4.1.0"           ,
-                    math → "2.1.2"           ,
-                   paths → "1.4.0"           ,
-               reference → "1.4.2"           ,
-              spark_util → "2.0.2"           ,
-                   stats → "1.2.0"           ,
-                   types → "1.0.1"
+                   bytes → "1.2.0"          ,
+                case_cli → "2.3.0"          ,
+                 channel → "1.4.0"          ,
+    hammerlab_hadoop_bam → "7.9.0"          ,
+                io_utils → "4.1.0"          ,
+               iterators → "2.1.0"          ,
+                    loci → "2.0.3"          ,
+              magic_rdds → "4.2.0"          ,
+                    math → "2.2.0"          ,
+                   paths → "1.5.0"          ,
+               reference → "1.4.2"          ,
+              spark_util → "2.0.3"          ,
+                   stats → "1.3.0"          ,
+                   types → "1.1.0"
   )
 )
 
@@ -38,7 +38,7 @@ lazy val bgzf = project.settings(
   ),
   addSparkDeps
 ).dependsOn(
-  test_bams test
+  test_bams
 )
 
 lazy val check = project.settings(
@@ -157,12 +157,12 @@ lazy val seqdoop = project.settings(
 
 lazy val test_bams = project.settings(
   name := "test-bams",
-  r"1.0.0",
+  v"1.1.0",
   dep(
     paths,
     testUtils
   ),
-  testDeps := Nil
+  clearTestDeps
 )
 
 // named this module "metrics" instead of "benchmarks" to work around bizarre IntelliJ-scala-plugin bug, cf.

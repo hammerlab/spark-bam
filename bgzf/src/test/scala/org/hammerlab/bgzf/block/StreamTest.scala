@@ -3,7 +3,8 @@ package org.hammerlab.bgzf.block
 import java.nio.channels.FileChannel
 
 import hammerlab.indent.implicits.tab
-import hammerlab.print._
+import hammerlab.lines._
+import hammerlab.math.sigfigs._
 import hammerlab.show._
 import org.hammerlab.bam.test.resources.bam2
 import org.hammerlab.stats.Stats
@@ -11,6 +12,8 @@ import org.hammerlab.test.Suite
 
 class StreamTest
   extends Suite {
+
+  implicit val sigfigs: SigFigs = 3
 
   def check(stats: Stats[Int, Int], expectedStr: String): Unit = {
     stats.showLines should be(
