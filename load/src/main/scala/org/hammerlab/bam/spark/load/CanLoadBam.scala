@@ -2,7 +2,7 @@ package org.hammerlab.bam.spark.load
 
 import grizzled.slf4j.Logging
 import hammerlab.iterator._
-import hammerlab.math.ceil
+import hammerlab.math.utils.ceil
 import hammerlab.path._
 import htsjdk.samtools.BAMFileReader.getFileSpan
 import htsjdk.samtools.SamReaderFactory.Option._

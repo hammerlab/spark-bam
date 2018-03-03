@@ -1,4 +1,6 @@
 
+import genomics.{ loci, reference }
+
 // most modules in this project are published with this group
 default(
   group("org.hammerlab.bam"),
@@ -7,12 +9,12 @@ default(
                    bytes → "1.2.0"          ,
                 case_cli → "2.3.0"          ,
                  channel → "1.4.0"          ,
-    hammerlab_hadoop_bam → "7.9.0"          ,
-                io_utils → "4.1.0"          ,
+    hammerlab.hadoop_bam → "7.9.0"          ,
+                io_utils → "5.0.0"          ,
                iterators → "2.1.0"          ,
                     loci → "2.0.3"          ,
               magic_rdds → "4.2.0"          ,
-                    math → "2.2.0"          ,
+              math.utils → "2.2.0"          ,
                    paths → "1.5.0"          ,
                reference → "1.4.2"          ,
               spark_util → "2.0.3"          ,
@@ -30,7 +32,7 @@ lazy val bgzf = project.settings(
     channel,
     io_utils,
     iterators,
-    math,
+    math.utils,
     paths,
     slf4j,
     spark_util,
@@ -72,7 +74,7 @@ lazy val cli = project.settings(
     case_cli + testtest,
     cats,
     channel,
-    hammerlab_hadoop_bam,
+    hammerlab.hadoop_bam,
     io_utils,
     iterators,
     magic_rdds,
@@ -125,7 +127,7 @@ lazy val load = project.settings(
     iterators,
     loci + testtest,
     magic_rdds % tests,
-    math,
+    math.utils,
     paths,
     reference,
     seqdoop_hadoop_bam,
@@ -142,7 +144,7 @@ lazy val load = project.settings(
 lazy val seqdoop = project.settings(
   dep(
     channel,
-    hammerlab_hadoop_bam,
+    hammerlab.hadoop_bam,
     htsjdk,
     paths
   ),
@@ -158,6 +160,7 @@ lazy val seqdoop = project.settings(
 lazy val test_bams = project.settings(
   name := "test-bams",
   v"1.1.0",
+  scala211Only,
   dep(
     paths,
     testUtils

@@ -244,11 +244,13 @@ object FullCheck extends Cmd {
 
             implicit val contigLengths = contigLengthsBroadcast.value
 
-            print(
-              criticalCalls,
-              numCriticalCalls,
-              s"$numCriticalCalls critical positions:",
-              n ⇒ s"$n of $numCriticalCalls critical positions:"
+            echo(
+              Limited(
+                criticalCalls,
+                numCriticalCalls,
+                s"$numCriticalCalls critical positions:",
+                s"$limit of $numCriticalCalls critical positions:"
+              )
             )
 
           case None ⇒
@@ -278,20 +280,23 @@ object FullCheck extends Cmd {
                 .collect
                 .sortBy(-_._1)
 
-            print(
-              closePositions.sample(numCloseCalls),
-              numCloseCalls,
-              s"$numCloseCalls positions where exactly two checks failed:",
-              n ⇒ s"$n of $numCloseCalls positions where exactly two checks failed:"
+            echo(
+              Limited(
+                closePositions.sample(numCloseCalls),
+                numCloseCalls,
+                s"$numCloseCalls positions where exactly two checks failed:",
+                s"$limit of $numCloseCalls positions where exactly two checks failed:"
+              ),
+              ""
             )
-            echo("")
 
             if (closeCallHist.head._1 > 1) {
-              print(
+              echo(
                 indent(
-                  closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
-                  "Histogram:",
-                  _ ⇒ "Histogram:"
+                  Limited(
+                    closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
+                    "Histogram:"
+                  )
                 ),
                 ""
               )

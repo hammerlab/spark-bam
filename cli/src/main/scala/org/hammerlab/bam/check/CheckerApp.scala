@@ -2,6 +2,7 @@ package org.hammerlab.bam.check
 
 import hammerlab.bytes._
 import hammerlab.iterator._
+import hammerlab.lines.limit._
 import magic_rdds.sample._
 import magic_rdds.size._
 import org.apache.log4j.Level.WARN
@@ -167,16 +168,17 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
           .reduceByKey(_ + _)
           .collect()
           .sortBy(-_._2)
-      print(
-        flagsHist
-          .map {
-            case (flags, count) ⇒
-              show"$count:\t$flags"
-          },
-        "False-positive-site flags histogram:",
-        _ ⇒ "False-positive-site flags histogram:"
+      echo(
+        Limited(
+          flagsHist
+            .map {
+              case (flags, count) ⇒
+                show"$count:\t$flags"
+            },
+          "False-positive-site flags histogram:"
+        ),
+        ""
       )
-      echo("")
 
       implicit val contigLengthsBroadcast = sc.broadcast(header.contigLengths)
       implicit val contigLengths = contigLengthsBroadcast.value
@@ -189,11 +191,13 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
           .map { _.show }
           .sample(numFalsePositives)
 
-      print(
-        sampledPositions,
-        numFalsePositives,
-        s"False positives with succeeding read info:",
-        n ⇒ s"$n of $numFalsePositives false positives with succeeding read info::"
+      echo(
+        Limited(
+          sampledPositions,
+          numFalsePositives,
+          s"False positives with succeeding read info:",
+          s"$limit of $numFalsePositives false positives with succeeding read info::"
+        )
       )
     }
 
@@ -202,7 +206,7 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
         fns.sample(numFalseNegatives),
         numFalseNegatives,
         s"$numFalseNegatives false negatives:",
-        n ⇒ s"$n of $numFalseNegatives false negatives:"
+        s"$limit of $numFalseNegatives false negatives:"
       )
 
     (numFalsePositives > 0, numFalseNegatives > 0) match {

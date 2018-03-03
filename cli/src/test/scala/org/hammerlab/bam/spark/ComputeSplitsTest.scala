@@ -3,13 +3,13 @@ package org.hammerlab.bam.spark
 import hammerlab.path._
 import org.hammerlab.bam.test.resources.bam1
 import org.hammerlab.cli.app.MainSuite
+import org.hammerlab.test.matchers.lines.HasLines
 
 class ComputeSplitsTest
-  extends MainSuite(ComputeSplits) {
+  extends MainSuite(ComputeSplits)
+    with HasLines {
 
   override def extraArgs(outPath: Path) = Seq(bam1, outPath)
-
-  import org.hammerlab.test.matchers.lines.Line._
 
   test("eager 230KB") {
     checkAllLines(
@@ -19,7 +19,7 @@ class ComputeSplitsTest
       l"Get spark-bam splits: ${d}ms",
       "",
       "Split-size distribution:",
-      "N: 3, μ/σ: 194067/57877.4, med/mad: 224301/20521",
+      "N: 3, μ/σ: 1.9e5/57877, med/mad: 2.2e5/20521",
       " elems: 224301 244822 113078",
       "sorted: 113078 224301 244822",
       "",
@@ -39,7 +39,7 @@ class ComputeSplitsTest
       l"Get hadoop-bam splits: ${d}ms",
       "",
       "Split-size distribution:",
-      "N: 3, μ/σ: 210102.3/53357.5, med/mad: 242083/11219",
+      "N: 3, μ/σ: 2.1e5/53357, med/mad: 2.4e5/11219",
       " elems: 242083 253302 134922",
       "sorted: 134922 242083 253302",
       "",
@@ -75,7 +75,7 @@ class ComputeSplitsTest
       "All splits matched!",
       "",
       "Split-size distribution:",
-      "N: 3, μ/σ: 194067/74433.1, med/mad: 244941/3497",
+      "N: 3, μ/σ: 1.9e5/74433, med/mad: 2.4e5/3497",
       " elems: 248438 244941 88822",
       "sorted: 88822 244941 248438",
       "",

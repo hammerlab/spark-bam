@@ -2,6 +2,7 @@ package org.hammerlab.bam.check.blocks
 
 import hammerlab.bytes._
 import hammerlab.iterator._
+import hammerlab.lines.limit._
 import hammerlab.monoid._
 import hammerlab.path._
 import magic_rdds._
@@ -171,22 +172,24 @@ object CheckBlocks
             _.map(_.toString).getOrElse("-")
           }
 
-        print(
-          badBlocks
-            .map {
-              case (
-                (
-                  start,
-                  (pos1, pos2)
-                ),
-                compressedSize
-              ) ⇒
-                show"$start (prev block size: $compressedSize):\t$pos1\t$pos2"
-            }
-            .sample(numWrongBlocks),
-          numWrongBlocks,
-          s"$numWrongBlocks mismatched blocks:",
-          (n: Int) ⇒ s"$n of $numWrongBlocks mismatched blocks:"
+        echo(
+          Limited(
+            badBlocks
+              .map {
+                case (
+                  (
+                    start,
+                    (pos1, pos2)
+                  ),
+                  compressedSize
+                ) ⇒
+                  show"$start (prev block size: $compressedSize):\t$pos1\t$pos2"
+              }
+              .sample(numWrongBlocks),
+            numWrongBlocks,
+            s"$numWrongBlocks mismatched blocks:",
+            s"$limit of $numWrongBlocks mismatched blocks:"
+          )
         )
       }
     }

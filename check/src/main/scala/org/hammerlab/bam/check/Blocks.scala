@@ -6,7 +6,7 @@ import caseapp.{ Recurse, ValueDescription, HelpMessage ⇒ M, Name ⇒ O }
 import cats.implicits.catsKernelStdGroupForLong
 import hammerlab.bytes._
 import hammerlab.iterator._
-import hammerlab.math.ceil
+import hammerlab.math.utils.ceil
 import hammerlab.path._
 import magic_rdds._
 import org.apache.spark.SparkContext

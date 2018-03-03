@@ -1,5 +1,6 @@
 package org.hammerlab.bam.spark.compare
 
+import hammerlab.lines.limit._
 import caseapp.{ AppName, ProgName, Name ⇒ O, Recurse ⇒ R }
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
 import org.hammerlab.cli.app.Cmd
@@ -135,18 +136,20 @@ object CompareSplits extends Cmd {
             val totalsMsg =
               s"totals: $numSparkSplits, $numHadoopSplits; mismatched: $numSparkOnlySplits, $numHadoopOnlySplits"
 
-            print(
-              diffs
-                .map {
-                  case Left(ours) ⇒
-                    show"\t$ours"
-                  case Right(theirs) ⇒
-                    show"\t\t$theirs"
-                },
-              s"\t${path.basename}: ${diffs.length} splits differ ($totalsMsg):",
-              n ⇒ s"\t${path.basename}: first $n of ${diffs.length} splits that differ ($totalsMsg):"
+            echo(
+              Limited(
+                diffs
+                  .map {
+                    case Left(ours) ⇒
+                      show"\t$ours"
+                    case Right(theirs) ⇒
+                      show"\t\t$theirs"
+                  },
+                s"\t${path.basename}: ${diffs.length} splits differ ($totalsMsg):",
+                s"\t${path.basename}: first $limit of ${diffs.length} splits that differ ($totalsMsg):"
+              ),
+              ""
             )
-            echo("")
         }
       }
     }
