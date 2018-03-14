@@ -20,7 +20,8 @@ default(
                reference → "1.4.3"          ,
               spark_util → "2.0.3"          ,
                    stats → "1.3.0"          ,
-                   types → "1.1.0"
+                   types → "1.1.0",
+      seqdoop_hadoop_bam → "7.9.2"
   )
 )
 
