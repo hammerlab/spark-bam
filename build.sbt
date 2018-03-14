@@ -1,36 +1,40 @@
 
-val defaults = Seq(
-  organization := "org.hammerlab.bam",
-  r"1.1.0",
-  versions ++= Seq(
-                   bytes → "1.1.0"           ,
-                case_cli → "2.2.0"           ,
-                 channel → "1.3.0"           ,
-    hammerlab_hadoop_bam → "7.9.0"           ,
-                      io → "4.0.0"           ,
-               iterators → "2.0.0"           ,
-                    loci → "2.0.1"           ,
-              magic_rdds → "4.1.0"           ,
-                    math → "2.1.2"           ,
-                   paths → "1.4.0"           ,
-               reference → "1.4.0"           ,
-              spark_util → "2.0.1"           ,
-                   stats → "1.2.0"           ,
-                   types → "1.0.1"
+import genomics.{ loci, reference }
+
+// most modules in this project are published with this group
+default(
+  group("org.hammerlab.bam"),
+  github.repo("spark-bam"),
+  v"1.2.0",
+  versions(
+                   bytes → "1.2.0"          ,
+                case_cli → "2.3.0"          ,
+                 channel → "1.4.0"          ,
+    hammerlab.hadoop_bam → "7.9.0"          ,
+                io_utils → "5.0.0"          ,
+               iterators → "2.1.0"          ,
+                    loci → "2.0.4"          ,
+              magic_rdds → "4.2.0"          ,
+              math.utils → "2.2.0"          ,
+                   paths → "1.5.0"          ,
+               reference → "1.4.3"          ,
+              spark_util → "2.0.3"          ,
+                   stats → "1.3.0"          ,
+                   types → "1.1.0",
+      seqdoop_hadoop_bam → "7.9.2"
   )
 )
 
 lazy val bgzf = project.settings(
-  defaults,
-  organization := "org.hammerlab",
+  group("org.hammerlab"),
   dep(
     case_app,
     case_cli + testtest,
     cats,
     channel,
-    io,
+    io_utils,
     iterators,
-    math,
+    math.utils,
     paths,
     slf4j,
     spark_util,
@@ -38,11 +42,10 @@ lazy val bgzf = project.settings(
   ),
   addSparkDeps
 ).dependsOn(
-  test_bams test
+  test_bams
 )
 
 lazy val check = project.settings(
-  defaults,
   dep(
     bytes,
     case_app,
@@ -53,7 +56,7 @@ lazy val check = project.settings(
     iterators,
     loci + testtest,
     magic_rdds,
-    io,
+    io_utils,
     paths,
     seqdoop_hadoop_bam,
     slf4j,
@@ -67,15 +70,14 @@ lazy val check = project.settings(
 )
 
 lazy val cli = project.settings(
-  defaults,
   dep(
     bytes,
     case_app,
     case_cli + testtest,
     cats,
     channel,
-    hammerlab_hadoop_bam,
-    io,
+    hammerlab.hadoop_bam,
+    io_utils,
     iterators,
     magic_rdds,
     paths,
@@ -115,7 +117,6 @@ lazy val cli = project.settings(
 )
 
 lazy val load = project.settings(
-  defaults,
 
   // When running all tests in this project with `sbt test`, sometimes a Kryo
   // "Class is not registered: org.hammerlab.genomics.loci.set.LociSet" exception is thrown by
@@ -128,7 +129,7 @@ lazy val load = project.settings(
     iterators,
     loci + testtest,
     magic_rdds % tests,
-    math,
+    math.utils,
     paths,
     reference,
     seqdoop_hadoop_bam,
@@ -143,10 +144,9 @@ lazy val load = project.settings(
 )
 
 lazy val seqdoop = project.settings(
-  defaults,
   dep(
     channel,
-    hammerlab_hadoop_bam,
+    hammerlab.hadoop_bam,
     htsjdk,
     paths
   ),
@@ -160,20 +160,19 @@ lazy val seqdoop = project.settings(
 )
 
 lazy val test_bams = project.settings(
-  defaults,
   name := "test-bams",
-  r"1.0.0",
+  v"1.1.0",
+  scala211Only,
   dep(
     paths,
     testUtils
   ),
-  testDeps := Nil
+  clearTestDeps
 )
 
 // named this module "metrics" instead of "benchmarks" to work around bizarre IntelliJ-scala-plugin bug, cf.
 // https://youtrack.jetbrains.com/issue/SCL-12628#comment=27-2439322
 lazy val metrics = project.in(file("benchmarks")).settings(
-  defaults,
   dep(
     paths,
     bytes

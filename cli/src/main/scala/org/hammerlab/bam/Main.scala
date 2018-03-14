@@ -6,8 +6,6 @@ import org.hammerlab.bam.spark.compare
 import org.hammerlab.bgzf
 import org.hammerlab.cli.app.Cmd
 
-@AppName("spark-bam")
-@ProgName("spark-bam")
 sealed abstract class Command[+C <: Cmd](val cmd: C) {
   def opts: cmd.Opts
   def apply(opts: cmd.Opts,
@@ -31,6 +29,10 @@ case class HtsjdkRewrite(@R opts:  rewrite.HTSJDKRewrite.Opts) extends Command( 
 
 object Main
   extends CommandApp[Command[Cmd]] {
+
+  override val    appName = "spark-bam"
+  override val appVersion = "1.2.0"
+  override val   progName = "spark-bam"
 
   override def run(cmd: Command[Cmd],
                    remainingArgs: RemainingArgs): Unit =

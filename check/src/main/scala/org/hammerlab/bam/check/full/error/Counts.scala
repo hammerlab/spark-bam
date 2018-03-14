@@ -1,6 +1,7 @@
 package org.hammerlab.bam.check.full.error
 
-import hammerlab.bool._
+import hammerlab.lines._
+import hammerlab.option._
 import hammerlab.print._
 import hammerlab.show._
 import shapeless.labelled.FieldType
@@ -83,48 +84,49 @@ object Counts {
                          hideTooFewFixedBlockBytes: Boolean = false)(
       implicit _indent: Indent
   ): ToLines[Counts] =
-    (t: Counts) ⇒ {
-      val dc = t.descCounts
+    ToLines {
+      t ⇒
+        val dc = t.descCounts
 
-      val stringPairs =
-        (
-          for {
-            (k, v) ← dc
-            if (v > 0 || includeZeros) && (k != "tooFewFixedBlockBytes" || !hideTooFewFixedBlockBytes)
-          } yield
-            k → v.toString
-        ) ++
-        (
-          t
-            .readsBeforeError
-            .toVector
-            .sorted match {
-              case Vector() ⇒ Nil
-              case readsBeforeError ⇒
-                List(
-                  "readsBeforeError" →
-                    readsBeforeError
-                      .map {
-                        case (reads, num) ⇒
-                          s"${reads}ⅹ$num"
-                      }
-                      .mkString(" ")
-                )
+        val stringPairs =
+          (
+            for {
+              (k, v) ← dc
+              if (v > 0 || includeZeros) && (k != "tooFewFixedBlockBytes" || !hideTooFewFixedBlockBytes)
+            } yield
+              k → v.toString
+          ) ++
+          (
+            t
+              .readsBeforeError
+              .toVector
+              .sorted match {
+                case Vector() ⇒ Nil
+                case readsBeforeError ⇒
+                  List(
+                    "readsBeforeError" →
+                      readsBeforeError
+                        .map {
+                          case (reads, num) ⇒
+                            s"${reads}ⅹ$num"
+                        }
+                        .mkString(" ")
+                  )
+              }
+          )
+
+        val maxKeySize = stringPairs.map(_._1.length).max
+        val maxValSize = stringPairs.map(_._2.length).max
+
+        Lines(
+          wrapFields ? "Errors(",
+          indent {
+            stringPairs map {
+              case (k, v) ⇒
+                s"${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
             }
+          },
+          wrapFields ? ")"
         )
-
-      val maxKeySize = stringPairs.map(_._1.length).max
-      val maxValSize = stringPairs.map(_._2.length).max
-
-      Lines(
-        wrapFields | "Errors(",
-        indent {
-          stringPairs map {
-            case (k, v) ⇒
-              s"${" " * (maxKeySize - k.length)}$k:\t${" " * (maxValSize - v.toString.length)}$v"
-          }
-        },
-        wrapFields | ")"
-      )
-  }
+    }
 }

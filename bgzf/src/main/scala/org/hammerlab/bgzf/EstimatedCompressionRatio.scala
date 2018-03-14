@@ -1,6 +1,6 @@
 package org.hammerlab.bgzf
 
-import caseapp.core.Default
+import caseapp.core.default.Default
 
 case class EstimatedCompressionRatio(ratio: Double)
 
@@ -10,5 +10,5 @@ object EstimatedCompressionRatio {
   implicit def unmakeEstimatedCompressionRatio(ratio: EstimatedCompressionRatio): Double =
     ratio.ratio
 
-  implicit val default: Default[EstimatedCompressionRatio] = Default.instance(3.0)
+  implicit val default: Default[EstimatedCompressionRatio] = Default(3.0)
 }

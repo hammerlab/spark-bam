@@ -5,7 +5,7 @@ import org.hammerlab.bam.header.{ ContigLengths, Header }
 import org.hammerlab.bam.index.Index.Chunk
 import org.hammerlab.bam.kryo.registerSAMFileHeader
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.genomics.loci
+import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.hadoop.Configuration
 import org.hammerlab.kryo._
 
@@ -30,7 +30,7 @@ case class Registrar()
         arr[Pos],
 
         /** [[CanLoadBam.loadBamIntervals]] broadcasts a [[org.hammerlab.genomics.loci.set.LociSet]] */
-        new loci.set.Registrar,
+        cls[LociSet],
 
         /** [[CanLoadBam.loadBamIntervals]] [[org.apache.spark.SparkContext.parallelize parallelize]]s some [[Vector]]s */
         arr[Vector[_]],

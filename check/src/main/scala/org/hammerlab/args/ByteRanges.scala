@@ -2,7 +2,7 @@ package org.hammerlab.args
 
 import java.lang.{ Long ⇒ JLong }
 
-import caseapp.core.ArgParser
+import caseapp.core.argparser._
 import hammerlab.bytes._
 import org.hammerlab.args.ByteRanges.bytesToJLong
 

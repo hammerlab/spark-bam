@@ -1,7 +1,7 @@
 Process [BAM files][SAM spec] using [Apache Spark] and [HTSJDK]; inspired by [hadoop-bam].
 
 ```bash
-$ spark-shell --packages=org.hammerlab.bam:load_2.11:1.1.0
+$ spark-shell --packages=org.hammerlab.bam:load_2.11:1.2.0
 ```
 ```scala
 import spark_bam._, hammerlab.path._
@@ -20,6 +20,10 @@ import hammerlab.bytes._
 // Configure maximum split size
 sc.loadReads(path, splitSize = 16 MB)
 // RDD[SAMRecord]
+
+// Only load reads in specific intervals
+sc.loadBamIntervals(path)("1:13000-14000", "1:60000-61000").count
+// 129
 ```
 
 ## Linking
@@ -27,23 +31,23 @@ sc.loadReads(path, splitSize = 16 MB)
 ### SBT
 
 ```scala
-libraryDependencies += "org.hammerlab.bam" %% "load" % "1.1.0"
+libraryDependencies += "org.hammerlab.bam" %% "load" % "1.2.0"
 ```
 
 ### Maven
 
 ```xml
 <dependency>
-       <groupId>org.hammerlab.bam</groupId>
-       <artifactId>load_2.11</artifactId>
-       <version>1.1.0</version>
+  <groupId>org.hammerlab.bam</groupId>
+  <artifactId>load_2.11</artifactId>
+  <version>1.2.0</version>
 </dependency>
 ```
 
 ### From `spark-shell`
 
 ```bash
-spark-shell --packages=org.hammerlab.bam:load:1.1.0
+spark-shell --packages=org.hammerlab.bam:load:1.2.0
 ```
 
 ### On Google Cloud
@@ -60,7 +64,7 @@ wget https://oss.sonatype.org/content/repositories/releases/com/google/cloud/goo
 Then include it in your `--jars` list when running `spark-shell` or `spark-submit`:
 
 ```bash
-spark-shell --jars $GOOGLE_CLOUD_NIO_JAR --packages=org.hammerlab.bam:load:1.1.0
+spark-shell --jars $GOOGLE_CLOUD_NIO_JAR --packages=org.hammerlab.bam:load:1.2.0
 …
 import spark_bam._, hammerlab.path._
 

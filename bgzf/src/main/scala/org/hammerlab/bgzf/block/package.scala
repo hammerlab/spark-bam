@@ -1,7 +1,7 @@
 package org.hammerlab.bgzf
 
-import caseapp.core.{ ArgParser, Default }
-import caseapp.core.ArgParser.instance
+import caseapp.core.default.Default
+import caseapp.core.argparser._
 
 package object block {
   // TODO: move this elsewhere
@@ -13,11 +13,10 @@ package object block {
   implicit class BGZFBlocksToCheck(val n: Int) extends AnyVal with IntWrapper
   object BGZFBlocksToCheck {
     implicit val parser: ArgParser[BGZFBlocksToCheck] =
-      instance("bgzf-blocks-to-check") {
+      SimpleArgParser.from("bgzf-blocks-to-check") {
         str ⇒ Right(str.toInt)
       }
 
-    implicit val default: Default[BGZFBlocksToCheck] =
-      Default.instance(5)
+    implicit val default: Default[BGZFBlocksToCheck] = Default(5)
   }
 }

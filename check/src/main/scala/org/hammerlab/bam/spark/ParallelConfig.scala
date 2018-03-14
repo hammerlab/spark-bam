@@ -1,5 +1,7 @@
 package org.hammerlab.bam.spark
 
+import java.lang.Runtime.getRuntime
+
 import org.apache.spark.SparkContext
 import org.hammerlab.parallel
 import org.hammerlab.parallel.spark.{ ElemsPerPartition, PartitioningStrategy }
@@ -14,13 +16,13 @@ object ParallelConfig {
   implicit def materialize(config: ParallelConfig)(implicit sc: SparkContext): parallel.Config =
     config match {
       case Spark(ps) ⇒
-        parallel.Spark(sc, ps)
+        parallel.spark.apply(sc, ps)
       case Threads(numThreads) ⇒
-        parallel.Threads(numThreads)
+        parallel.threads.Config(numThreads)
     }
 }
 
-case class Threads(numThreads: Int = parallel.defaultNumThreads)
+case class Threads(numThreads: Int = getRuntime.availableProcessors())
   extends ParallelConfig
 
 case class Spark(partitioningStrategy: PartitioningStrategy = ElemsPerPartition(1))

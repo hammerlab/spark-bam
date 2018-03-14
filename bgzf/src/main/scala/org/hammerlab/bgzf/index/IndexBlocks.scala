@@ -48,5 +48,4 @@ object IndexBlocks extends Cmd {
       info("Traversal done")
     }
   )
-//  object Main extends app.Main(App)
 }

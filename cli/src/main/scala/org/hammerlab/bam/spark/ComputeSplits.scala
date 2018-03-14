@@ -3,6 +3,7 @@ package org.hammerlab.bam.spark
 import caseapp.{ AppName, ProgName, HelpMessage ⇒ M, Name ⇒ O, Recurse ⇒ R }
 import hammerlab.bytes._
 import hammerlab.iterator._
+import hammerlab.lines.limit._
 import hammerlab.or._
 import hammerlab.show._
 import magic_rdds.partitions._
@@ -40,113 +41,116 @@ object ComputeSplits extends Cmd {
   )
 
   val main = Main(
-    args ⇒ new PathApp(args, load.Registrar)
-      with Timer
-      with LoadReads {
+    args ⇒
+      new PathApp(args, load.Registrar)
+        with Timer
+        with LoadReads {
 
-      args
-        .gsBuffer
-        .foreach(
-          conf.setLong(
-            "fs.gs.io.buffersize",
-            _
+        args
+          .gsBuffer
+          .foreach(
+            conf.setLong(
+              "fs.gs.io.buffersize",
+              _
+            )
           )
-        )
 
-      def printSplits(splits: Seq[Split]): Unit = {
-        val splitSizeStats = Stats(splits.map(_.length.toInt))
-        echo(
-          "Split-size distribution:",
-          splitSizeStats,
-          ""
-        )
-        print(
-          splits,
-          s"${splits.length} splits:",
-          n ⇒ s"First $n of ${splits.length} splits:"
-        )
-      }
-
-      implicit val splitSizeArgs = args.splitSizeArgs
-
-      (args.sparkBam, args.hadoopBam) match {
-        case (false, true) ⇒
-          val (hadoopBamMS, BAMRecordRDD(splits, reads)) = time { hadoopBamLoad }
+        def printSplits(splits: Seq[Split]): Unit = {
+          val splitSizeStats = Stats(splits.map(_.length.toInt))
           echo(
-            s"Get hadoop-bam splits: ${hadoopBamMS}ms",
-            ""
+            "Split-size distribution:",
+            splitSizeStats,
+            "",
+            Limited(
+              splits,
+              s"${splits.length} splits:",
+              s"First $limit of ${splits.length} splits:"
+            )
           )
-          printSplits(splits)
-          if (args.printReadPartitionStats) {
-            val partitionSizes = reads.partitionSizes
-            val partitionSizeStats = Stats(partitionSizes)
+        }
+
+        implicit val splitSizeArgs = args.splitSizeArgs
+
+        (args.sparkBam, args.hadoopBam) match {
+          case (false, true) ⇒
+            val (hadoopBamMS, BAMRecordRDD(splits, reads)) = time { hadoopBamLoad }
             echo(
-              "Partition count stats:",
-              partitionSizeStats
-            )
-          }
-        case (true, false) ⇒
-          val (sparkBamMS, BAMRecordRDD(splits, reads)) = time { sparkBamLoad }
-          echo(
-            s"Get spark-bam splits: ${sparkBamMS}ms",
-            ""
-          )
-          printSplits(splits)
-          if (args.printReadPartitionStats)
-            echo(
-              "Partition count stats:",
-              Stats(reads.partitionSizes)
-            )
-        case _ ⇒
-          info("Computing spark-bam splits")
-          val (sparkBamMS, our) = time { sparkBamLoad }
-          echo(s"Get spark-bam splits: ${sparkBamMS}ms")
-
-          info("Computing hadoop-bam splits")
-          val (hadoopBamMS, their) = time { hadoopBamLoad }
-          echo(s"Get hadoop-bam splits: ${hadoopBamMS}ms")
-
-          echo("")
-
-          implicit def toStart(split: Split): Pos = split.start
-
-          val diffs =
-            our
-              .splits
-              .orMerge[Split, Pos](their.splits)
-              .flatMap {
-                case Both(_, _) ⇒ None
-                case L(ours) ⇒ Some(Left(ours))
-                case R(theirs) ⇒ Some(Right(theirs))
-              }
-              .toVector
-
-          if (diffs.nonEmpty) {
-            print(
-              diffs
-                .map {
-                case Left(ours) ⇒ ours.show
-                case Right(theirs) ⇒ show"\t$theirs"
-              },
-              s"${diffs.length} splits differ (totals: ${our.splits.size}, ${their.splits.length}):",
-              n ⇒ s"First $n of ${diffs.length} splits that differ (totals: ${our.splits.size}, ${their.splits.length}):"
-            )
-          } else {
-            echo(
-              "All splits matched!",
+              s"Get hadoop-bam splits: ${hadoopBamMS}ms",
               ""
             )
-            printSplits(our.splits)
+            printSplits(splits)
             if (args.printReadPartitionStats) {
-              val partitionSizes = our.reads.partitionSizes
+              val partitionSizes = reads.partitionSizes
               val partitionSizeStats = Stats(partitionSizes)
               echo(
                 "Partition count stats:",
                 partitionSizeStats
               )
             }
-          }
+          case (true, false) ⇒
+            val (sparkBamMS, BAMRecordRDD(splits, reads)) = time { sparkBamLoad }
+            echo(
+              s"Get spark-bam splits: ${sparkBamMS}ms",
+              ""
+            )
+            printSplits(splits)
+            if (args.printReadPartitionStats)
+              echo(
+                "Partition count stats:",
+                Stats(reads.partitionSizes)
+              )
+          case _ ⇒
+            info("Computing spark-bam splits")
+            val (sparkBamMS, our) = time { sparkBamLoad }
+            echo(s"Get spark-bam splits: ${sparkBamMS}ms")
+
+            info("Computing hadoop-bam splits")
+            val (hadoopBamMS, their) = time { hadoopBamLoad }
+            echo(s"Get hadoop-bam splits: ${hadoopBamMS}ms")
+
+            echo("")
+
+            implicit def toStart(split: Split): Pos = split.start
+
+            val diffs =
+              our
+                .splits
+                .orMerge[Split, Pos](their.splits)
+                .flatMap {
+                  case Both(_, _) ⇒ None
+                  case L(ours) ⇒ Some(Left(ours))
+                  case R(theirs) ⇒ Some(Right(theirs))
+                }
+                .toVector
+
+            if (diffs.nonEmpty)
+              echo(
+                Limited(
+                  diffs
+                    .map {
+                      case Left(ours) ⇒ ours.show
+                      case Right(theirs) ⇒ show"\t$theirs"
+                    },
+                  s"${diffs.length} splits differ (totals: ${our.splits.size}, ${their.splits.length}):",
+                  s"First $limit of ${diffs.length} splits that differ (totals: ${our.splits.size}, ${their.splits.length}):"
+                )
+              )
+            else {
+              echo(
+                "All splits matched!",
+                ""
+              )
+              printSplits(our.splits)
+              if (args.printReadPartitionStats) {
+                val partitionSizes = our.reads.partitionSizes
+                val partitionSizeStats = Stats(partitionSizes)
+                echo(
+                  "Partition count stats:",
+                  partitionSizeStats
+                )
+              }
+            }
+        }
       }
-    }
   )
 }

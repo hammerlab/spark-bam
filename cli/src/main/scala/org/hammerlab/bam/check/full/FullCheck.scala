@@ -2,6 +2,7 @@ package org.hammerlab.bam.check.full
 
 import caseapp.{ AppName, ProgName, Recurse }
 import hammerlab.iterator._
+import hammerlab.lines._
 import hammerlab.monoid._
 import hammerlab.path._
 import hammerlab.print._
@@ -243,11 +244,13 @@ object FullCheck extends Cmd {
 
             implicit val contigLengths = contigLengthsBroadcast.value
 
-            print(
-              criticalCalls,
-              numCriticalCalls,
-              s"$numCriticalCalls critical positions:",
-              n ⇒ s"$n of $numCriticalCalls critical positions:"
+            echo(
+              Limited(
+                criticalCalls,
+                numCriticalCalls,
+                s"$numCriticalCalls critical positions:",
+                s"$limit of $numCriticalCalls critical positions:"
+              )
             )
 
           case None ⇒
@@ -277,32 +280,35 @@ object FullCheck extends Cmd {
                 .collect
                 .sortBy(-_._1)
 
-            print(
-              closePositions.sample(numCloseCalls),
-              numCloseCalls,
-              s"$numCloseCalls positions where exactly two checks failed:",
-              n ⇒ s"$n of $numCloseCalls positions where exactly two checks failed:"
+            echo(
+              Limited(
+                closePositions.sample(numCloseCalls),
+                numCloseCalls,
+                s"$numCloseCalls positions where exactly two checks failed:",
+                s"$limit of $numCloseCalls positions where exactly two checks failed:"
+              ),
+              ""
             )
-            echo("")
 
             if (closeCallHist.head._1 > 1) {
-              indent {
-                print(
-                  closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
-                  "Histogram:",
-                  _ ⇒ "Histogram:"
-                )
-              }
-              echo("")
-            }
-
-            indent {
               echo(
-                "Per-flag totals:",
-                counts.lines(includeZeros = false)
+                indent(
+                  Limited(
+                    closeCallHist.map { case (num, flags) ⇒ show"$num:\t$flags" },
+                    "Histogram:"
+                  )
+                ),
+                ""
               )
             }
-            echo("")
+
+            echo(
+              indent(
+                "Per-flag totals:",
+                counts.lines(includeZeros = false)
+              ),
+              ""
+            )
           case None ⇒
             echo(
               "No positions where exactly two checks failed",
@@ -333,6 +339,4 @@ object FullCheck extends Cmd {
     arr[Split],
     cls[mutable.WrappedArray.ofInt]
   )
-
-//  object Main extends app.Main(App)
 }

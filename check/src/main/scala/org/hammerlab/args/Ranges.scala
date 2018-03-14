@@ -1,7 +1,8 @@
 package org.hammerlab.args
 
-import caseapp.core.ArgParser
-import caseapp.core.ArgParser.instance
+import caseapp.core.argparser._
+import caseapp.core.Error
+import caseapp.core.Error.UnrecognizedValue
 import cats.syntax.either._
 import org.hammerlab.args.Range.toGuavaRange
 import org.hammerlab.guava.collect.{ RangeSet, TreeRangeSet }
@@ -61,16 +62,13 @@ object Ranges {
       rangeParser: ArgParser[Range[T]],
       toSetT: T ⇒ SetT
   ): ArgParser[R] =
-    instance[R]("ranges") {
+    SimpleArgParser.from[R]("ranges") {
       _
         .split(",")
         .map {
-          str ⇒
-            rangeParser
-              .apply(None, str, mandatory = false)
-              .map(_._2)
+          rangeParser(None, _)
         }
-        .foldLeft[Either[Seq[String], Seq[Range[T]]]](
+        .foldLeft[Either[Seq[Error], Seq[Range[T]]]](
           Right(Vector())
         ) {
           case (Left(errors), Left(error)) ⇒ Left(errors :+ error)
@@ -79,7 +77,7 @@ object Ranges {
           case (Right(ranges), Right(range)) ⇒ Right(ranges :+ range)
         }
         .bimap(
-          errors ⇒ s"Invalid ranges:\n\t${errors.mkString("\n\t")}",
+          errors ⇒ UnrecognizedValue(s"Invalid ranges:\n\t${errors.mkString("\n\t")}"),
           ranges ⇒ gen.from(ranges :: HNil)
         )
     }
