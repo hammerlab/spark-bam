@@ -12,11 +12,11 @@ default(
     hammerlab.hadoop_bam → "7.9.0"          ,
                 io_utils → "5.0.0"          ,
                iterators → "2.1.0"          ,
-                    loci → "2.0.3"          ,
+                    loci → "2.0.4"          ,
               magic_rdds → "4.2.0"          ,
               math.utils → "2.2.0"          ,
                    paths → "1.5.0"          ,
-               reference → "1.4.2"          ,
+               reference → "1.4.3"          ,
               spark_util → "2.0.3"          ,
                    stats → "1.3.0"          ,
                    types → "1.1.0"
