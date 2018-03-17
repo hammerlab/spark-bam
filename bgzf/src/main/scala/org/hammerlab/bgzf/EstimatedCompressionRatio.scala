@@ -10,5 +10,6 @@ object EstimatedCompressionRatio {
   implicit def unmakeEstimatedCompressionRatio(ratio: EstimatedCompressionRatio): Double =
     ratio.ratio
 
-  implicit val default: Default[EstimatedCompressionRatio] = Default(3.0)
+  implicit val default: EstimatedCompressionRatio = 3.0
+  implicit val defaultParam = Default(default)
 }

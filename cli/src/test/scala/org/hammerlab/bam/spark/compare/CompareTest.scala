@@ -2,7 +2,6 @@ package org.hammerlab.bam.spark.compare
 
 import hammerlab.bytes._
 import org.apache.spark.broadcast.Broadcast
-import org.hammerlab.bam.check.Checker.default
 import org.hammerlab.bam.check.{ MaxReadSize, ReadsToCheck }
 import org.hammerlab.bam.spark.Split
 import org.hammerlab.bam.test.resources.bam1
@@ -15,10 +14,6 @@ import shapeless.LabelledGeneric
 
 class CompareTest
   extends SparkSuite {
-
-  implicit val readsToCheck      = default[ReadsToCheck]
-  implicit val maxReadSize       = default[MaxReadSize]
-  implicit val bgzfBlocksToCheck = default[BGZFBlocksToCheck]
 
   val lg = LabelledGeneric[Result]
 

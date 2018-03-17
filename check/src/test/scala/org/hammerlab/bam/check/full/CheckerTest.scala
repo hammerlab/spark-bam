@@ -3,8 +3,6 @@ package org.hammerlab.bam.check.full
 import java.nio.channels.FileChannel
 
 import hammerlab.path._
-import org.hammerlab.bam.check.Checker.default
-import org.hammerlab.bam.check.ReadsToCheck
 import org.hammerlab.bam.check.full.error.{ Flags, InvalidCigarOp, NoReadName, Result, Success }
 import org.hammerlab.bam.header.ContigLengths
 import org.hammerlab.bam.test.resources.bam2
@@ -28,8 +26,7 @@ class CheckerTest
     val checker =
       Checker(
         uncompressedBytes,
-        ContigLengths(path),
-        default[ReadsToCheck]
+        ContigLengths(path)
       )
 
     checker(pos) should be(expected)

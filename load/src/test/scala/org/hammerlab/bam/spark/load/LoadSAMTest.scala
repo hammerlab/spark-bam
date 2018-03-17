@@ -2,7 +2,6 @@ package org.hammerlab.bam.spark.load
 
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
-import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import spark_bam._
 
@@ -37,17 +36,16 @@ class LoadSAMTest
     val intervals = "1:13000-14000,1:28000-29000"
 
     {
-      val records = sc.loadBamIntervals(path)(intervals)
+      val records = sc.loadBamIntervals(path, intervals)
       records.getNumPartitions should be(1)
       records.count should be(125)
     }
 
     {
+      implicit val splitSize = MaxSplitSize(100000)
       val records =
         sc.loadBamIntervals(
           path,
-          splitSize = MaxSplitSize(100000)
-        )(
           intervals
         )
 

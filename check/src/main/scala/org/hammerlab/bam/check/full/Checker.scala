@@ -15,8 +15,10 @@ import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
  * [[check.Checker]] that builds [[Flags]] of all failing checks at each [[org.hammerlab.bgzf.Pos]].
  */
 case class Checker(uncompressedStream: SeekableUncompressedBytes,
-                   contigLengths: ContigLengths,
-                   readsToCheck: ReadsToCheck)
+                   contigLengths: ContigLengths)(
+    implicit
+    val readsToCheck: ReadsToCheck
+)
   extends PosChecker[Result] {
 
   override protected def apply(startPos: Long)(
@@ -191,8 +193,7 @@ object Checker {
       override def apply(ch: CachingChannel[SeekableByteChannel]): Checker =
         Checker(
           SeekableUncompressedBytes(ch),
-          contigLengths.value,
-          readsToCheck
+          contigLengths.value
         )
     }
 }

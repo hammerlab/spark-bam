@@ -14,7 +14,7 @@ default(
                 io_utils → "5.0.0"          ,
                iterators → "2.1.0"          ,
                     loci → "2.0.4"          ,
-              magic_rdds → "4.2.0"          ,
+              magic_rdds → "4.2.1".snapshot ,
               math.utils → "2.2.0"          ,
                    paths → "1.5.0"          ,
                reference → "1.4.3"          ,
@@ -107,13 +107,18 @@ lazy val cli = project.settings(
 
   publishAssemblyJar,
 
-  consolePkg("spark_bam")
+  consolePkg("spark_bam"),
+
+  buildInfoPackage := "build_info.spark_bam",
+  buildInfoObject := "cli"
 ).dependsOn(
   bgzf,
   check,
   load,
   seqdoop,
   test_bams test
+).enablePlugins(
+  BuildInfoPlugin
 )
 
 lazy val load = project.settings(
@@ -133,6 +138,7 @@ lazy val load = project.settings(
     paths,
     reference,
     seqdoop_hadoop_bam,
+    shapeless,
     slf4j,
     spark_util
   ),
@@ -167,7 +173,8 @@ lazy val test_bams = project.settings(
     paths,
     testUtils
   ),
-  clearTestDeps
+  clearTestDeps,
+  test in sbt.Test := {}
 )
 
 // named this module "metrics" instead of "benchmarks" to work around bizarre IntelliJ-scala-plugin bug, cf.

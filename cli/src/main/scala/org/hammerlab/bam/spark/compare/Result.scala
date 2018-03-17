@@ -41,8 +41,8 @@ object Result
       conf: Configuration,
       splitSize: MaxSplitSize,
       bgzfBlocksToCheck: BGZFBlocksToCheck,
-      readsToCheck: ReadsToCheck,
-      maxReadSize: MaxReadSize
+           readsToCheck:      ReadsToCheck,
+            maxReadSize:       MaxReadSize
   ): Result = {
 
     val fileSplits =
@@ -52,8 +52,7 @@ object Result
       )
 
     val (hadoopBamMS, hadoopBamSplits) = time { getHadoopBamSplits(path, fileSplits) }
-
-    val (sparkBamMS, sparkBamSplits) =  time { getSparkBamSplits(path, fileSplits) }
+    val ( sparkBamMS,  sparkBamSplits) = time {  getSparkBamSplits(path, fileSplits) }
 
     implicit def toStart(split: Split): Pos = split.start
 
@@ -92,8 +91,8 @@ object Result
       implicit
       conf: Configuration,
       bgzfBlocksToCheck: BGZFBlocksToCheck,
-      readsToCheck: ReadsToCheck,
-      maxReadSize: MaxReadSize
+           readsToCheck:      ReadsToCheck,
+            maxReadSize:       MaxReadSize
   ): Vector[Split] = {
     implicit val Channels(
       compressedChannel,
@@ -136,10 +135,13 @@ object Result
       .toVector
   }
 
-  def getHadoopBamSplits(path: Path,
-                         fileSplits: Seq[FileSplit])(
-                            implicit conf: Configuration
-                        ): Vector[Split] = {
+  def getHadoopBamSplits(
+    path: Path,
+    fileSplits: Seq[FileSplit]
+  )(
+    implicit
+    conf: Configuration
+  ): Vector[Split] = {
 
     val ifmt = new BAMInputFormat
     val job = Job.getInstance(conf, s"$path:file-splits")

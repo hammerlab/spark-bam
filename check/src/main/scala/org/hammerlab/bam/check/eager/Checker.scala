@@ -16,8 +16,10 @@ import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
  * a read-record boundary.
  */
 case class Checker(uncompressedStream: SeekableUncompressedBytes,
-                   contigLengths: ContigLengths,
-                   readsToCheck: ReadsToCheck)
+                   contigLengths: ContigLengths)(
+    implicit
+    val readsToCheck: ReadsToCheck
+)
   extends PosChecker[Boolean]
     with ReadStartFinder {
 
@@ -170,8 +172,7 @@ object Checker {
       override def apply(ch: CachingChannel[SeekableByteChannel]): Checker =
         Checker(
           SeekableUncompressedBytes(ch),
-          contigLengths.value,
-          readsToCheck
+          contigLengths.value
         )
     }
 }

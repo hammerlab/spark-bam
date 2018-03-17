@@ -14,11 +14,11 @@ case class Pos(blockPos: Long, offset: Int) {
   override def toString: String =
     s"$blockPos:$offset"
 
-  def -(other: Pos)(implicit estimatedCompressionRatio: EstimatedCompressionRatio): Double =
+  def -(other: Pos)(implicit ratio: EstimatedCompressionRatio): Double =
     max(
       0L,
       blockPos - other.blockPos +
-        ((offset - other.offset) / estimatedCompressionRatio).toLong
+        ((offset - other.offset) / ratio).toLong
     )
 
   def toHTSJDK: Long = (blockPos << 16 | offset)

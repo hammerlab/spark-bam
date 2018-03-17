@@ -96,8 +96,6 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
     val fps = differingCalls.filter(!_._2).keys
     val fns = differingCalls.filter( _._2).keys
 
-//    val pathBroadcast = sc.broadcast(path)
-
     implicit val contigLengthsBroadcast = sc.broadcast(header.contigLengths)
 
     val fpsWithMetadata =
@@ -111,8 +109,7 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
             val fullChecker =
               full.Checker(
                 uncompressedBytes,
-                contigLengthsBroadcast.value,
-                readsToCheck
+                contigLengthsBroadcast.value
               )
 
             it

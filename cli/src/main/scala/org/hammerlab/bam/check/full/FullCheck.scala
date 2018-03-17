@@ -71,8 +71,7 @@ object FullCheck extends Cmd {
     val checker =
       Checker(
         uncompressedBytes,
-        contigLengthsBroadcast.value,
-        readsToCheck
+        contigLengthsBroadcast.value
       )
 
     blocks
@@ -125,8 +124,7 @@ object FullCheck extends Cmd {
                 val checker =
                   Checker(
                     uncompressedBytes,
-                    contigLengthsBroadcast.value,
-                    readsToCheck
+                    contigLengthsBroadcast.value
                   )
 
                 blocks

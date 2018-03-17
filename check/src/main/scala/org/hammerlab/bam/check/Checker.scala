@@ -1,6 +1,5 @@
 package org.hammerlab.bam.check
 
-import caseapp.core.default._
 import org.hammerlab.bgzf.Pos
 import org.hammerlab.channel.{ CachingChannel, SeekableByteChannel }
 
@@ -23,6 +22,4 @@ object Checker {
   trait MakeChecker[Call, C <: Checker[Call]]
     extends ((CachingChannel[SeekableByteChannel]) ⇒ C)
       with Serializable
-
-  def default[T]()(implicit d: Default[T]): T = d.value
 }

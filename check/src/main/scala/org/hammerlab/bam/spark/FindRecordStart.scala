@@ -37,7 +37,7 @@ object FindRecordStart {
 
     uncompressedBytes.seek(start)
 
-    val checker = eager.Checker(uncompressedBytes, contigLengths, readsToCheck)
+    val checker = eager.Checker(uncompressedBytes, contigLengths)
 
     var idx = 0
     while (idx < maxReadSize.n) {

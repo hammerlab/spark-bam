@@ -17,6 +17,7 @@ package object block {
         str ⇒ Right(str.toInt)
       }
 
-    implicit val default: Default[BGZFBlocksToCheck] = Default(5)
+    implicit val default: BGZFBlocksToCheck = 5
+    implicit val defaultParam = Default(default)
   }
 }
