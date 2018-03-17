@@ -5,7 +5,7 @@ import genomics.{ loci, reference }
 default(
   group("org.hammerlab.bam"),
   github.repo("spark-bam"),
-  v"1.2.0",
+  v"1.2.0-M1",
   versions(
                    bytes → "1.2.0"          ,
                 case_cli → "2.3.0"          ,
@@ -161,7 +161,7 @@ lazy val seqdoop = project.settings(
 
 lazy val test_bams = project.settings(
   name := "test-bams",
-  v"1.1.0",
+  v"1.1.0-M1",
   scala211Only,
   dep(
     paths,

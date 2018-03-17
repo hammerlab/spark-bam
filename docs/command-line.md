@@ -23,7 +23,7 @@ The latter are typically most easily run via `spark-submit` anyway, as in exampl
 ### Via Maven
 
 ```bash
-wget -O spark-bam-cli.jar https://oss.sonatype.org/content/repositories/releases/org/hammerlab/bam/cli_2.11/1.2.0/cli_2.11-1.2.0-assembly.jar
+wget -O spark-bam-cli.jar https://oss.sonatype.org/content/repositories/releases/org/hammerlab/bam/cli_2.11/1.2.0-M1/cli_2.11-1.2.0-M1-assembly.jar
 export CLI_JAR=spark-bam-cli.jar
 ```
 
@@ -31,7 +31,7 @@ export CLI_JAR=spark-bam-cli.jar
 
 ```bash
 sbt cli/assembly
-export CLI_JAR=cli/target/scala-2.11/cli-assembly-1.2.0.jar
+export CLI_JAR=cli/target/scala-2.11/cli-assembly-1.2.0-M1.jar
 ```
 
 ## Running a subcommand

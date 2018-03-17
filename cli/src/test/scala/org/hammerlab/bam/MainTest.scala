@@ -56,7 +56,7 @@ class MainTest
     check(
       "-h"
     )(
-      """spark-bam 1.2.0
+      """spark-bam 1.2.0-M1
         |Usage: spark-bam [options] [command] [command-options]
         |
         |Available commands: check-bam, check-blocks, compare-splits, compute-splits, count-reads, full-check, htsjdk-rewrite, index-blocks, index-records, time-load

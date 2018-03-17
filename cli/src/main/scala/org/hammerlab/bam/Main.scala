@@ -31,7 +31,7 @@ object Main
   extends CommandApp[Command[Cmd]] {
 
   override val    appName = "spark-bam"
-  override val appVersion = "1.2.0"
+  override val appVersion = "1.2.0-M1"
   override val   progName = "spark-bam"
 
   override def run(cmd: Command[Cmd],
