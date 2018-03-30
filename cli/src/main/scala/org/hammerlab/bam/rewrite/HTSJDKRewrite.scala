@@ -1,13 +1,13 @@
 package org.hammerlab.bam.rewrite
 
-import caseapp.{ Name ⇒ O, _ }
+import caseapp._
 import grizzled.slf4j.Logging
+import hammerlab.cli._
 import htsjdk.samtools.{ SAMFileWriterFactory, SamReaderFactory }
 import org.hammerlab.args.IntRanges
 import org.hammerlab.bam.index.IndexRecords
 import org.hammerlab.bgzf.index.IndexBlocks
-import org.hammerlab.cli.app.{ Cmd, HasPrinter, RequiredArgOutPathApp }
-import org.hammerlab.cli.args.PrinterArgs
+import org.hammerlab.cli.base.app.HasPrinter
 
 import scala.collection.JavaConverters._
 

@@ -1,6 +1,7 @@
 package org.hammerlab.bam.check.blocks
 
 import hammerlab.bytes._
+import hammerlab.cli._
 import hammerlab.iterator._
 import hammerlab.lines.limit._
 import hammerlab.monoid._
@@ -16,8 +17,6 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.Metadata
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
-import org.hammerlab.cli.app.Cmd
-import org.hammerlab.kryo._
 import org.hammerlab.spark.accumulator.Histogram
 import org.hammerlab.stats.Stats
 
@@ -195,6 +194,7 @@ object CheckBlocks
     }
   }
 
+  import org.hammerlab.kryo._
   case class Registrar() extends spark.Registrar(
     Blocks,
     CheckerApp,

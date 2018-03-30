@@ -1,10 +1,10 @@
 package org.hammerlab.bam
 
-import caseapp.{ Recurse ⇒ R, _ }
+import caseapp._
+import hammerlab.cli._
 import org.hammerlab.bam.check.{ blocks, eager, full }
 import org.hammerlab.bam.spark.compare
 import org.hammerlab.bgzf
-import org.hammerlab.cli.app.Cmd
 
 sealed abstract class Command[+C <: Cmd](val cmd: C) {
   def opts: cmd.Opts

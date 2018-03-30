@@ -1,16 +1,13 @@
 package org.hammerlab.bam.spark.compare
 
-import caseapp.{ Name ⇒ O, Recurse ⇒ R }
-import hammerlab.monoid._
+import hammerlab.cli._
 import hammerlab.lines._
+import hammerlab.monoid._
 import hammerlab.option._
 import hammerlab.print._
 import hammerlab.show._
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bam.spark.{ LoadReads, load }
-import org.hammerlab.cli.app.Cmd
-import org.hammerlab.cli.app.spark.PathApp
-import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.exception.Error
 import org.hammerlab.stats.{ Empty, Stats }
 import org.hammerlab.timing.Timer
@@ -25,6 +22,8 @@ object CountReads
                   @R splitSizeArgs: SplitSize.Args,
                   @O("s") sparkBamFirst: Boolean = false,
                   @O("n") numIterations: Int = 1)
+
+  import hammerlab.cli.spark._
 
   val main = Main(
     new PathApp(_, load.Registrar)

@@ -10,7 +10,7 @@ import org.hammerlab.hadoop.splits.MaxSplitSize
 /**
  * Wrapper for the split-computation Spark job that uses a [[Configuration]] in each task; forces the closure's
  * reference to the [[Configuration]] to be an instance variable that gets serialized, as opposed to
- * [[org.hammerlab.cli.app.spark.HasSparkContext.conf]] which is static and would inadvertently cause creation of a
+ * [[org.hammerlab.cli.spark.HasSparkContext.conf]] which is static and would inadvertently cause creation of a
  * [[SparkContext]] on each executor.
  */
 class PathChecks(lines: Vector[String], num: Int)(

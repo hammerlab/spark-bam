@@ -2,10 +2,9 @@ package org.hammerlab.bgzf.index
 
 import caseapp.{ AppName, ProgName }
 import grizzled.slf4j.Logging
+import hammerlab.cli._
 import org.hammerlab.bgzf.block.{ Metadata, MetadataStream }
 import org.hammerlab.channel.ByteChannel
-import org.hammerlab.cli.app.{ Cmd, IndexingApp }
-import org.hammerlab.cli.args.PrinterArgs
 import org.hammerlab.timing.Interval.heartbeat
 
 object IndexBlocks extends Cmd {

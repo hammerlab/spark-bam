@@ -164,8 +164,6 @@ trait Intervals {
             )
       }
   }
-
-
 }
 
 object Intervals {

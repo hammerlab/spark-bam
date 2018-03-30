@@ -1,7 +1,7 @@
 package org.hammerlab.bgzf.index
 
 import org.hammerlab.bam.test.resources.bam2
-import org.hammerlab.cli.app.MainSuite
+import org.hammerlab.cli.base.app.MainSuite
 
 class IndexBlocksTest
   extends MainSuite(IndexBlocks) {

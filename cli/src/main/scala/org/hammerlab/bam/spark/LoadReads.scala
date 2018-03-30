@@ -1,11 +1,11 @@
 package org.hammerlab.bam.spark
 
+import hammerlab.cli.spark._
 import hammerlab.collection.canBuildVector
 import hammerlab.path._
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.rdd.AsNewHadoopPartition
 import org.hammerlab.args.SplitSize
-import org.hammerlab.cli.app.spark.PathApp
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, FileVirtualSplit, SAMRecordWritable }
 import spark_bam._
 

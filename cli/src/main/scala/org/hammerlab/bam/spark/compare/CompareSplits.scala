@@ -1,13 +1,11 @@
 package org.hammerlab.bam.spark.compare
 
+import caseapp._
+import hammerlab.cli._
+import hammerlab.cli.spark.PathApp
 import hammerlab.lines.limit._
-import caseapp.{ AppName, ProgName, Name ⇒ O, Recurse ⇒ R }
 import org.hammerlab.args.{ FindBlockArgs, FindReadArgs, IntRanges, SplitSize }
-import org.hammerlab.cli.app.Cmd
-import org.hammerlab.cli.app.spark.PathApp
-import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.hadoop.splits.MaxSplitSize
-import org.hammerlab.kryo._
 import org.hammerlab.stats.Stats
 import shapeless._
 
@@ -156,8 +154,9 @@ object CompareSplits extends Cmd {
   )
 
   /** Import this here to avoid conflict with [[shapeless.Path]] */
-  import hammerlab.path.Path
+  import hammerlab.path._
   import org.hammerlab.bam.kryo.pathSerializer
+  import org.hammerlab.kryo._
 
   case class Registrar() extends spark.Registrar(
     cls[mutable.WrappedArray.ofRef[_]],

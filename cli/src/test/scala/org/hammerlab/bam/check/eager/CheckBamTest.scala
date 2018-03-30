@@ -2,7 +2,7 @@ package org.hammerlab.bam.check.eager
 
 import hammerlab.path._
 import org.hammerlab.bam.test.resources.{ bam1, bam1Unindexed }
-import org.hammerlab.cli.app.MainSuite
+import org.hammerlab.cli.spark.MainSuite
 import org.hammerlab.test.resources.File
 
 class CheckBamTest

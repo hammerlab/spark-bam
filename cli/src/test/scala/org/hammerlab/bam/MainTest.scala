@@ -3,8 +3,8 @@ package org.hammerlab.bam
 import java.io.ByteArrayOutputStream
 import java.security.Permission
 
-import org.hammerlab.cli.app.Cmd
-import org.hammerlab.test.Suite
+import hammerlab.cli._
+import hammerlab.test.Suite
 
 case class ExitException(status: Int)
   extends SecurityException("System.exit() is not allowed")

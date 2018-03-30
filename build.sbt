@@ -1,20 +1,22 @@
 
 import genomics.{ loci, reference }
+import org.hammerlab.sbt.plugin.HammerLab.{autoImport ⇒ hl }
 
-// most modules in this project are published with this group
 default(
-  group("org.hammerlab.bam"),
+  // most modules in this project are published with this group
+  subgroup("bam"),
   github.repo("spark-bam"),
   v"1.2.0-M1",
   versions(
                    bytes → "1.2.0"          ,
-                case_cli → "2.3.0"          ,
+            hl.cli. base → "1.0.0"          ,
+            hl.cli.spark → "1.0.0"          ,
                  channel → "1.4.0"          ,
     hammerlab.hadoop_bam → "7.9.0"          ,
                 io_utils → "5.0.0"          ,
                iterators → "2.1.0"          ,
-                    loci → "2.0.4"          ,
-              magic_rdds → "4.2.1".snapshot ,
+                    loci → "2.1.0"          ,
+              magic_rdds → "4.2.1"          ,
               math.utils → "2.2.0"          ,
                    paths → "1.5.0"          ,
                reference → "1.4.3"          ,
@@ -28,8 +30,7 @@ default(
 lazy val bgzf = project.settings(
   group("org.hammerlab"),
   dep(
-    case_app,
-    case_cli + testtest,
+    hl.cli.base +testtest,
     cats,
     channel,
     io_utils,
@@ -48,8 +49,8 @@ lazy val bgzf = project.settings(
 lazy val check = project.settings(
   dep(
     bytes,
+    hl.cli.base +testtest,
     case_app,
-    case_cli + testtest,
     cats,
     channel,
     htsjdk,
@@ -73,10 +74,11 @@ lazy val cli = project.settings(
   dep(
     bytes,
     case_app,
-    case_cli + testtest,
     cats,
     channel,
     hammerlab.hadoop_bam,
+    hl.cli. base +testtest,
+    hl.cli.spark +testtest,
     io_utils,
     iterators,
     magic_rdds,
