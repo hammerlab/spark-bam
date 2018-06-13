@@ -1,6 +1,8 @@
 
 import genomics.{ loci, reference }
-import org.hammerlab.sbt.plugin.HammerLab.{autoImport ⇒ hl }
+
+val `cli-base`  = hammerlab.cli. base +testtest
+val `cli-spark` = hammerlab.cli.spark +testtest
 
 default(
   // most modules in this project are published with this group
@@ -9,20 +11,20 @@ default(
   v"1.2.0-M1",
   versions(
                    bytes → "1.2.0"          ,
-            hl.cli. base → "1.0.0"          ,
-            hl.cli.spark → "1.0.0"          ,
-                 channel → "1.4.0"          ,
+               `cli-base`→ "1.0.0"          ,
+              `cli-spark`→ "1.0.0"          ,
+                 channel → "1.5.1"          ,
     hammerlab.hadoop_bam → "7.9.0"          ,
-                io_utils → "5.0.0"          ,
-               iterators → "2.1.0"          ,
+            hammerlab.io → "5.1.1"          ,
+               iterators → "2.2.0"          ,
                     loci → "2.1.0"          ,
-              magic_rdds → "4.2.1"          ,
+              magic_rdds → "4.2.2"          ,
               math.utils → "2.2.0"          ,
                    paths → "1.5.0"          ,
                reference → "1.4.3"          ,
-              spark_util → "2.0.3"          ,
-                   stats → "1.3.0"          ,
-                   types → "1.1.0",
+              spark_util → "2.0.4"          ,
+                   stats → "1.3.1"          ,
+                   types → "1.2.0"          ,
       seqdoop_hadoop_bam → "7.9.2"
   )
 )
@@ -30,10 +32,10 @@ default(
 lazy val bgzf = project.settings(
   group("org.hammerlab"),
   dep(
-    hl.cli.base +testtest,
+   `cli-base`,
     cats,
     channel,
-    io_utils,
+    hammerlab.io,
     iterators,
     math.utils,
     paths,
@@ -41,15 +43,15 @@ lazy val bgzf = project.settings(
     spark_util,
     stats
   ),
-  addSparkDeps
+  spark
 ).dependsOn(
-  test_bams
+  `test-bams` test
 )
 
 lazy val check = project.settings(
   dep(
     bytes,
-    hl.cli.base +testtest,
+   `cli-base`,
     case_app,
     cats,
     channel,
@@ -57,17 +59,17 @@ lazy val check = project.settings(
     iterators,
     loci + testtest,
     magic_rdds,
-    io_utils,
+    hammerlab.io,
     paths,
     seqdoop_hadoop_bam,
     slf4j,
     spark_util
   ),
-  addSparkDeps,
+  spark,
   fork := true  // ByteRangesTest exposes an SBT bug that this works around; see https://github.com/sbt/sbt/issues/2824
 ).dependsOn(
   bgzf,
-  test_bams test
+  `test-bams` test
 )
 
 lazy val cli = project.settings(
@@ -77,9 +79,9 @@ lazy val cli = project.settings(
     cats,
     channel,
     hammerlab.hadoop_bam,
-    hl.cli. base +testtest,
-    hl.cli.spark +testtest,
-    io_utils,
+   `cli-base`,
+   `cli-spark`,
+    hammerlab.io,
     iterators,
     magic_rdds,
     paths,
@@ -90,8 +92,8 @@ lazy val cli = project.settings(
 
   // Bits that depend on the seqdoop module use org.hammerlab:hadoop-bam; make sure we don't get the org.seqdoop one.
   excludes += seqdoop_hadoop_bam,
-  
-  addSparkDeps,
+
+  spark,
 
   shadedDeps += shapeless,
 
@@ -118,7 +120,7 @@ lazy val cli = project.settings(
   check,
   load,
   seqdoop,
-  test_bams test
+  `test-bams` test
 ).enablePlugins(
   BuildInfoPlugin
 )
@@ -144,11 +146,11 @@ lazy val load = project.settings(
     slf4j,
     spark_util
   ),
-  addSparkDeps
+  spark
 ).dependsOn(
   bgzf,
   check,
-  test_bams test
+  `test-bams` test
 )
 
 lazy val seqdoop = project.settings(
@@ -160,20 +162,20 @@ lazy val seqdoop = project.settings(
   ),
   // Make sure we get org.hammerlab:hadoop-bam, not org.seqdoop
   excludes += seqdoop_hadoop_bam,
-  addSparkDeps
+  spark
 ).dependsOn(
   bgzf,
   check,
-  test_bams test
+  `test-bams` test
 )
 
-lazy val test_bams = project.settings(
+lazy val `test-bams` = project.settings(
   name := "test-bams",
   v"1.1.0-M1",
-  scala211Only,
+  `2.11`.only,
   dep(
     paths,
-    testUtils
+    hammerlab.test.base
   ),
   clearTestDeps,
   test in sbt.Test := {}
@@ -188,12 +190,12 @@ lazy val metrics = project.in(file("benchmarks")).settings(
   )
 )
 
-lazy val spark_bam =
-  rootProject(
+lazy val `spark-bam` =
+  root(
     bgzf,
     check,
     cli,
     load,
     seqdoop,
-    test_bams
+    `test-bams`
   )

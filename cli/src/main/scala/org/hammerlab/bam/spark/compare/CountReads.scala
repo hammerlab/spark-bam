@@ -76,7 +76,7 @@ object CountReads
 
   case class Result(sparkBam: Reads, hadoopBam: Try[Reads])
 
-  import hammerlab.indent.implicits.tab
+  import hammerlab.indent.tab
 
   object Result {
     implicit val showResult: ToLines[Result] =
@@ -169,7 +169,7 @@ object CountReads
             "",
 
             hadoopBamTimes match {
-              case Empty() ⇒ None
+              case Empty() ⇒ Lines()
               case _ ⇒
                 Lines(
                   "hadoop-bam times (ms):",
