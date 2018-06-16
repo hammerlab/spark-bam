@@ -2,8 +2,6 @@ package org.hammerlab.bam.header
 
 import java.io.InputStream
 
-import com.esotericsoftware.kryo.io.{ Input, Output }
-import com.esotericsoftware.kryo.{ Kryo, Serializer }
 import hammerlab.path._
 import htsjdk.samtools.SamReaderFactory.Option.EAGERLY_DECODE
 import htsjdk.samtools.SamReaderFactory.makeDefault
@@ -95,34 +93,35 @@ object ContigLengths {
           )
     )
 
-  implicit object ContigLengthsSerializer extends Serializer[ContigLengths] {
-    override def write(kryo: Kryo, output: Output, contigLengths: ContigLengths): Unit = {
-      output.writeInt(contigLengths.size)
-      for {
-        (_, (name, length)) ← contigLengths
-      } {
-        kryo.writeClassAndObject(output, name)
-        output.writeLong(length)
-      }
-    }
-
-    override def read(kryo: Kryo, input: Input, clz: Class[ContigLengths]): ContigLengths = {
-      val size = input.readInt()
-      SortedMap(
-        (for {
-          idx ← 0 until size
-        } yield
-          idx →
-            (
-              kryo.readClassAndObject(input).asInstanceOf[ContigName],
-              NumLoci(input.readLong())
-            )
-        ): _*
-      )
-    }
-  }
-
   import org.hammerlab.kryo._
+
+  implicit val serializer: Serializer[ContigLengths] =
+    Serializer(
+      (kryo, input) ⇒ {
+        val size = input.readInt()
+        SortedMap(
+          (for {
+            idx ← 0 until size
+          } yield
+            idx →
+              (
+                kryo.readClassAndObject(input).asInstanceOf[ContigName],
+                NumLoci(input.readLong())
+              )
+         ): _*
+        )
+      },
+      (kryo, output, contigLengths) ⇒ {
+        output.writeInt(contigLengths.size)
+        for {
+          (_, (name, length)) ← contigLengths
+        } {
+          kryo.writeClassAndObject(output, name)
+          output.writeLong(length)
+        }
+      }
+    )
+
   implicit val alsoRegister: AlsoRegister[ContigLengths] =
     AlsoRegister(
       cls[ContigName]

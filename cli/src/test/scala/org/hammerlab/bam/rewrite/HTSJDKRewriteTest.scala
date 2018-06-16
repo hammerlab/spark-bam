@@ -12,12 +12,10 @@ class HTSJDKRewriteTest
    */
   test("slice 2.bam") {
     run(
-      Seq(
-        "-b",              // index blocks
-        "-i",              // index records
-        "-r", "100-1000",  // select reads with indices ∈ [100,1000)
-        bam2
-      )
+      "-b",              // index blocks
+      "-i",              // index records
+      "-r", "100-1000",  // select reads with indices ∈ [100,1000)
+      bam2
     )
     .parent should dirMatch(File("slice"))
   }

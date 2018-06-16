@@ -13,26 +13,25 @@ import scala.collection.mutable
 
 case class Registrar()
   extends spark.Registrar(
+    /** Several [[CanLoadBam]] methods broadcast [[Header]] and/or [[ContigLengths]] */
+    cls[Header],
+    cls[ContigLengths],
+    cls[Configuration],
 
-        /** Several [[CanLoadBam]] methods broadcast [[Header]] and/or [[ContigLengths]] */
-        cls[Header],
-        cls[ContigLengths],
-        cls[Configuration],
+    /** [[CanLoadBam.loadSam]] broadcasts a [[htsjdk.samtools.SAMFileHeader]] */
+    cls[SAMFileHeader],
 
-        /** [[CanLoadBam.loadSam]] broadcasts a [[htsjdk.samtools.SAMFileHeader]] */
-        cls[SAMFileHeader],
+    /**
+     * An [[org.apache.spark.rdd.RDD]] of [[Pos]] is [[org.apache.spark.rdd.RDD.collect collect]]ed in
+     * [[CanLoadBam.loadSplitsAndReads]]
+     */
+    cls[mutable.WrappedArray.ofRef[_]],
+    arr[Pos],
 
-        /**
-         * An [[org.apache.spark.rdd.RDD]] of [[Pos]] is [[org.apache.spark.rdd.RDD.collect collect]]ed in
-         * [[CanLoadBam.loadSplitsAndReads]]
-         */
-        cls[mutable.WrappedArray.ofRef[_]],
-        arr[Pos],
+    /** [[CanLoadBam.loadBamIntervals]] broadcasts a [[org.hammerlab.genomics.loci.set.LociSet]] */
+    cls[LociSet],
 
-        /** [[CanLoadBam.loadBamIntervals]] broadcasts a [[org.hammerlab.genomics.loci.set.LociSet]] */
-        cls[LociSet],
-
-        /** [[CanLoadBam.loadBamIntervals]] [[org.apache.spark.SparkContext.parallelize parallelize]]s some [[Vector]]s */
-        arr[Vector[_]],
-        cls[Chunk]
+    /** [[CanLoadBam.loadBamIntervals]] [[org.apache.spark.SparkContext.parallelize parallelize]]s some [[Vector]]s */
+    arr[Vector[_]],
+    cls[Chunk]
   )
