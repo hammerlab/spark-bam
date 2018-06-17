@@ -9,9 +9,8 @@ import hammerlab.show._
 import magic_rdds.partitions._
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.cli.app.Cmd
-import org.hammerlab.cli.app.spark.PathApp
-import org.hammerlab.cli.args.PrintLimitArgs
+import hammerlab.cli._
+import hammerlab.cli.spark.PathApp
 import org.hammerlab.stats.Stats
 import org.hammerlab.timing.Timer
 

@@ -1,14 +1,13 @@
 package org.hammerlab.bam.spark
 
 import hammerlab.show._
-import org.hammerlab.bam.check.Checker.default
 import org.hammerlab.bgzf.{ EstimatedCompressionRatio, Pos }
 import org.hammerlab.kryo._
 import org.seqdoop.hadoop_bam.FileVirtualSplit
 
 case class Split(start: Pos,
                  end: Pos) {
-  def length(implicit estimatedCompressionRatio: EstimatedCompressionRatio = default[EstimatedCompressionRatio]): Double =
+  def length(implicit r: EstimatedCompressionRatio): Double =
     end - start
 }
 

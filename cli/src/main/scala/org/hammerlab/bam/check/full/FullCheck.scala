@@ -21,9 +21,7 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.{ Metadata, PosIterator, SeekableUncompressedBytes }
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
-import org.hammerlab.cli.app.Cmd
-import org.hammerlab.cli.args.PrintLimitArgs
-import org.hammerlab.kryo._
+import hammerlab.cli._
 
 import scala.collection.immutable.SortedMap
 import scala.collection.mutable
@@ -71,8 +69,7 @@ object FullCheck extends Cmd {
     val checker =
       Checker(
         uncompressedBytes,
-        contigLengthsBroadcast.value,
-        readsToCheck
+        contigLengthsBroadcast.value
       )
 
     blocks
@@ -125,8 +122,7 @@ object FullCheck extends Cmd {
                 val checker =
                   Checker(
                     uncompressedBytes,
-                    contigLengthsBroadcast.value,
-                    readsToCheck
+                    contigLengthsBroadcast.value
                   )
 
                 blocks
@@ -328,6 +324,7 @@ object FullCheck extends Cmd {
       )
     }
 
+  import org.hammerlab.kryo._
   case class Registrar() extends spark.Registrar(
     CheckerApp,
     CallPartition,

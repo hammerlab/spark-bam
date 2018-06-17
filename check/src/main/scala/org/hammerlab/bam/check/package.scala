@@ -14,8 +14,8 @@ package object check {
         str ⇒ Right(str.toInt)
       }
 
-    implicit val default: Default[ReadsToCheck] =
-      Default(10)
+    implicit val default: ReadsToCheck = 10
+    implicit val defaultParam = Default(default)
   }
 
   implicit class MaxReadSize(val n: Int) extends AnyVal with IntWrapper
@@ -25,7 +25,7 @@ package object check {
         str ⇒ Right(str.toInt)
       }
 
-    implicit val default: Default[MaxReadSize] =
-      Default(100000000)
+    implicit val default: MaxReadSize = 100000000
+    implicit val defaultParam = Default(default)
   }
 }

@@ -16,11 +16,13 @@ import org.hammerlab.bgzf.Pos
 import org.hammerlab.bgzf.block.SeekableUncompressedBytes
 import org.hammerlab.channel.CachingChannel._
 import org.hammerlab.channel.SeekableByteChannel
-import org.hammerlab.cli.app.Args
-import org.hammerlab.cli.app.HasPrintLimit.PrintLimit
-import org.hammerlab.cli.app.OutPathApp.HasOverwrite
-import org.hammerlab.cli.app.close.Closeable
-import org.hammerlab.cli.app.spark.{ PathApp, Registrar }
+import hammerlab.cli
+import hammerlab.cli.{ PathApp ⇒ _, spark ⇒ _, _ }
+import hammerlab.cli.spark._
+import org.hammerlab.cli.base.app.Args
+import org.hammerlab.cli.base.app.HasPrintLimit.PrintLimit
+import org.hammerlab.cli.base.app.OutPathApp.HasOverwrite
+import org.hammerlab.cli.base.close.Closeable
 import org.hammerlab.kryo._
 import org.hammerlab.shapeless._
 import org.hammerlab.shapeless.hlist.Find
@@ -30,7 +32,7 @@ import org.hammerlab.shapeless.hlist.Find
  * in subclasses.
  */
 abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
-                                                           reg: Registrar)(
+                                                           reg: cli.spark.Registrar)(
     implicit
     c: Closeable,
     findBlocks: Find[Opts, Blocks.Args],
@@ -96,8 +98,6 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
     val fps = differingCalls.filter(!_._2).keys
     val fns = differingCalls.filter( _._2).keys
 
-//    val pathBroadcast = sc.broadcast(path)
-
     implicit val contigLengthsBroadcast = sc.broadcast(header.contigLengths)
 
     val fpsWithMetadata =
@@ -111,8 +111,7 @@ abstract class CheckerApp[Opts: HasOverwrite : PrintLimit](args: Args[Opts],
             val fullChecker =
               full.Checker(
                 uncompressedBytes,
-                contigLengthsBroadcast.value,
-                readsToCheck
+                contigLengthsBroadcast.value
               )
 
             it

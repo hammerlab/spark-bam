@@ -1,15 +1,12 @@
 package org.hammerlab.bam.spark.compare
 
-import caseapp.{ Name ⇒ O, Recurse ⇒ R }
+import hammerlab.cli._
 import hammerlab.iterator._
 import htsjdk.samtools.SAMRecord
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.rdd.RDD
 import org.hammerlab.args.SplitSize
 import org.hammerlab.bam.spark.{ LoadReads, load }
-import org.hammerlab.cli.app.Cmd
-import org.hammerlab.cli.app.spark.PathApp
-import org.hammerlab.cli.args.PrintLimitArgs
 import org.hammerlab.exception.Error
 import org.hammerlab.timing.Timer
 import org.seqdoop.hadoop_bam.{ BAMInputFormat, SAMRecordWritable }
@@ -19,6 +16,8 @@ object TimeLoad extends Cmd {
   case class Opts(@R printLimit: PrintLimitArgs,
                   @R splitSizeArgs: SplitSize.Args,
                   @O("s") sparkBamFirst: Boolean = false)
+
+  import hammerlab.cli.spark._
 
   val main = Main(
     args ⇒ new PathApp(args, load.Registrar)

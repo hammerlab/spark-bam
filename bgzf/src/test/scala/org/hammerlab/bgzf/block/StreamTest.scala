@@ -2,7 +2,7 @@ package org.hammerlab.bgzf.block
 
 import java.nio.channels.FileChannel
 
-import hammerlab.indent.implicits.tab
+import hammerlab.indent.tab
 import hammerlab.lines._
 import hammerlab.math.sigfigs._
 import hammerlab.show._
@@ -35,18 +35,18 @@ class StreamTest
     val ch = FileChannel.open(bam2.path)
     val stream = SeekableStream(ch)
 
-    stream.next() should ===(Metadata(    0, 26169, 65498))
+    ==(stream.next(), Metadata(    0, 26169, 65498))
     stream.seek(0)
-    stream.next() should ===(Metadata(    0, 26169, 65498))
+    ==(stream.next(), Metadata(    0, 26169, 65498))
     stream.seek(0)
-    stream.next() should ===(Metadata(    0, 26169, 65498))
-    stream.next() should ===(Metadata(26169, 24080, 65498))
+    ==(stream.next(), Metadata(    0, 26169, 65498))
+    ==(stream.next(), Metadata(26169, 24080, 65498))
 
     stream.seek(0)
-    stream.next() should ===(Metadata(    0, 26169, 65498))
+    ==(stream.next(), Metadata(    0, 26169, 65498))
 
     stream.seek(75791)
-    stream.next() should ===(Metadata(75791, 22308, 65498))
+    ==(stream.next(), Metadata(75791, 22308, 65498))
   }
 
   test("2.bam") {
@@ -55,9 +55,9 @@ class StreamTest
     val blocks = bgzfStream.toList
     blocks.size should be(25)
 
-    blocks(0) should ===(Metadata(    0, 26169, 65498))
-    blocks(1) should ===(Metadata(26169, 24080, 65498))
-    blocks(2) should ===(Metadata(50249, 25542, 65498))
+    ==(blocks(0), Metadata(    0, 26169, 65498))
+    ==(blocks(1), Metadata(26169, 24080, 65498))
+    ==(blocks(2), Metadata(50249, 25542, 65498))
 
     val compressedStats =
       Stats(

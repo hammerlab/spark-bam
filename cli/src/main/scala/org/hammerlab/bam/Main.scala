@@ -1,10 +1,10 @@
 package org.hammerlab.bam
 
-import caseapp.{ Recurse ⇒ R, _ }
+import caseapp._
+import hammerlab.cli._
 import org.hammerlab.bam.check.{ blocks, eager, full }
 import org.hammerlab.bam.spark.compare
 import org.hammerlab.bgzf
-import org.hammerlab.cli.app.Cmd
 
 sealed abstract class Command[+C <: Cmd](val cmd: C) {
   def opts: cmd.Opts
@@ -31,7 +31,7 @@ object Main
   extends CommandApp[Command[Cmd]] {
 
   override val    appName = "spark-bam"
-  override val appVersion = "1.2.0"
+  override val appVersion = build_info.spark_bam.cli.version
   override val   progName = "spark-bam"
 
   override def run(cmd: Command[Cmd],

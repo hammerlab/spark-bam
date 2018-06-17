@@ -3,9 +3,8 @@ package org.hammerlab.bam.spark.load
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
 import org.hammerlab.bam.index.Index.Chunk
-import org.hammerlab.bam.spark.load.CanLoadBam.getIntevalChunks
+import org.hammerlab.bam.spark.load.Intervals.getIntevalChunks
 import org.hammerlab.bgzf.Pos
-import org.hammerlab.genomics.loci.set.LociSet
 import org.hammerlab.hadoop.splits.MaxSplitSize
 import spark_bam._
 
@@ -59,7 +58,7 @@ class LoadBAMTest
       )
     )
 
-    val records = sc.loadBamIntervals(path)(interval)
+    val records = sc.loadBamIntervals(path, interval)
 
     records.count should be(2450)  // 2500 reads, 50 unmapped
   }
@@ -78,18 +77,17 @@ class LoadBAMTest
     )
 
     {
-      val records = sc.loadBamIntervals(path)(intervals)
+      val records = sc.loadBamIntervals(path, intervals)
 
       records.getNumPartitions should be(1)
       records.count should be(129)
     }
 
     {
+      implicit val splitSize = MaxSplitSize(10000)
       val records =
         sc.loadBamIntervals(
           path,
-          splitSize = MaxSplitSize(10000)
-        )(
           intervals
         )
 
@@ -108,7 +106,7 @@ class LoadBAMTest
       Nil
     )
 
-    val records = sc.loadBamIntervals(path)(intervals)
+    val records = sc.loadBamIntervals(path, intervals)
     records.count should be(0)
   }
 

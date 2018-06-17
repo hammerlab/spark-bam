@@ -2,7 +2,7 @@ package org.hammerlab.bam.check.full
 
 import hammerlab.path._
 import org.hammerlab.bam.test.resources.{ TestBams, bam1Unindexed }
-import org.hammerlab.cli.app.MainSuite
+import org.hammerlab.cli.spark.MainSuite
 import org.hammerlab.test.resources.File
 
 class FullCheckTest

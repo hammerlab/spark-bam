@@ -1,7 +1,7 @@
 package org.hammerlab.bam.spark.compare
 
 import org.hammerlab.bam.test.resources._
-import org.hammerlab.cli.app.MainSuite
+import org.hammerlab.cli.spark.MainSuite
 import org.hammerlab.test.matchers.lines.Chars
 import org.hammerlab.test.matchers.lines.Line._
 

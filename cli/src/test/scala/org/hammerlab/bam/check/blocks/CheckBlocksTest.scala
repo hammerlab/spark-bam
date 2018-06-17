@@ -1,7 +1,7 @@
 package org.hammerlab.bam.check.blocks
 
 import org.hammerlab.bam.test.resources.{ bam1, bam1BlockAligned, bam2 }
-import org.hammerlab.cli.app.MainSuite
+import org.hammerlab.cli.spark.MainSuite
 
 class CheckBlocksTest
   extends MainSuite(CheckBlocks) {

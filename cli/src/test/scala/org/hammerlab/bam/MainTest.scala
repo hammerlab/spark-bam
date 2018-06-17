@@ -3,8 +3,8 @@ package org.hammerlab.bam
 import java.io.ByteArrayOutputStream
 import java.security.Permission
 
-import org.hammerlab.cli.app.Cmd
-import org.hammerlab.test.Suite
+import hammerlab.cli._
+import hammerlab.test.Suite
 
 case class ExitException(status: Int)
   extends SecurityException("System.exit() is not allowed")
@@ -56,8 +56,8 @@ class MainTest
     check(
       "-h"
     )(
-      """spark-bam 1.2.0
-        |Usage: spark-bam [options] [command] [command-options]
+       s"spark-bam ${build_info.spark_bam.cli.version}\n" +
+      """Usage: spark-bam [options] [command] [command-options]
         |
         |Available commands: check-bam, check-blocks, compare-splits, compute-splits, count-reads, full-check, htsjdk-rewrite, index-blocks, index-records, time-load
         |

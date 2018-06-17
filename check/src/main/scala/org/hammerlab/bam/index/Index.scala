@@ -51,7 +51,7 @@ object Index {
 
   case class Chunk(start: Pos,
                    end: Pos) {
-    def size(implicit estimatedCompressionRatio: EstimatedCompressionRatio): Double =
+    def size(implicit r: EstimatedCompressionRatio): Double =
       end - start
   }
 

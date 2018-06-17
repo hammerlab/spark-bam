@@ -1,12 +1,10 @@
 package org.hammerlab.bam.check.eager
 
-import caseapp.{ AppName, ProgName, HelpMessage ⇒ M, Name ⇒ O, Recurse ⇒ R }
+import caseapp._
+import hammerlab.cli._
 import org.hammerlab.args.{ FindReadArgs, LogArgs, PostPartitionArgs }
 import org.hammerlab.bam.check.indexed.IndexedRecordPositions
 import org.hammerlab.bam.check.{ Blocks, CallPartition, CheckerApp, eager, seqdoop }
-import org.hammerlab.cli.app.Cmd
-import org.hammerlab.cli.args.PrintLimitArgs
-import org.hammerlab.kryo._
 
 object CheckBam
   extends Cmd {
@@ -75,7 +73,8 @@ object CheckBam
       )
     }
 
-  case class Registrar() extends spark.Registrar(
+  import org.hammerlab.kryo
+  case class Registrar() extends kryo.spark.Registrar(
     CallPartition,
     CheckerApp
   )
